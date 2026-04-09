@@ -1,0 +1,29 @@
+// ─── Estado del pedido ────────────────────────────────────────────────────────
+export type OrderStatus =
+  | "nuevo"
+  | "en_preparacion"
+  | "listo"
+  | "entregado"
+  | "cancelado";
+
+// ─── Item dentro de un pedido ─────────────────────────────────────────────────
+export interface OrderItem {
+  dishId: string;
+  dishName: string;
+  qty: number;
+  unitPrice: number;
+}
+
+// ─── Pedido ───────────────────────────────────────────────────────────────────
+export interface Order {
+  id: string;
+  folio: string;
+  sessionId?: string;   // ← ID de sesión del comensal (localStorage)
+  tableId?: string;
+  status: OrderStatus;
+  items: OrderItem[];
+  notes?: string;
+  createdAt: string;    // ISO string
+  attendedBy?: string;
+  branch?: string;
+}
