@@ -32,20 +32,21 @@ const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string
 export default function MeseroPage() {
   const { user, isLoading } = useRoleGuard(["mesero", "admin"]);
   const { logout } = useAuth();
-  const { data: orders, loading, error, empty, refetch } = useFetchWithState<Order[]>("/orders");
-  if (loading) return <FoodSpinner fullScreen={false} />;
+  const { data: orders, setData: setOrders, loading, error, empty, refetch } = useFetchWithState<Order[]>("/orders");
+  
+  const [tab, setTab] = useState<"activos" | "entregados">("activos");
+
+  if (isLoading || loading) return <FoodSpinner />;
   if (error) return <ErrorAlert message={error} onRetry={refetch} />;
-  if (empty) return <EmptyState title="No hay órdenes" description="No hay órdenes pendientes." />;
-  const [tab, setTab]       = useState<"activos" | "entregados">("activos");
 
-  if (isLoading || !user) return <FoodSpinner />;
-
-  const activos    = orders.filter(o => o.status === "nuevo" || o.status === "en_preparacion" || o.status === "listo");
-  const entregados = orders.filter(o => o.status === "entregado" || o.status === "cancelado");
-  const displayed  = tab === "activos" ? activos : entregados;
+  const ativos    = (orders ?? []).filter(o => o.status === "nuevo" || o.status === "en_preparacion" || o.status === "listo");
+  const entregados = (orders ?? []).filter(o => o.status === "entregado" || o.status === "cancelado");
+  const displayed  = tab === "activos" ? ativos : entregados;
 
   const markEntregado = (id: string) => {
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: "entregado" as OrderStatus } : o));
+    if (setOrders) {
+      setOrders(prev => (prev ?? []).map(o => o.id === id ? { ...o, status: "entregado" as OrderStatus } : o));
+    }
   };
 
   const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });

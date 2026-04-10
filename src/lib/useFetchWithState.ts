@@ -50,5 +50,5 @@ export function useFetchWithState<T>(url: string, options?: RequestInit) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
-  return { data, loading, error, empty, refetch: fetchData };
+  return { data, setData, loading, error, empty, refetch: fetchData };
 }

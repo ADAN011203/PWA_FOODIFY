@@ -79,8 +79,8 @@ export default function ReportesPage() {
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
-  const totalVentas  = useMemo(() => salesData.reduce((s, d) => s + d.ventas, 0), [salesData]);
-  const totalOrdenes = useMemo(() => salesData.reduce((s, d) => s + d.ordenes, 0), [salesData]);
+  const totalVentas  = useMemo(() => (salesData ?? []).reduce((s, d) => s + d.ventas, 0), [salesData]);
+  const totalOrdenes = useMemo(() => (salesData ?? []).reduce((s, d) => s + d.ordenes, 0), [salesData]);
   const ticketProm   = totalOrdenes > 0 ? Math.round(totalVentas / totalOrdenes) : 0;
 
   const handleExport = async (type: "sales" | "dishes" | "inventory") => {

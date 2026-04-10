@@ -40,7 +40,7 @@ const PAGE_SIZE = 8;
 
 // ─── Recibo / Ticker de una orden ─────────────────────────────────────────────
 function OrderTotals({ order }: { order: Order }) {
-  const subtotal = order.items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
+  const subtotal = (order.items ?? []).reduce((s, i) => s + i.unitPrice * i.qty, 0);
   return (
     <div
       style={{
@@ -62,7 +62,7 @@ function OrderTotals({ order }: { order: Order }) {
       >
         🧾 Detalle de la orden
       </p>
-      {order.items.map((item, i) => (
+      {(order.items ?? []).map((item, i) => (
         <div
           key={i}
           style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}
@@ -127,7 +127,7 @@ function OrderDetailModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Pedido #${order.folio.slice(-6)}`}
+      title={`Pedido #${(order.folio ?? "").slice(-6)}`}
     >
       <div
         style={{
@@ -168,7 +168,7 @@ function OrderDetailModal({
           {
             icon: "📋",
             label: "Artículos",
-            value: `${order.items.reduce((s, i) => s + i.qty, 0)} pzas`,
+            value: `${(order.items ?? []).reduce((s, i) => s + i.qty, 0)} pzas`,
           },
         ].map(({ icon, label, value }) => (
           <div
@@ -226,7 +226,7 @@ function OrderDetailModal({
 // ─── Order Card ───────────────────────────────────────────────────────────────
 function OrderCard({ order, onTap }: { order: Order; onTap: () => void }) {
   const cfg = STATUS_CFG[order.status];
-  const subtotal = order.items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
+  const subtotal = (order.items ?? []).reduce((s, i) => s + i.unitPrice * i.qty, 0);
   const time = new Date(order.createdAt).toLocaleTimeString("es-MX", {
     hour: "2-digit",
     minute: "2-digit",
