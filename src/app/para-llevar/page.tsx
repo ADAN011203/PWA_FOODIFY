@@ -24,6 +24,7 @@ function DishModal({
   onClose,
   onAdd,
   dark,
+  categories,
 }: {
   dish: Dish;
   onClose: () => void;

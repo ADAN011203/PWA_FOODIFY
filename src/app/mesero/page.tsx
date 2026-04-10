@@ -60,7 +60,7 @@ export default function MeseroPage() {
           <div style={{ width: 36, height: 36, borderRadius: 10, background: "#FF6B35", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem" }}>🛎️</div>
           <div>
             <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: 0 }}>Vista Mesero</p>
-            <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0 }}>🛎️ {user.name} · {user.branch}</p>
+            <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0 }}>🛎️ {user?.name} · {user?.branch}</p>
           </div>
         </div>
         <button onClick={logout} style={{ background: "#2e3238", color: "#f0ede8", border: "none", padding: "7px 14px", borderRadius: 8, fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
@@ -69,15 +69,14 @@ export default function MeseroPage() {
       </div>
 
       <div style={{ padding: "16px" }}>
-
         {/* Tabs */}
         <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
           {([
-            { key: "activos",    label: `Activos (${activos.length})` },
+            { key: "activos",    label: `Activos (${ativos.length})` },
             { key: "entregados", label: `Entregados (${entregados.length})` },
           ] as const).map(({ key, label }) => (
             <button key={key} onClick={() => setTab(key)} style={{
-              flex: 1, padding: "12px", borderRadius: 999, border: "none", cursor: "pointer",
+              flex: 1, padding: "12px", borderRadius: 999, cursor: "pointer",
               background: tab === key ? "#FF6B35" : "#1a1d21",
               color: tab === key ? "white" : "#6b7280",
               fontWeight: 700, fontSize: "0.875rem", fontFamily: "inherit",

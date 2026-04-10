@@ -356,7 +356,7 @@ export default function AdminStaffPage() {
   const { user, isLoading } = useAdminGuard();
   const { logout } = useAuth();
 
-  const { data: staff, loading, error, empty, refetch } = useFetchWithState<StaffMember[]>("/staff");
+  const { data: staff, setData: setStaff, loading, error, empty, refetch } = useFetchWithState<StaffMember[]>("/staff");
 if (loading) return <FoodSpinner fullScreen={false} />;
 if (error) return <ErrorAlert message={error} onRetry={refetch} />;
 if (empty) return <EmptyState title="No hay personal" description="Agrega empleados desde la PWA." />;
@@ -370,7 +370,7 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
 
   // Filtrado — antes de cualquier early return
   const filtered = useMemo(() => {
-    let list = staff;
+    let list = staff ?? [];
     if (filterRole   !== "todos") list = list.filter((s) => s.role   === filterRole);
     if (filterStatus !== "todos") list = list.filter((s) => s.status === filterStatus);
     if (search) {
@@ -390,8 +390,8 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
 
   // CRUD
   const handleSave = (form: typeof EMPTY_FORM, id?: string) => {
-    if (id) {
-      setStaff((prev) => prev.map((s) => s.id === id ? { ...s, ...form } : s));
+    if (id && setStaff) {
+      setStaff((prev) => (prev ?? []).map((s) => s.id === id ? { ...s, ...form } : s));
       showToast("✅ Empleado actualizado");
     } else {
       const newMember: StaffMember = {
@@ -400,7 +400,9 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
         createdAt: new Date().toISOString(),
         avatarInitials: form.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase(),
       };
-      setStaff((prev) => [newMember, ...prev]);
+      if (setStaff) {
+        setStaff((prev) => [newMember, ...(prev ?? [])]);
+      }
       showToast("✅ Empleado agregado");
     }
     setShowForm(false);
@@ -409,23 +411,27 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
   };
 
   const handleToggleStatus = (id: string, status: StaffStatus) => {
-    setStaff((prev) => prev.map((s) => s.id === id ? { ...s, status } : s));
+    if (setStaff) {
+      setStaff((prev) => (prev ?? []).map((s) => s.id === id ? { ...s, status } : s));
+    }
     const labels: Record<StaffStatus, string> = { active: "activado", inactive: "desactivado", suspended: "suspendido" };
     showToast(`✅ Empleado ${labels[status]}`);
   };
 
   const handleDelete = (id: string) => {
-    setStaff((prev) => prev.filter((s) => s.id !== id));
+    if (setStaff) {
+      setStaff((prev) => (prev ?? []).filter((s) => s.id !== id));
+    }
     showToast("🗑️ Empleado eliminado");
   };
 
   // KPIs por rol
   const kpis = ROLES.map((r) => ({
     role: r,
-    count: staff.filter((s) => s.role === r && s.status === "active").length,
+    count: (staff ?? []).filter((s) => s.role === r && s.status === "active").length,
   }));
 
-  const totalActive = staff.filter((s) => s.status === "active").length;
+  const totalActive = (staff ?? []).filter((s) => s.status === "active").length;
 
   return (
     <div style={{ minHeight: "100dvh", background: "#111214", fontFamily: "'Outfit', sans-serif", color: "#f0ede8" }}>
@@ -436,7 +442,7 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
           <button onClick={() => window.location.href = "/dashboard"} style={{ background: "#2e3238", border: "none", color: "#8a8f98", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
           <div>
             <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: 0 }}>Staff / Personal</p>
-            <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0 }}>👥 {staff.length} empleados · {totalActive} activos</p>
+            <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0 }}>👥 {(staff ?? []).length} empleados · {totalActive} activos</p>
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>

@@ -296,7 +296,7 @@ export default function OrderTrackingPage() {
           {order.items.map((item, i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, marginBottom: 10, borderBottom: i < order.items.length - 1 ? "1px solid #f0e4d0" : "none" }}>
               <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 600, fontSize: "0.875rem", margin: "0 0 2px", color: "#2C1810" }}>{item.name}</p>
+                <p style={{ fontWeight: 600, fontSize: "0.875rem", margin: "0 0 2px", color: "#2C1810" }}>{item.dishName}</p>
                 <p style={{ fontSize: "0.72rem", color: "#9B7B6B", margin: 0 }}>× {item.qty} · ${item.unitPrice} c/u</p>
               </div>
               <p style={{ fontWeight: 700, color: "#FF6B35", margin: 0, fontSize: "0.9rem" }}>
@@ -318,7 +318,7 @@ export default function OrderTrackingPage() {
             {[
               { label: "Folio",    value: `#${order.folio ?? order.id.slice(-6).toUpperCase()}` },
               { label: "Hora",     value: fmtTime(order.createdAt)       },
-              { label: "Tipo",     value: order.type === "para_llevar" ? "🛍 Para llevar" : "🪑 En restaurante" },
+              { label: "Mesa",     value: order.tableId ?? "Para llevar" },
               { label: "Pedido",   value: fmtElapsed(order.createdAt)    },
             ].map(({ label, value }) => (
               <div key={label}>

@@ -87,6 +87,7 @@ function OrderDetailModal({ order, onClose, onCancel, dark }: {
   const bg     = dark ? "#1e1e1e" : "#ffffff";
   const mutedC = dark ? "#6b7280" : "#6b7280";
   const cardBg = dark ? "#2a2a2a" : "#f9fafb";
+  const text   = dark ? "#f0ede8" : "#2C1810";
   const total  = order.items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
   const canCancel = order.status === "nuevo" || order.status === "en_preparacion";
 
@@ -238,6 +239,7 @@ function OrderCard({ order, onTap, dark }: { order: Order; onTap: () => void; da
   const bg     = isCancelled ? (dark ? "#2a1a1a" : "#fff5f5") : (dark ? "#1e1e1e" : "#ffffff");
   const mutedC = dark ? "#6b7280" : "#9B7B6B";
   const total  = order.items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
+  const text   = dark ? "#f0ede8" : "#2C1810";
 
   const fmtDate = (iso: string) => {
     const d = new Date(iso);
@@ -308,6 +310,7 @@ export default function OrdenesPage() {
   const cardBg = dark ? "#1a1a1a" : "#ffffff";
   const mutedC = dark ? "#6b7280" : "#9B7B6B";
   const tipBg  = dark ? "#1a2a1a" : "#f0fdf4";
+  const text   = dark ? "#f0ede8" : "#2C1810";
 
   const proceso    = myOrders.filter(o => o.status === "nuevo" || o.status === "en_preparacion" || o.status === "listo");
   const entregadas = myOrders.filter(o => o.status === "entregado" || o.status === "cancelado");

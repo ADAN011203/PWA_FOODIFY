@@ -71,7 +71,7 @@ export async function getDishesApi(): Promise<Dish[]> {
   try {
     const { data } = await api.get("/dishes");
     const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
-    return list.map((d: Record<string, unknown>) => ({
+    return list.map((d: any) => ({
       id:              String(d.id),
       name:            d.name,
       description:     d.description ?? "",
