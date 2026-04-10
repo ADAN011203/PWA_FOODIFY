@@ -29,6 +29,7 @@ function DishModal({
   onClose: () => void;
   onAdd: (dish: Dish, qty: number) => void;
   dark: boolean;
+  categories: { id: string; name: string }[];
 }) {
   const [qty, setQty] = useState(1);
 
@@ -330,7 +331,7 @@ function CartModal({
 // ─────────────────────────────────────────────────────────────────────────────
 // TARJETA: vista lista (móvil)
 // ─────────────────────────────────────────────────────────────────────────────
-function CardList({ dish, onTap, dark }: { dish: Dish; onTap: () => void; dark: boolean }) {
+function CardList({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => void; dark: boolean; categories: { id: string; name: string }[] }) {
   const bg     = dark ? "#1e1e1e" : "#ffffff";
   const text   = dark ? "#f0ede8" : "#1a1a1a";
   const mutedC = dark ? "#6b7280" : "#9B7B6B";
@@ -387,7 +388,7 @@ function CardList({ dish, onTap, dark }: { dish: Dish; onTap: () => void; dark: 
 // ─────────────────────────────────────────────────────────────────────────────
 // TARJETA: vista grid (tablet+)
 // ─────────────────────────────────────────────────────────────────────────────
-function CardGrid({ dish, onTap, dark }: { dish: Dish; onTap: () => void; dark: boolean }) {
+function CardGrid({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => void; dark: boolean; categories: { id: string; name: string }[] }) {
   const bg     = dark ? "#1e1e1e" : "#ffffff";
   const text   = dark ? "#f0ede8" : "#1a1a1a";
   const mutedC = dark ? "#6b7280" : "#9B7B6B";
@@ -744,7 +745,7 @@ export default function ParaLlevarPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {filteredDishes.map((dish, i) => (
               <div key={dish.id} className="anim-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-                <CardGrid dish={dish} onTap={() => setSelectedDish(dish)} dark={dark} />
+                <CardGrid dish={dish} onTap={() => setSelectedDish(dish)} dark={dark} categories={categories} />
               </div>
             ))}
           </div>
@@ -752,7 +753,7 @@ export default function ParaLlevarPage() {
           <div>
             {filteredDishes.map((dish, i) => (
               <div key={dish.id} className="anim-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-                <CardList dish={dish} onTap={() => setSelectedDish(dish)} dark={dark} />
+                <CardList dish={dish} onTap={() => setSelectedDish(dish)} dark={dark} categories={categories} />
               </div>
             ))}
           </div>
@@ -785,6 +786,7 @@ export default function ParaLlevarPage() {
           onClose={() => setSelectedDish(null)}
           onAdd={addToCart}
           dark={dark}
+          categories={categories}
         />
       )}
 
