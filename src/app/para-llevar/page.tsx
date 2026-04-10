@@ -742,7 +742,7 @@ export default function ParaLlevarPage() {
           </div>
         ) : viewMode === "grid" ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {dishes.map((dish, i) => (
+            {filteredDishes.map((dish, i) => (
               <div key={dish.id} className="anim-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
                 <CardGrid dish={dish} onTap={() => setSelectedDish(dish)} dark={dark} />
               </div>
@@ -750,7 +750,7 @@ export default function ParaLlevarPage() {
           </div>
         ) : (
           <div>
-            {dishes.map((dish, i) => (
+            {filteredDishes.map((dish, i) => (
               <div key={dish.id} className="anim-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
                 <CardList dish={dish} onTap={() => setSelectedDish(dish)} dark={dark} />
               </div>

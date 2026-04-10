@@ -2,7 +2,7 @@ import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 
 // Con el proxy de Next.js las peticiones van a /api/* y Next las redirige
 // a localhost:3001/api/* — sin CORS porque es server-to-server
-const API_URL = "/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 // ─── Instancia principal (con JWT) ───────────────────────────────────────────
 export const api: AxiosInstance = axios.create({
@@ -13,7 +13,7 @@ export const api: AxiosInstance = axios.create({
 
 // ─── Instancia pública (sin JWT — menú del comensal) ─────────────────────────
 export const publicApi: AxiosInstance = axios.create({
-  baseURL: "",  // Usa rutas relativas: /menu/:slug
+  baseURL: process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "",
   headers: { "Content-Type": "application/json" },
   timeout: 10000,
 });
