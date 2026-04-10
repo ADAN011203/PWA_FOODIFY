@@ -1,8 +1,13 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 
-// Con el proxy de Next.js las peticiones van a /api/* y Next las redirige
-// a localhost:3001/api/* — sin CORS porque es server-to-server
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+// En producción usamos el proxy de Next.js para evitar Mixed Content (HTTPS -> HTTP)
+const API_URL = typeof window !== "undefined" && window.location.hostname !== "localhost"
+  ? "/api_proxy/api/v1"
+  : (process.env.NEXT_PUBLIC_API_URL || "http://3.142.73.52:3000/api/v1");
+
+const BASE_URL_PROXY = typeof window !== "undefined" && window.location.hostname !== "localhost"
+  ? "/api_proxy"
+  : (process.env.NEXT_PUBLIC_API_URL || "http://3.142.73.52:3000").replace("/api/v1", "");
 
 // ─── Instancia principal (con JWT) ───────────────────────────────────────────
 export const api: AxiosInstance = axios.create({
@@ -14,7 +19,7 @@ export const api: AxiosInstance = axios.create({
 // ─── Instancia pública (sin JWT — menú del comensal) ─────────────────────────
 export const publicApi: AxiosInstance = axios.create({
   // Si no hay URL de entorno, usa el origin actual (útil para despliegues locales)
-  baseURL: (process.env.NEXT_PUBLIC_API_URL || "").replace("/api/v1", ""),
+  baseURL: BASE_URL_PROXY,
   headers: { "Content-Type": "application/json" },
   timeout: 10000,
 });
