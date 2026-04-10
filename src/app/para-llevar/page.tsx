@@ -10,7 +10,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { EmptyState } from "@/components/EmptyState";
 import { fetchPublicMenu, RESTAURANT_SLUG } from "@/lib/menuApi";
 import { createPublicOrderApi } from "@/lib/ordersApi";
-import type { Dish, CartItem } from "@/types/menu";
+import type { Dish, Category, CartItem } from "@/types/menu";
 import {
   IconBag, IconSearch, IconFilter,
   IconGrid, IconList, IconTrash, IconX,
@@ -29,7 +29,7 @@ function DishModal({
   onClose: () => void;
   onAdd: (dish: Dish, qty: number) => void;
   dark: boolean;
-  categories: { id: string; name: string }[];
+  categories: Category[];
 }) {
   const [qty, setQty] = useState(1);
 
@@ -331,7 +331,7 @@ function CartModal({
 // ─────────────────────────────────────────────────────────────────────────────
 // TARJETA: vista lista (móvil)
 // ─────────────────────────────────────────────────────────────────────────────
-function CardList({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => void; dark: boolean; categories: { id: string; name: string }[] }) {
+function CardList({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => void; dark: boolean; categories: Category[] }) {
   const bg     = dark ? "#1e1e1e" : "#ffffff";
   const text   = dark ? "#f0ede8" : "#1a1a1a";
   const mutedC = dark ? "#6b7280" : "#9B7B6B";
@@ -388,7 +388,7 @@ function CardList({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => 
 // ─────────────────────────────────────────────────────────────────────────────
 // TARJETA: vista grid (tablet+)
 // ─────────────────────────────────────────────────────────────────────────────
-function CardGrid({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => void; dark: boolean; categories: { id: string; name: string }[] }) {
+function CardGrid({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => void; dark: boolean; categories: Category[] }) {
   const bg     = dark ? "#1e1e1e" : "#ffffff";
   const text   = dark ? "#f0ede8" : "#1a1a1a";
   const mutedC = dark ? "#6b7280" : "#9B7B6B";

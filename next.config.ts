@@ -31,12 +31,7 @@ const withPWA = withPWAInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async rewrites() {
-    return [
-      { source: "/api/:path*",  destination: "http://127.0.0.1:3000/api/:path*"  },
-      { source: "/menu/:path*", destination: "http://127.0.0.1:3000/menu/:path*" },
-    ];
-  },
+  // Rewrites eliminados para producción (se usan URLs absolutas en api.ts)
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
   },

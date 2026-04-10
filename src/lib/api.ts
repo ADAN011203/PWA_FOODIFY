@@ -13,7 +13,8 @@ export const api: AxiosInstance = axios.create({
 
 // ─── Instancia pública (sin JWT — menú del comensal) ─────────────────────────
 export const publicApi: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "",
+  // Si no hay URL de entorno, usa el origin actual (útil para despliegues locales)
+  baseURL: (process.env.NEXT_PUBLIC_API_URL || "").replace("/api/v1", ""),
   headers: { "Content-Type": "application/json" },
   timeout: 10000,
 });
