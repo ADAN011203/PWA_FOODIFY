@@ -17,6 +17,7 @@ import { getAlertLevel } from "@/types/inventory";
 import type { Order } from "@/types/orders";
 import { getOrdersApi } from "@/lib/ordersApi";
 import { Button } from "@/components/ui/Button";
+import { RestaurantSwitchModal } from "@/components/RestaurantSwitchModal";
 import styles from "./dashboard.module.css";
 
 function useRoleGuard(allowed: string[]) {
@@ -98,6 +99,7 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState<Period>("mes");
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -136,10 +138,20 @@ export default function DashboardPage() {
           <div className={styles.headerLogo}>🍽️</div>
           <div>
             <p className={styles.headerTitle}>Foodify Admin</p>
-            <p className={styles.headerSub}>{user.name} · {user.branch}</p>
+            <div className={styles.branchSelector} onClick={() => setShowSwitchModal(true)}>
+              <p className={styles.headerSub}>{user.name} · {user.branch}</p>
+              <span className={styles.switchBadge}>Cambiar sucursal</span>
+            </div>
           </div>
         </div>
         <div className={styles.headerRight}>
+          <RestaurantSwitchModal
+            isOpen={showSwitchModal}
+            onClose={() => setShowSwitchModal(false)}
+          />
+          <style>{`
+            @keyframes spin    { to { transform: rotate(360deg); } }
+          `}</style>
           {alertIngredients.length > 0 && (
             <button
               className={styles.alertBadge}
