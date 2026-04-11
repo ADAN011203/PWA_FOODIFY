@@ -100,14 +100,14 @@ export default function DashboardPage() {
   const salesData  = useMemo(() => buildSalesData(orders, period === "hoy" ? 1 : period === "semana" ? 7 : period === "mes" ? 30 : 90), [orders, period]);
   const profitData = useMemo(() => buildProfitData(), []);
   const { data: dishesData, loading: dishesLoading, error: dishesError, empty: dishesEmpty, refetch: refetchDishes } = useFetchWithState<Dish[]>("/dishes");
-  const { data: ingredientsData, loading: ingLoading, error: ingError, empty: ingEmpty, refetch: refetchIng } = useFetchWithState<Ingredient[]>("/inventory/items");
+  const { data: ingredientsData, error: ingError } = useFetchWithState<Ingredient[]>("/inventory/items");
+  const isPremium = !ingError; // si no hay error de 403, tiene inventario
   const dishes = dishesData ?? [];
   const alertIngredients = useMemo(() => ingredientsData?.filter(i => getAlertLevel(i) !== "ok") ?? [], [ingredientsData]);
   const topDishes = useMemo(() => [...dishes].sort((a,b)=> (b.soldCount??0)-(a.soldCount??0)).slice(0,5).map(d=>({name: d.name.length>16?d.name.slice(0,16)+"…":d.name, value: d.soldCount??0})), [dishes]);
 
-  if (dishesLoading || ingLoading) return <DashboardSkeleton />;
+  if (dishesLoading) return <DashboardSkeleton />;
   if (dishesError) return <ErrorAlert message={dishesError} onRetry={refetchDishes} />;
-  if (ingError) return <ErrorAlert message={ingError} onRetry={refetchIng} />;
   const totalVentas      = salesData.reduce((s, d) => s + d.ventas, 0);
   const validOrders      = orders.filter((o) => o.status !== "cancelado");
   const ticketPromedio   = validOrders.length > 0
