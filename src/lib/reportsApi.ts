@@ -9,7 +9,6 @@ export async function getSalesReportApi(period: ReportPeriod = "month"): Promise
   label: string; ventas: number; ordenes: number;
 }[]> {
   if (USE_MOCK_REPORTS) return [];
-  try {
     const { data } = await api.get("/reports/sales", { params: { period } });
     const list = Array.isArray(data.data?.byDay) ? data.data.byDay : [];
     return list.map((d: Record<string, unknown>) => ({
@@ -24,7 +23,6 @@ export async function getTopDishesApi(limit = 5): Promise<{
   name: string; value: number; income: number;
 }[]> {
   if (USE_MOCK_REPORTS) return [];
-  try {
     const { data } = await api.get("/reports/dishes/top", { params: { limit } });
     const list = Array.isArray(data.data) ? data.data : [];
     return list.map((d: Record<string, unknown>) => ({
@@ -39,7 +37,6 @@ export async function getPeakHoursApi(): Promise<{
   hour: string; ordenes: number;
 }[]> {
   if (USE_MOCK_REPORTS) return [];
-  try {
     const { data } = await api.get("/reports/peak-hours");
     const list = Array.isArray(data.data) ? data.data : [];
     return list.map((d: Record<string, unknown>) => ({
@@ -53,7 +50,6 @@ export async function getCategoryIncomeApi(): Promise<{
   name: string; value: number;
 }[]> {
   if (USE_MOCK_REPORTS) return [];
-  try {
     const { data } = await api.get("/reports/category-income");
     const list = Array.isArray(data.data) ? data.data : [];
     return list.map((d: Record<string, unknown>) => ({
