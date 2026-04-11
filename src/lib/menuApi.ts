@@ -1,8 +1,6 @@
 import { publicApi, api } from "./api";
-import { MOCK_DISHES, MOCK_CATEGORIES } from "./mockData";
 import { type Dish, type Category } from "../types/menu";
 
-export const USE_MOCK_MENU = false;
 export const RESTAURANT_SLUG = "demo-restaurant";
 
 export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "takeout" | "dine_in" = "takeout"): Promise<{
@@ -11,62 +9,50 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
   restaurantName: string;
   restaurantId: number;
 }> {
-  if (USE_MOCK_MENU) {
-    return { dishes: MOCK_DISHES, categories: MOCK_CATEGORIES, restaurantName: "Foodify Demo", restaurantId: 1 };
-  }
+  // IMPORTANTE: El backend excluye /menu/:slug del prefijo global /api/v1
+  const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
+  const { restaurant, menus, isActiveNow: globalIsActive } = data.data;
+  const isRestaurantOpen = globalIsActive ?? true;
 
-  try {
-    // IMPORTANTE: El backend excluye /menu/:slug del prefijo global /api/v1
-    const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
-    const { restaurant, menus, isActiveNow: globalIsActive } = data.data;
-    const isRestaurantOpen = globalIsActive ?? true;
+  const allDishes: Dish[] = [];
+  const categoryMap = new Map<string, Category>();
 
-    const allDishes: Dish[] = [];
-    const categoryMap = new Map<string, Category>();
-
-    for (const menu of (menus ?? [])) {
-      const isMenuVisible = (menu.isActiveNow ?? isRestaurantOpen) || mode === "takeout";
-      if (!isMenuVisible) continue;
-      for (const cat of (menu.categories ?? [])) {
-        if (!categoryMap.has(String(cat.id))) {
-          categoryMap.set(String(cat.id), {
-            id:    String(cat.id),
-            name:  cat.name,
-            emoji: cat.icon ?? cat.emoji ?? "",
-          });
-        }
-        for (const d of (cat.dishes ?? [])) {
-          allDishes.push({
-            id:              String(d.id),
-            name:            d.name,
-            description:     d.description ?? "",
-            price:           Number(d.price),
-            prepTime:        Number(d.prepTimeMin ?? d.prep_time_min ?? 15),
-            images:          Array.isArray(d.images) ? d.images : [],
-            isAvailable:     Boolean(d.isAvailable ?? true),
-            available:       Boolean(d.isAvailable ?? true),
-            categoryId:      String(cat.id),
-            soldCount:       Number(d.soldCount ?? d.sold_count ?? 0),
-            allergens:       Array.isArray(d.allergens) ? d.allergens : [],
-            availabilityNote: d.availabilityNote,
-          });
-        }
+  for (const menu of (menus ?? [])) {
+    const isMenuVisible = (menu.isActiveNow ?? isRestaurantOpen) || mode === "takeout";
+    if (!isMenuVisible) continue;
+    for (const cat of (menu.categories ?? [])) {
+      if (!categoryMap.has(String(cat.id))) {
+        categoryMap.set(String(cat.id), {
+          id:    String(cat.id),
+          name:  cat.name,
+          emoji: cat.icon ?? cat.emoji ?? "",
+        });
+      }
+      for (const d of (cat.dishes ?? [])) {
+        allDishes.push({
+          id:              String(d.id),
+          name:            d.name,
+          description:     d.description ?? "",
+          price:           Number(d.price),
+          prepTime:        Number(d.prepTimeMin ?? d.prep_time_min ?? 15),
+          images:          Array.isArray(d.images) ? d.images : [],
+          isAvailable:     Boolean(d.isAvailable ?? true),
+          available:       Boolean(d.isAvailable ?? true),
+          categoryId:      String(cat.id),
+          soldCount:       Number(d.soldCount ?? d.sold_count ?? 0),
+          allergens:       Array.isArray(d.allergens) ? d.allergens : [],
+          availabilityNote: d.availabilityNote,
+        });
       }
     }
-
-    if (allDishes.length === 0) {
-      return { dishes: MOCK_DISHES, categories: MOCK_CATEGORIES, restaurantName: restaurant?.name ?? "Foodify", restaurantId: Number(restaurant?.id ?? 1) };
-    }
-
-    return {
-      dishes:         allDishes,
-      categories:     Array.from(categoryMap.values()),
-      restaurantName: restaurant?.name ?? "Foodify",
-      restaurantId:   Number(restaurant?.id ?? 1),
-    };
-  } catch {
-    return { dishes: MOCK_DISHES, categories: MOCK_CATEGORIES, restaurantName: "Foodify Demo", restaurantId: 1 };
   }
+
+  return {
+    dishes:         allDishes,
+    categories:     Array.from(categoryMap.values()),
+    restaurantName: restaurant?.name ?? "Foodify",
+    restaurantId:   Number(restaurant?.id ?? 1),
+  };
 }
 
 // ─── ADMIN: Platillos CRUD ──────────────────────────────────────────────────
@@ -88,8 +74,8 @@ export async function getDishesApi(): Promise<Dish[]> {
       allergens:       Array.isArray(d.allergens) ? d.allergens : [],
       badge:           d.badge ?? undefined,
     }));
-  } catch {
-    return MOCK_DISHES;
+  } catch (e) {
+    throw e;
   }
 }
 
