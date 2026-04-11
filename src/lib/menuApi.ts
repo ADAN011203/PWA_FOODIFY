@@ -109,10 +109,9 @@ export async function createDishApi(payload: Partial<Dish>): Promise<Dish> {
     price: payload.price,
     prepTimeMin: payload.prepTime,
     description: payload.description,
-    categoryId: Number(payload.categoryId), // El backend require numérico
-    isAvailable: payload.isAvailable,
+    categoryId: Number(payload.categoryId) || undefined,
+    is_active: payload.isAvailable,
     images: payload.imageUrl ? [payload.imageUrl] : undefined,
-    badge: payload.badge,
   };
   const { data } = await api.post("/dishes", backendPayload);
   return data.data as unknown as Dish;
@@ -124,10 +123,9 @@ export async function updateDishApi(id: string, payload: Partial<Dish>): Promise
     price: payload.price,
     prepTimeMin: payload.prepTime,
     description: payload.description,
-    categoryId: Number(payload.categoryId),
-    isAvailable: payload.isAvailable,
+    categoryId: Number(payload.categoryId) || undefined,
+    is_active: payload.isAvailable,
     images: payload.imageUrl ? [payload.imageUrl] : undefined,
-    badge: payload.badge,
   };
   const { data } = await api.put(`/dishes/${id}`, backendPayload);
   return data.data as unknown as Dish;
