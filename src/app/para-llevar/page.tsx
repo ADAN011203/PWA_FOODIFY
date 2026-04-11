@@ -462,11 +462,30 @@ export default function ParaLlevarPage() {
   const [orderDone, setOrderDone]     = useState(false);
 
   // Datos del menú desde el backend
-  const { data: menuData, loading, error, empty, refetch } = useFetchWithState<{ dishes: Dish[]; categories: Category[] }>("/menu/demo-restaurant?mode=takeout");
+  const [menuData, setMenuData] = useState<{ dishes: Dish[]; categories: Category[]; restaurantName: string; restaurantId: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [empty, setEmpty] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchPublicMenu(RESTAURANT_SLUG, "takeout")
+      .then((result) => {
+        if (cancelled) return;
+        if (result.dishes.length === 0) setEmpty(true);
+        setMenuData(result);
+      })
+      .catch(() => {
+        if (!cancelled) setError("No se pudo cargar el menú");
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const dishes = menuData?.dishes ?? [];
   const categories = menuData?.categories ?? [];
-  const restaurantId = 1; // placeholder if needed
+  const restaurantId = menuData?.restaurantId ?? 1;
 
   // Colores según tema
   const bg      = dark ? "#121212" : "#FFF0DC";
