@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import ui from "@/components/ui/AdminUI.module.css";
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
@@ -410,9 +411,9 @@ function IngredientCard({ ingredient, onTap }: { ingredient: Ingredient; onTap: 
 export default function AdminInventarioPage() {
   const { user, isLoading } = useAdminGuard();
   const toast = useToast();
-
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [initLoading, setInitLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selected, setSelected] = useState<Ingredient | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [filterAlert, setFilterAlert] = useState<StockAlertLevel | "todos">("todos");
@@ -422,7 +423,10 @@ export default function AdminInventarioPage() {
     if (!user) return;
     getInventoryItemsApi()
       .then(setIngredients)
-      .catch(() => toast.error("Error al cargar inventario"))
+      .catch((e: any) => {
+        if (e.response?.status === 403) setErrorMsg("La feature 'inventoryFifo' requiere Plan Premium");
+        else setErrorMsg("Error al cargar inventario");
+      })
       .finally(() => setInitLoading(false));
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -444,6 +448,24 @@ export default function AdminInventarioPage() {
         <div className={ui.spinner} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <AdminLayout title="Inventario" subtitle="Gestión de insumos">
+        <div className={ui.page}>
+          <header className={ui.header}>
+            <div>
+              <h1 className={ui.title}>Control de Inventario</h1>
+              <p className={ui.subtitle}>Gestiona tus insumos</p>
+            </div>
+          </header>
+          <div style={{ marginTop: 20 }}>
+            <ErrorAlert message={errorMsg} onRetry={() => window.location.reload()} />
+          </div>
+        </div>
+      </AdminLayout>
     );
   }
 

@@ -13,6 +13,7 @@ import {
   updateDishApi,
   deleteDishApi,
   toggleDishAvailabilityApi,
+  getAdminCategoriesApi,
 } from "@/lib/menuApi";
 import type { Dish, Category } from "@/types/menu";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -563,9 +564,8 @@ function DishCard({
 export default function AdminMenuPage() {
   const { user, isLoading } = useAdminGuard();
   const toast = useToast();
-  const { data: menuData } = useFetchWithState<{ categories: any[] }>("/menu/demo-restaurant?mode=takeout");
-  const categories = menuData?.categories ?? [];
 
+  const [categories, setCategories] = useState<Category[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [initLoading, setInitLoading] = useState(true);
   const [activeCat, setActiveCat] = useState("todos");
@@ -576,8 +576,11 @@ export default function AdminMenuPage() {
 
   useEffect(() => {
     if (!user) return;
-    getDishesApi()
-      .then((res) => setDishes(res))
+    Promise.all([getDishesApi(), getAdminCategoriesApi()])
+      .then(([dishesRes, categoriesRes]) => {
+        setDishes(dishesRes);
+        setCategories(categoriesRes);
+      })
       .catch(() => toast.error("Error al cargar el menú"))
       .finally(() => setInitLoading(false));
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps

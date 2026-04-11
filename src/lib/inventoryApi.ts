@@ -34,9 +34,8 @@ export async function getInventoryItemsApi(): Promise<Ingredient[]> {
     const { data } = await api.get("/inventory/items");
     const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
     return list.map(mapItem);
-  } catch {
-    console.warn("Fallback a mock de inventario");
-    return MOCK_INGREDIENTS;
+  } catch (e) {
+    throw e;
   }
 }
 

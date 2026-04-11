@@ -56,6 +56,30 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
 }
 
 // ─── ADMIN: Platillos CRUD ──────────────────────────────────────────────────
+
+export async function getAdminCategoriesApi(): Promise<Category[]> {
+  const { data: menuData } = await api.get("/menus");
+  const menus = Array.isArray(menuData.data) ? menuData.data : menuData.data?.items ?? [];
+  const categories: Category[] = [];
+  
+  for (const m of menus) {
+    try {
+      const { data: catData } = await api.get(`/menus/${m.id}/categories`);
+      const cats = Array.isArray(catData.data) ? catData.data : catData.data?.items ?? [];
+      for (const c of cats) {
+        categories.push({
+          id: String(c.id),
+          name: c.name,
+          emoji: c.icon ?? c.emoji ?? "🏷️"
+        });
+      }
+    } catch {
+      // Continue if one menu fails
+    }
+  }
+  return categories;
+}
+
 export async function getDishesApi(): Promise<Dish[]> {
   try {
     const { data } = await api.get("/dishes");
