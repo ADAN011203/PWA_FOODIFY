@@ -107,9 +107,9 @@ export async function createDishApi(payload: Partial<Dish>): Promise<Dish> {
   const backendPayload = {
     name: payload.name,
     price: payload.price,
-    prepTimeMin: payload.prepTime,
+    prep_time_min: payload.prepTime,
     description: payload.description,
-    categoryId: Number(payload.categoryId) || undefined,
+    category_id: Number(payload.categoryId) || undefined,
     is_active: payload.isAvailable,
     images: payload.imageUrl ? [payload.imageUrl] : undefined,
   };
@@ -121,9 +121,9 @@ export async function updateDishApi(id: string, payload: Partial<Dish>): Promise
   const backendPayload = {
     name: payload.name,
     price: payload.price,
-    prepTimeMin: payload.prepTime,
+    prep_time_min: payload.prepTime,
     description: payload.description,
-    categoryId: Number(payload.categoryId) || undefined,
+    category_id: Number(payload.categoryId) || undefined,
     is_active: payload.isAvailable,
     images: payload.imageUrl ? [payload.imageUrl] : undefined,
   };
