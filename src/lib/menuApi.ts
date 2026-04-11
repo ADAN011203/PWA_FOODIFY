@@ -138,3 +138,27 @@ export async function deleteDishApi(id: string): Promise<void> {
 export async function toggleDishAvailabilityApi(id: string, status: boolean): Promise<void> {
   await api.patch(`/dishes/${id}/availability`, { isAvailable: status });
 }
+
+export async function getAdminMenusApi(): Promise<{ id: string; name: string }[]> {
+  const { data } = await api.get("/menus");
+  const items = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return items.map((m: any) => ({
+    id: String(m.id),
+    name: m.name,
+  }));
+}
+
+export async function createCategoryApi(menuId: string, name: string): Promise<Category> {
+  const { data } = await api.post(`/menus/${menuId}/categories`, {
+    name,
+    description: "",
+    sortOrder: 0,
+  });
+  const c = data.data;
+  return {
+    id: String(c.id),
+    name: c.name,
+    emoji: c.icon || "🏷️",
+  };
+}
+

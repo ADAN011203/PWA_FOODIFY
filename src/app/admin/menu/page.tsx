@@ -14,6 +14,8 @@ import {
   deleteDishApi,
   toggleDishAvailabilityApi,
   getAdminCategoriesApi,
+  getAdminMenusApi,
+  createCategoryApi,
 } from "@/lib/menuApi";
 import type { Dish, Category } from "@/types/menu";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -308,6 +310,83 @@ function DishFormModal({
   );
 }
 
+// ─── Modal: Crear Categoría ───────────────────────────────────────────────────
+function CategoryFormModal({
+  menus,
+  isOpen,
+  onClose,
+  onSave,
+}: {
+  menus: { id: string; name: string }[];
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (menuId: string, name: string) => Promise<void>;
+}) {
+  const [name, setName] = useState("");
+  const [menuId, setMenuId] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName("");
+      if (menus.length > 0) setMenuId(menus[0].id);
+      else setMenuId("");
+    }
+  }, [isOpen, menus]);
+
+  const handleSave = async () => {
+    if (!name.trim() || !menuId) return;
+    setSaving(true);
+    try {
+      await onSave(menuId, name);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="➕ Nueva Categoría">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <Input
+          label="Nombre de la categoría *"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Ej. Entradas, Postres..."
+        />
+        {menus.length > 1 && (
+          <Select
+            label="Menú al que pertenece *"
+            value={menuId}
+            onChange={(e) => setMenuId(e.target.value)}
+          >
+            {menus.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </Select>
+        )}
+        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+          <Button variant="secondary" size="lg" fullWidth onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={handleSave}
+            loading={saving}
+            disabled={!name.trim() || !menuId}
+          >
+            Crear categoría
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 // ─── Modal: confirmar eliminación ─────────────────────────────────────────────
 function ConfirmDeleteModal({
   name,
@@ -566,20 +645,23 @@ export default function AdminMenuPage() {
   const toast = useToast();
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [menus, setMenus] = useState<{ id: string; name: string }[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [initLoading, setInitLoading] = useState(true);
   const [activeCat, setActiveCat] = useState("todos");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showCatForm, setShowCatForm] = useState(false);
   const [editDish, setEditDish] = useState<Dish | null>(null);
   const [dishToDelete, setDishToDelete] = useState<Dish | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([getDishesApi(), getAdminCategoriesApi()])
-      .then(([dishesRes, categoriesRes]) => {
+    Promise.all([getDishesApi(), getAdminCategoriesApi(), getAdminMenusApi()])
+      .then(([dishesRes, categoriesRes, menusRes]) => {
         setDishes(dishesRes);
         setCategories(categoriesRes);
+        setMenus(menusRes);
       })
       .catch(() => toast.error("Error al cargar el menú"))
       .finally(() => setInitLoading(false));
@@ -618,6 +700,16 @@ export default function AdminMenuPage() {
     setShowForm(false);
   };
 
+  const handleCreateCategory = async (menuId: string, name: string) => {
+    try {
+      const newCat = await createCategoryApi(menuId, name);
+      setCategories((prev) => [...prev, newCat]);
+      toast.success(`Categoría "${name}" creada`);
+    } catch {
+      toast.error("Error al crear categoría");
+    }
+  };
+
   const handleToggle = async (dish: Dish) => {
     try {
       await toggleDishAvailabilityApi(dish.id, !dish.isAvailable);
@@ -647,16 +739,21 @@ export default function AdminMenuPage() {
       title="Gestión de Menú"
       subtitle={`🍽️ ${total} platillos · ${activos} activos`}
       actions={
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => {
-            setEditDish(null);
-            setShowForm(true);
-          }}
-        >
-          ＋ Agregar
-        </Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button variant="secondary" size="sm" onClick={() => setShowCatForm(true)}>
+            ＋ Categoría
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setEditDish(null);
+              setShowForm(true);
+            }}
+          >
+            ＋ Platillo
+          </Button>
+        </div>
       }
     >
       {/* KPIs */}
@@ -739,6 +836,13 @@ export default function AdminMenuPage() {
         isOpen={!!dishToDelete}
         onClose={() => setDishToDelete(null)}
         onConfirm={handleDelete}
+      />
+
+      <CategoryFormModal
+        menus={menus}
+        isOpen={showCatForm}
+        onClose={() => setShowCatForm(false)}
+        onSave={handleCreateCategory}
       />
     </AdminLayout>
   );
