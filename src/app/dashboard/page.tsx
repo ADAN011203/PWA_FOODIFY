@@ -15,6 +15,7 @@ import type { Dish } from "@/types/menu";
 import type { Ingredient } from "@/types/inventory";
 import { getAlertLevel } from "@/types/inventory";
 import type { Order } from "@/types/orders";
+import { getOrdersApi } from "@/lib/ordersApi";
 import { Button } from "@/components/ui/Button";
 import styles from "./dashboard.module.css";
 
@@ -27,35 +28,40 @@ function useRoleGuard(allowed: string[]) {
   return { user, isLoading };
 }
 
-function readOrders(): Order[] {
-  try {
-    const raw = localStorage.getItem("foodify_guest_orders");
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
 function buildSalesData(orders: Order[], days: number) {
-  const result = [];
+  const result: { label: string; ventas: number; ordenes: number }[] = [];
+  const now = new Date();
+  
   for (let i = days - 1; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const key   = date.toISOString().slice(0, 10);
-    const label = date.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const label = d.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+    
     const dayOrders = orders.filter((o) => o.createdAt.slice(0, 10) === key && o.status !== "cancelado");
-    const baseSales = Math.floor(Math.sin(i * 0.8) * 800 + 1800 + Math.random() * 400);
-    const realSales = dayOrders.reduce((s, o) => s + o.items.reduce((t, it) => t + it.unitPrice * it.qty, 0), 0);
-    result.push({ label, ventas: realSales + baseSales, ordenes: dayOrders.length + Math.floor(Math.random() * 8 + 4) });
+    const realSales = dayOrders.reduce((acc, o) => 
+      acc + o.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0)
+    , 0);
+
+    result.push({
+      label,
+      ventas: realSales,
+      ordenes: dayOrders.length,
+    });
   }
   return result;
 }
 
-function buildProfitData() {
-  return ["Sem 1", "Sem 2", "Sem 3", "Sem 4"].map((w, i) => ({
-    label: w,
-    ingresos:     2800 + i * 320 + Math.floor(Math.random() * 200),
-    costos:       1200 + i * 80  + Math.floor(Math.random() * 100),
-    rentabilidad: 1600 + i * 240 + Math.floor(Math.random() * 150),
-  }));
+function buildProfitData(salesData: { ventas: number }[]) {
+  return salesData.slice(-4).map((day, i) => {
+    const rawCost = day.ventas * 0.4; // 40% margin estimate
+    return {
+      label: `Día ${i + 1}`,
+      ingresos: day.ventas,
+      costos: rawCost,
+      rentabilidad: day.ventas - rawCost,
+    };
+  });
 }
 
 const PIE_COLORS = ["#FF6B35", "#6366f1", "#22c55e", "#f59e0b", "#ec4899"];
@@ -90,15 +96,19 @@ export default function DashboardPage() {
   const { user, isLoading } = useRoleGuard(["admin", "restaurant_admin", "manager"]);
   const { logout } = useAuth();
   const [period, setPeriod] = useState<Period>("mes");
-  const [orders] = useState<Order[]>(() => {
-  if (typeof window === "undefined") return [];
-  return readOrders();
-  });
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
 
-  //useEffect(() => { setOrders(readOrders()); }, []);
+  useEffect(() => {
+    if (!user) return;
+    getOrdersApi({ limit: 500 }) // fetch plenty of orders for history map
+      .then(setOrders)
+      .catch(console.error)
+      .finally(() => setOrdersLoading(false));
+  }, [user]);
 
   const salesData  = useMemo(() => buildSalesData(orders, period === "hoy" ? 1 : period === "semana" ? 7 : period === "mes" ? 30 : 90), [orders, period]);
-  const profitData = useMemo(() => buildProfitData(), []);
+  const profitData = useMemo(() => buildProfitData(salesData), [salesData]);
   const { data: dishesData, loading: dishesLoading, error: dishesError, empty: dishesEmpty, refetch: refetchDishes } = useFetchWithState<Dish[]>("/dishes");
   const { data: ingredientsData, error: ingError } = useFetchWithState<Ingredient[]>("/inventory/items");
   const isPremium = !ingError; // si no hay error de 403, tiene inventario
@@ -106,13 +116,14 @@ export default function DashboardPage() {
   const alertIngredients = useMemo(() => ingredientsData?.filter(i => getAlertLevel(i) !== "ok") ?? [], [ingredientsData]);
   const topDishes = useMemo(() => [...dishes].sort((a,b)=> (b.soldCount??0)-(a.soldCount??0)).slice(0,5).map(d=>({name: d.name.length>16?d.name.slice(0,16)+"…":d.name, value: d.soldCount??0})), [dishes]);
 
-  if (dishesLoading) return <DashboardSkeleton />;
+
+  if (dishesLoading || ordersLoading) return <DashboardSkeleton />;
   if (dishesError) return <ErrorAlert message={dishesError} onRetry={refetchDishes} />;
   const totalVentas      = salesData.reduce((s, d) => s + d.ventas, 0);
   const validOrders      = orders.filter((o) => o.status !== "cancelado");
   const ticketPromedio   = validOrders.length > 0
     ? Math.round(validOrders.reduce((s, o) => s + o.items.reduce((t, it) => t + it.unitPrice * it.qty, 0), 0) / validOrders.length)
-    : 178;
+    : 0;
   const enCocina = orders.filter((o) => o.status === "en_preparacion").length;
 
   if (isLoading || !user) return <DashboardSkeleton />;

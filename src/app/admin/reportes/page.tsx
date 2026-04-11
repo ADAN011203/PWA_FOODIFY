@@ -13,6 +13,7 @@ import {
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import ui from "@/components/ui/AdminUI.module.css";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { FoodSpinner } from "@/components/ui/FoodSpinner";
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
@@ -56,9 +57,11 @@ export default function ReportesPage() {
   const [categoryData, setCategoryData] = useState<{ name: string; value: number }[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [exporting, setExporting]     = useState(false);
+  const [errorMsg, setErrorMsg]       = useState<string | null>(null);
 
   const loadReports = useCallback(async () => {
     setLoadingData(true);
+    setErrorMsg(null);
     try {
       const [sales, top, hours, cats] = await Promise.allSettled([
         getSalesReportApi(period),
@@ -70,8 +73,13 @@ export default function ReportesPage() {
       if (top.status === "fulfilled")   setTopDishes(top.value);
       if (hours.status === "fulfilled") setPeakHours(hours.value);
       if (cats.status === "fulfilled")  setCategoryData(cats.value);
-    } catch {
-      //
+      
+      const failed = [sales, top, hours, cats].find(r => r.status === "rejected") as PromiseRejectedResult;
+      if (failed) throw failed.reason;
+      
+    } catch (e: any) {
+      if (e.response?.status === 403) setErrorMsg("Los reportes avanzados requieren Plan Premium");
+      else setErrorMsg("Error al cargar reportes");
     } finally {
       setLoadingData(false);
     }
@@ -91,6 +99,18 @@ export default function ReportesPage() {
   };
 
   if (isLoading || !user) return <FoodSpinner />;
+  
+  if (errorMsg) {
+    return (
+      <AdminLayout title="Reportes" subtitle="Análisis en tiempo real">
+        <div className={ui.page}>
+          <div style={{ marginTop: 20 }}>
+            <ErrorAlert message={errorMsg} onRetry={() => window.location.reload()} />
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   const card = {
     background: "var(--bg-card)",

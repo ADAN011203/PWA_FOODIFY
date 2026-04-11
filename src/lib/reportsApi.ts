@@ -17,7 +17,6 @@ export async function getSalesReportApi(period: ReportPeriod = "month"): Promise
       ventas:  Number(d.total ?? d.ventas ?? 0),
       ordenes: Number(d.orders ?? d.ordenes ?? 0),
     }));
-  } catch { return []; }
 }
 
 // ─── Top platillos ────────────────────────────────────────────────────────────
@@ -33,7 +32,6 @@ export async function getTopDishesApi(limit = 5): Promise<{
       value:  Number(d.soldCount ?? d.quantity ?? 0),
       income: Number(d.income ?? d.total ?? 0),
     }));
-  } catch { return []; }
 }
 
 // ─── Horas pico ──────────────────────────────────────────────────────────────
@@ -48,7 +46,6 @@ export async function getPeakHoursApi(): Promise<{
       hour:    `${String(d.hour ?? "0").padStart(2, "0")}:00`,
       ordenes: Number(d.orders ?? d.count ?? 0),
     }));
-  } catch { return []; }
 }
 
 // ─── Ingresos por categoría ───────────────────────────────────────────────────
@@ -63,7 +60,6 @@ export async function getCategoryIncomeApi(): Promise<{
       name:  String(d.categoryName ?? d.name ?? ""),
       value: Number(d.income ?? d.total ?? 0),
     }));
-  } catch { return []; }
 }
 
 // ─── KPIs del restaurante ─────────────────────────────────────────────────────
