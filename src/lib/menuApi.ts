@@ -18,13 +18,15 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
   try {
     // IMPORTANTE: Según src/main.ts del backend, /menu/:slug está EXCLUIDO del prefijo global /api/v1
     const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
-    const { restaurant, menus } = data.data;
+    const { restaurant, menus, isActiveNow: globalIsActive } = data.data;
+    const isRestaurantOpen = globalIsActive ?? true;
 
     const allDishes: Dish[] = [];
     const categoryMap = new Map<string, Category>();
 
     for (const menu of (menus ?? [])) {
-      if (!menu.isActiveNow && mode !== "takeout") continue;
+      const isMenuVisible = (menu.isActiveNow ?? isRestaurantOpen) || mode === "takeout";
+      if (!isMenuVisible) continue;
       for (const cat of (menu.categories ?? [])) {
         if (!categoryMap.has(String(cat.id))) {
           categoryMap.set(String(cat.id), {
