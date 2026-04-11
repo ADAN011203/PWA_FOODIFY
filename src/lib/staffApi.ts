@@ -1,8 +1,5 @@
 import { api } from "./api";
-import { MOCK_STAFF } from "./mockStaff";
 import type { StaffMember, StaffRole, StaffStatus } from "../types/staff";
-
-export const USE_MOCK_STAFF = false;
 
 function mapRole(r: string): StaffRole {
   switch (r) {
@@ -28,7 +25,7 @@ function mapMember(u: Record<string, unknown>): StaffMember {
     phone:          String(u.phone ?? u.phoneNumber ?? "—"),
     role:           mapRole(String(u.role ?? "waiter")),
     status:         mapStatus(u.isActive),
-    branch:         String((u.restaurant as Record<string, unknown>)?.name ?? u.branch ?? "Restaurante"),
+    branch:         String((u.restaurant as Record<string, unknown>)?.name ?? u.branch ?? "Principal"),
     createdAt:      String(u.createdAt ?? new Date().toISOString()),
     lastLogin:      u.lastLoginAt ? String(u.lastLoginAt) : (u.lastLogin ? String(u.lastLogin) : undefined),
     avatarInitials: name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
@@ -36,13 +33,13 @@ function mapMember(u: Record<string, unknown>): StaffMember {
 }
 
 export async function getStaffApi(): Promise<StaffMember[]> {
-  if (USE_MOCK_STAFF) return MOCK_STAFF;
   try {
     const { data } = await api.get("/users");
     const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
     return list.map(mapMember);
-  } catch {
-    return MOCK_STAFF;
+  } catch (e) {
+    console.error("Error fetching staff:", e);
+    throw e;
   }
 }
 

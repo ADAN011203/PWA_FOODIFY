@@ -55,9 +55,10 @@ const EMPTY_FORM = {
   name: "",
   email: "",
   phone: "",
+  password: "",
   role: "waiter" as StaffRole,
   status: "active" as StaffStatus,
-  branch: "Centro Histórico",
+  branch: "",
 };
 type StaffForm = typeof EMPTY_FORM;
 
@@ -147,6 +148,18 @@ function StaffFormModal({
           placeholder="33 1234 5678"
           error={errors.phone}
         />
+
+        {!member && (
+          <Input
+            label="Contraseña inicial *"
+            type="password"
+            value={form.password}
+            onChange={(e) => set("password", e.target.value)}
+            placeholder="Mínimo 6 caracteres"
+            error={form.password && form.password.length < 6 ? "Demasiado corta" : undefined}
+          />
+        )}
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Select
             label="Rol *"
@@ -172,10 +185,9 @@ function StaffFormModal({
           </Select>
         </div>
         <Input
-          label="Sucursal"
-          value={form.branch}
-          onChange={(e) => set("branch", e.target.value)}
-          placeholder="Centro Histórico"
+          label="Restaurante"
+          value={member?.branch || user?.branch || "Principal"}
+          disabled
         />
 
         {/* Preview Rol */}
@@ -476,6 +488,11 @@ export default function AdminStaffPage() {
       .finally(() => setInitLoading(false));
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const currentRestaurant = useMemo(() => {
+    if (staff.length > 0 && staff[0].branch) return staff[0].branch;
+    return "Principal";
+  }, [staff]);
+
   const filtered = useMemo(() => {
     let list = staff;
     if (filterRole !== "todos") list = list.filter((s) => s.role === filterRole);
@@ -511,7 +528,12 @@ export default function AdminStaffPage() {
 
   const handleSave = async (form: typeof EMPTY_FORM, id?: string) => {
     if (id) {
-      const updated = await updateStaffApi(id, form);
+      const updated = await updateStaffApi(id, {
+        fullName: form.name,
+        email: form.email,
+        phone: form.phone,
+        role: form.role,
+      });
       setStaff((prev) => prev.map((s) => (s.id === id ? { ...s, ...updated } : s)));
       toast.success("Empleado actualizado");
     } else {
@@ -520,7 +542,7 @@ export default function AdminStaffPage() {
         email: form.email,
         phone: form.phone,
         role: form.role,
-        password: "password123",
+        password: form.password || "staff123",
       };
       const newMember = await createStaffApi(payload);
       setStaff((prev) => [newMember, ...prev]);
