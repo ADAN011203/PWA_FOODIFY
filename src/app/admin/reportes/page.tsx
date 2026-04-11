@@ -73,13 +73,8 @@ export default function ReportesPage() {
       if (top.status === "fulfilled")   setTopDishes(top.value);
       if (hours.status === "fulfilled") setPeakHours(hours.value);
       if (cats.status === "fulfilled")  setCategoryData(cats.value);
-      
-      const failed = [sales, top, hours, cats].find(r => r.status === "rejected") as PromiseRejectedResult;
-      if (failed) throw failed.reason;
-      
-    } catch (e: any) {
-      if (e.response?.status === 403) setErrorMsg("Los reportes avanzados requieren Plan Premium");
-      else setErrorMsg("Error al cargar reportes");
+    } catch {
+      setErrorMsg("Ocurrió un error al cargar algunos datos");
     } finally {
       setLoadingData(false);
     }
@@ -93,9 +88,14 @@ export default function ReportesPage() {
 
   const handleExport = async (type: "sales" | "dishes" | "inventory") => {
     setExporting(true);
-    try { await exportReportApi(type, "xlsx"); }
-    catch { alert("Error al exportar"); }
-    finally { setExporting(false); }
+    try { 
+      await exportReportApi(type, "xlsx"); 
+    } catch (e: any) { 
+      if (e.response?.status === 403) alert("Exportar datos avanzados requiere Plan Premium");
+      else alert("Error al exportar"); 
+    } finally { 
+      setExporting(false); 
+    }
   };
 
   if (isLoading || !user) return <FoodSpinner />;

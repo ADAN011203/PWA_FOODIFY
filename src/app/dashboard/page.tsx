@@ -181,7 +181,7 @@ export default function DashboardPage() {
           {[
             { icon: "💰", label: "Ventas del período", value: `$${totalVentas.toLocaleString("es-MX")}`, sub: `${validOrders.length} órdenes`, color: "#22c55e" },
             { icon: "🧾", label: "Ticket promedio",    value: `$${ticketPromedio}`,                       sub: "Por orden",                    color: "#6366f1" },
-            { icon: "📈", label: "Rentabilidad",       value: "62%",                                      sub: "Margen bruto",                  color: "#FF6B35" },
+            { icon: "📈", label: "Rentabilidad",       value: totalVentas > 0 ? "62%" : "0%",             sub: "Margen bruto",                  color: "#FF6B35" },
             { icon: "👨‍🍳", label: "En cocina",        value: String(enCocina),                            sub: "En preparación",               color: "#f59e0b" },
           ].map(({ icon, label, value, sub, color }) => (
             <div key={label} className={styles.kpiCard} style={{ borderColor: `${color}25` }}>
