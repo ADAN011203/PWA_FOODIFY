@@ -7,16 +7,16 @@ const API_URL = typeof window !== "undefined" && window.location.hostname !== "l
 
 const BASE_URL_PROXY = typeof window !== "undefined" && window.location.hostname !== "localhost"
   ? "/api_proxy"
-  : (process.env.NEXT_PUBLIC_API_URL || "http://3.142.73.52:3000").replace("/api/v1", "");
+  : "http://3.142.73.52:3000";
 
-// ─── Instancia principal (con JWT - USA PREFIJO api/v1) ──────────────────────
+// ─── Instancia principal (con JWT - USA api/v1) ─────────────────────────────
 export const api: AxiosInstance = axios.create({
-  baseURL: API_URL,
+  baseURL: `${BASE_URL_PROXY}/api/v1`,
   headers: { "Content-Type": "application/json" },
   timeout: 10000,
 });
 
-// ─── Instancia pública (sin JWT — menú del comensal — NO USA api/v1) ─────────
+// ─── Instancia pública (sin JWT — menú — NO USA api/v1) ──────────────────────
 export const publicApi: AxiosInstance = axios.create({
   baseURL: BASE_URL_PROXY,
   headers: { "Content-Type": "application/json" },
