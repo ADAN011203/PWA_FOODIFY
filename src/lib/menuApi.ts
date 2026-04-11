@@ -16,6 +16,7 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
   }
 
   try {
+    // IMPORTANTE: Según src/main.ts del backend, /menu/:slug está EXCLUIDO del prefijo global /api/v1
     const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
     const { restaurant, menus } = data.data;
 
