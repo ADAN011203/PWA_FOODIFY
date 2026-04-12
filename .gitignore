@@ -10,6 +10,6 @@ dist
 .DS_Store
 .vscode
 foodify-keys.pem
-foodify-backend/.git
-foodify-Movil-v3.2/.git
+foodify-backend/
+foodify-Movil-v3.2/
 pwa-client/.git

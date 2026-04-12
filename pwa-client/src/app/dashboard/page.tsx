@@ -39,9 +39,9 @@ function buildSalesData(orders: Order[], days: number) {
     const key = d.toISOString().slice(0, 10);
     const label = d.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
     
-    const dayOrders = orders.filter((o) => o.createdAt.slice(0, 10) === key && o.status !== "cancelado");
+    const dayOrders = orders.filter((o) => o?.createdAt?.slice(0, 10) === key && o.status !== "cancelado");
     const realSales = dayOrders.reduce((acc, o) => 
-      acc + o.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0)
+      acc + (o.items?.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0) ?? 0)
     , 0);
 
     result.push({
@@ -116,17 +116,28 @@ export default function DashboardPage() {
   const isPremium = !ingError; // si no hay error de 403, tiene inventario
   const dishes = dishesData ?? [];
   const alertIngredients = useMemo(() => ingredientsData?.filter(i => getAlertLevel(i) !== "ok") ?? [], [ingredientsData]);
-  const topDishes = useMemo(() => [...dishes].sort((a,b)=> (b.soldCount??0)-(a.soldCount??0)).slice(0,5).map(d=>({name: d.name.length>16?d.name.slice(0,16)+"…":d.name, value: d.soldCount??0})), [dishes]);
+  const topDishes = useMemo(() => 
+    [...dishes]
+      .sort((a,b)=> (b.soldCount??0)-(a.soldCount??0))
+      .slice(0,5)
+      .map(d=>({
+        name: (d.name || "Sin nombre").length > 16 
+          ? (d.name || "Sin nombre").slice(0,16)+"…" 
+          : (d.name || "Sin nombre"), 
+        value: d.soldCount??0
+      })), 
+    [dishes]
+  );
 
 
   if (dishesLoading || ordersLoading) return <DashboardSkeleton />;
   if (dishesError) return <ErrorAlert message={dishesError} onRetry={refetchDishes} />;
-  const totalVentas      = salesData.reduce((s, d) => s + d.ventas, 0);
-  const validOrders      = orders.filter((o) => o.status !== "cancelado");
+  const totalVentas      = salesData.reduce((s, d) => s + (d.ventas || 0), 0);
+  const validOrders      = orders.filter((o) => o && o.status !== "cancelado");
   const ticketPromedio   = validOrders.length > 0
-    ? Math.round(validOrders.reduce((s, o) => s + o.items.reduce((t, it) => t + it.unitPrice * it.qty, 0), 0) / validOrders.length)
+    ? Math.round(validOrders.reduce((s, o) => s + (o.items?.reduce((t, it) => t + it.unitPrice * it.qty, 0) ?? 0), 0) / validOrders.length)
     : 0;
-  const enCocina = orders.filter((o) => o.status === "en_preparacion").length;
+  const enCocina = orders.filter((o) => o?.status === "en_preparacion").length;
 
   if (isLoading || !user) return <DashboardSkeleton />;
 
