@@ -332,6 +332,7 @@ function StaffCard({ member, onTap }: { member: StaffMember; onTap: () => void }
             >
               {member.name}
             </p>
+            <span
               style={{
                 display: "inline-flex",
                 alignItems: "center",
