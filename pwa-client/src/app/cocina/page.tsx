@@ -172,7 +172,7 @@ export default function CocinaPage() {
           <div>
             <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: 0 }}>Vista Cocina</p>
             <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
-              <IconChefHat size={12} /> {user.name} · {user.branch}
+              <IconChefHat size={12} /> {user?.name} · {user?.branch}
             </p>
           </div>
         </div>
