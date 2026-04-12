@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { AuthUser, AuthSession } from "@/types/auth";
 import { logoutApi } from "@/lib/authApi";
-import { getOwnedRestaurantsApi } from "@/lib/restaurantApi";
+import { getRestaurantDetailsApi } from "@/lib/restaurantApi";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -52,10 +52,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Auto-resolución de slug para sesiones antiguas
   useEffect(() => {
     if (user && !user.slug && user.restaurantId) {
-      getOwnedRestaurantsApi().then(list => {
-        const current = list.find(r => String(r.id) === String(user.restaurantId));
-        if (current?.slug) {
-          const updated = { ...user, slug: current.slug };
+      getRestaurantDetailsApi(user.restaurantId).then(rest => {
+        if (rest.slug) {
+          const updated = { ...user, slug: rest.slug };
           setUser(updated);
           // Actualizar localStorage
           const raw = localStorage.getItem("foodify_session");

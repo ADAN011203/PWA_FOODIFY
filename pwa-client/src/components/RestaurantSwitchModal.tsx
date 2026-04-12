@@ -42,11 +42,26 @@ export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
     setSwitching(restaurant.id);
     try {
       await switchActiveRestaurantApi(user.id, restaurant.id);
-      toast(`Cambiando a ${restaurant.name}...`, "success");
-      // Recargar para refrescar el contexto global y los datos de todos los módulos
+      
+      // Obtener detalles frescos (slug, branch name) antes de recargar
+      const details = await getRestaurantDetailsApi(restaurant.id);
+      
+      toast(`Cambiando a ${details.name}...`, "success");
+      
+      // Intentar actualizar la sesión local inmediatamente
+      const raw = localStorage.getItem("foodify_session");
+      if (raw) {
+        const session = JSON.parse(raw);
+        session.user.restaurantId = restaurant.id;
+        session.user.branch = details.name;
+        session.user.slug = details.slug || "";
+        localStorage.setItem("foodify_session", JSON.stringify(session));
+      }
+
+      // Recargar para refrescar el contexto global
       setTimeout(() => {
         window.location.reload();
-      }, 1000);
+      }, 800);
     } catch (e) {
       toast("No se pudo cambiar de sucursal", "error");
       setSwitching(null);
