@@ -20,7 +20,7 @@ import { FoodSpinner } from "@/components/ui/FoodSpinner";
 function useAdminGuard() {
   const { user, isLoading } = useAuth();
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "admin"))
+    if (!isLoading && (!user || !["admin", "restaurant_admin"].includes(user.role)))
       window.location.href = "/login";
   }, [isLoading, user]);
   return { user, isLoading };

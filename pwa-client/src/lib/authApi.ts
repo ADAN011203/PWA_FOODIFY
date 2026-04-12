@@ -57,7 +57,7 @@ export async function loginApi(
     const me = meRes.data.data;
 
     const user: AuthUser = {
-      id:     String(me.id ?? me.userId ?? ""),
+      id:     String(me.id ?? me.userId ?? me.sub ?? ""),
       name:   String(me.fullName ?? me.name ?? email.split("@")[0]),
       email:  String(me.email ?? email),
       role:   mapRole(authData.role),
@@ -81,7 +81,7 @@ export async function getMeApi(): Promise<AuthUser> {
   const { data } = await api.get("/auth/me");
   const me = data.data;
   return {
-    id:     String(me.id),
+    id:     String(me.id ?? me.userId ?? me.sub ?? ""),
     name:   String(me.fullName ?? me.name ?? ""),
     email:  String(me.email),
     role:   mapRole(me.role),

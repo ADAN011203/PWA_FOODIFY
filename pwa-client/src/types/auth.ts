@@ -11,6 +11,7 @@ export interface AuthUser {
   restaurantId?: string;
 }
 
+
 export interface LoginPayload {
   email: string;
   password: string;

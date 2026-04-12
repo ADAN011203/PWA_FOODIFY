@@ -1,240 +1,107 @@
-import type { Order, OrderStatus } from "@/types/orders";
+import { api, publicApi } from "./api";
+import type { Order, OrderStatus } from "../types/orders";
 
-export interface OrdersResponse {
-  data: any[];
-  total: number;
-}
+export const USE_MOCK_ORDERS = false;
 
-export async function getOrdersApi(params?: any): Promise<Order[]> {
-  try {
-    const searchParams = new URLSearchParams();
-    if (params?.limit) searchParams.append("limit", String(params.limit));
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1"}/orders?${searchParams.toString()}`
-    );
-    if (!res.ok) return [];
-
-    const json = await res.json();
-    const data = Array.isArray(json) ? json : (json?.data ?? []);
-    if (!Array.isArray(data)) return [];
-
-    return data.map((o: any) => {
-      const rawItems = o.items ?? o.order_items ?? [];
-      const mappedItems = Array.isArray(rawItems)
-        ? rawItems.map((item: any) => ({
-            id:        item.id,
-            dishId:    item.dishId ?? item.dish_id,
-            dishName:  item.dish?.name ?? item.dish_name ?? "Platillo",
-            quantity:  Number(item.quantity ?? item.qty ?? 1),
-            qty:       Number(item.qty ?? item.quantity ?? 1),
-            unitPrice: Number(item.unitPrice ?? item.unit_price ?? 0),
-          }))
-        : [];
-
-      return {
-        id:         o.id,
-        folio:      o.folio ?? String(o.id).slice(0, 8),
-        status:     o.status,
-        total:      Number(o.total ?? 0),
-        createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
-        items:      mappedItems,
-        waiterName: o.waiter?.fullName ?? o.waiterName ?? "Admin",
-      };
-    });
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    return [];
+function mapStatus(s: string): OrderStatus {
+  switch (s) {
+    case "pending":    return "nuevo";
+    case "confirmed":  return "nuevo";
+    case "preparing":  return "en_preparacion";
+    case "ready":      return "listo";
+    case "delivered":  return "entregado";
+    case "cancelled":  return "cancelado";
+    default:           return "nuevo";
   }
 }
 
-export async function getActiveOrdersApi(): Promise<Order[]> {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1"}/orders?status=active&limit=100`
-    );
-    if (!res.ok) return [];
-
-    const json = await res.json();
-    const data = Array.isArray(json) ? json : (json?.data ?? []);
-    if (!Array.isArray(data)) return [];
-
-    return data.map((o: any) => {
-      const rawItems = o.items ?? o.order_items ?? [];
-      const mappedItems = Array.isArray(rawItems)
-        ? rawItems.map((item: any) => ({
-            id:        item.id,
-            dishId:    item.dishId ?? item.dish_id,
-            dishName:  item.dish?.name ?? item.dish_name ?? "Platillo",
-            quantity:  Number(item.quantity ?? item.qty ?? 1),
-            qty:       Number(item.qty ?? item.quantity ?? 1),
-            unitPrice: Number(item.unitPrice ?? item.unit_price ?? 0),
-          }))
-        : [];
-
-      return {
-        id:         o.id,
-        folio:      o.folio ?? String(o.id).slice(0, 8),
-        status:     o.status,
-        total:      Number(o.total ?? 0),
-        createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
-        items:      mappedItems,
-        waiterName: o.waiter?.fullName ?? o.waiterName ?? "Admin",
-      };
-    });
-  } catch (error) {
-    console.error("Error fetching active orders:", error);
-    return [];
+export function mapStatusToBackend(status: OrderStatus): string {
+  switch (status) {
+    case "nuevo":          return "pending";
+    case "en_preparacion": return "preparing";
+    case "listo":          return "ready";
+    case "entregado":      return "delivered";
+    case "cancelado":      return "cancelled";
+    default:               return "pending";
   }
 }
 
-export async function getKitchenOrdersApi(): Promise<Order[]> {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1"}/orders?status=en_preparacion&limit=100`
-    );
-    if (!res.ok) return [];
+function mapToInternalOrder(o: Record<string, unknown>): Order {
+  const items = (o.items as Record<string, unknown>[] ?? []).map((it) => ({
+    dishId:    String((it.dish as Record<string, unknown>)?.id ?? it.dishId ?? ""),
+    dishName:  String((it.dish as Record<string, unknown>)?.name ?? it.dishName ?? ""),
+    name:      String((it.dish as Record<string, unknown>)?.name ?? it.dishName ?? ""),
+    qty:       Number(it.quantity ?? it.qty ?? 1),
+    unitPrice: Number(it.unitPrice ?? it.unit_price ?? 0),
+  }));
 
-    const json = await res.json();
-    const data = Array.isArray(json) ? json : (json?.data ?? []);
-    if (!Array.isArray(data)) return [];
-
-    return data.map((o: any) => {
-      const rawItems = o.items ?? o.order_items ?? [];
-      const mappedItems = Array.isArray(rawItems)
-        ? rawItems.map((item: any) => ({
-            id:        item.id,
-            dishId:    item.dishId ?? item.dish_id,
-            dishName:  item.dish?.name ?? item.dish_name ?? "Platillo",
-            quantity:  Number(item.quantity ?? item.qty ?? 1),
-            qty:       Number(item.qty ?? item.quantity ?? 1),
-            unitPrice: Number(item.unitPrice ?? item.unit_price ?? 0),
-          }))
-        : [];
-
-      return {
-        id:         o.id,
-        folio:      o.folio ?? String(o.id).slice(0, 8),
-        status:     o.status,
-        total:      Number(o.total ?? 0),
-        createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
-        items:      mappedItems,
-        waiterName: o.waiter?.fullName ?? o.waiterName ?? "Admin",
-      };
-    });
-  } catch (error) {
-    console.error("Error fetching kitchen orders:", error);
-    return [];
-  }
+  return {
+    id:         String(o.id),
+    folio:      String(o.orderNumber ?? o.order_number ?? o.folio ?? o.id),
+    status:     mapStatus(String(o.status ?? "pending")),
+    createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
+    attendedBy: String((o.waiter as Record<string, unknown>)?.fullName ?? o.attendedBy ?? "—"),
+    branch:     "Restaurante",
+    items,
+  };
 }
 
-export async function updateOrderStatusApi(id: string, status: OrderStatus): Promise<void> {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1"}/orders/${id}/status`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      }
-    );
-    if (!res.ok) throw new Error(`Error actualizando orden: ${res.status}`);
-  } catch (error) {
-    console.error("Error updating order status:", error);
-    throw error;
-  }
+// ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2 ────────────────
+export async function createPublicOrderApi(payload: {
+  restaurantId: number;
+  customerName: string;
+  customerPhone?: string;
+  notes?: string;
+  items: { dishId: number; quantity: number; specialNotes?: string }[];
+}): Promise<Order> {
+  const { data } = await publicApi.post("/api/v1/orders", {
+    type: "takeout",
+    ...payload,
+  });
+  return mapToInternalOrder(data.data ?? data);
 }
 
-export async function updateKitchenStatusApi(id: string, status: OrderStatus): Promise<void> {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1"}/orders/${id}/kitchen-status`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      }
-    );
-    if (res.status === 404) {
-      await updateOrderStatusApi(id, status);
-    } else if (!res.ok) {
-      throw new Error(`Error actualizando estado cocina: ${res.status}`);
-    }
-  } catch (error) {
-    console.error("Error updating kitchen status:", error);
-    throw error;
-  }
-}
-
-export async function cancelOrderApi(id: string): Promise<void> {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1"}/orders/${id}/status`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "cancelado" }),
-      }
-    );
-    if (!res.ok) throw new Error(`Error cancelando orden: ${res.status}`);
-  } catch (error) {
-    console.error("Error canceling order:", error);
-    throw error;
-  }
-}
-
-export async function createPublicOrderApi(data: any): Promise<any> {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1"}/orders/public`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }
-    );
-    if (!res.ok) throw new Error(`Error creando orden pública: ${res.status}`);
-    return await res.json();
-  } catch (error) {
-    console.error("Error creating public order:", error);
-    throw error;
-  }
-}
-
+// ─── Seguimiento de orden por folio (público) ─────────────────────────────────
 export async function getOrderByFolioApi(slug: string, folio: string): Promise<Order | null> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1"}/orders/folio/${folio}?slug=${slug}`
-    );
-    if (!res.ok) return null;
-
-    const json = await res.json();
-    const o = json?.data || json;
-    if (!o || !o.id) return null;
-
-    const rawItems = o.items ?? o.order_items ?? [];
-    const mappedItems = Array.isArray(rawItems)
-      ? rawItems.map((item: any) => ({
-          id:        item.id,
-          dishId:    item.dishId ?? item.dish_id,
-          dishName:  item.dish?.name ?? item.dish_name ?? "Platillo",
-          quantity:  Number(item.quantity ?? item.qty ?? 1),
-          qty:       Number(item.qty ?? item.quantity ?? 1),
-          unitPrice: Number(item.unitPrice ?? item.unit_price ?? 0),
-        }))
-      : [];
-
-    return {
-      id:         o.id,
-      folio:      o.folio ?? String(o.id).slice(0, 8),
-      status:     o.status,
-      total:      Number(o.total ?? 0),
-      createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
-      items:      mappedItems,
-      waiterName: o.waiter?.fullName ?? o.waiterName ?? "Admin",
-    };
-  } catch (error) {
-    console.error("Error fetching order by folio:", error);
-    return null;
-  }
+    const { data } = await publicApi.get(`/menu/${slug}/order/${folio}`);
+    return mapToInternalOrder(data.data ?? data);
+  } catch { return null; }
 }
+
+// ─── Listar órdenes activas (staff) ──────────────────────────────────────────
+export async function getActiveOrdersApi(): Promise<Order[]> {
+  const { data } = await api.get("/orders/active");
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map(mapToInternalOrder);
+}
+
+// ─── Listar todas las órdenes con filtros ─────────────────────────────────────
+export async function getOrdersApi(params?: {
+  status?: string; dateFrom?: string; dateTo?: string;
+  page?: number; limit?: number;
+}): Promise<Order[]> {
+  const { data } = await api.get("/orders", { params });
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map(mapToInternalOrder);
+}
+
+// ─── Cambiar estado de orden ──────────────────────────────────────────────────
+export async function updateOrderStatusApi(id: string, status: OrderStatus): Promise<void> {
+  await api.patch(`/orders/${id}/status`, { status: mapStatusToBackend(status) });
+}
+
+// ─── Cancelar orden ───────────────────────────────────────────────────────────
+export async function cancelOrderApi(id: string, reason = "Cancelado por el cliente"): Promise<void> {
+  await api.patch(`/orders/${id}/cancel`, { reason });
+}
+
+// ─── Comandas de cocina (Premium) ─────────────────────────────────────────────
+export async function getKitchenOrdersApi(): Promise<Order[]> {
+  const { data } = await api.get("/kitchen/orders");
+  return (Array.isArray(data.data) ? data.data : []).map(mapToInternalOrder);
+}
+
+export async function updateKitchenStatusApi(orderId: string, status: OrderStatus): Promise<void> {
+  await api.patch(`/kitchen/orders/${orderId}/status`, { status: mapStatusToBackend(status) });
+}

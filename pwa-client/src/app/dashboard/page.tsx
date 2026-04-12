@@ -29,29 +29,8 @@ function useRoleGuard(allowed: string[]) {
   return { user, isLoading };
 }
 
-function buildSalesData(orders: Order[], days: number) {
-  const result: { label: string; ventas: number; ordenes: number }[] = [];
-  const now = new Date();
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const label = d.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
-    
-    const dayOrders = orders.filter((o) => o?.createdAt?.slice(0, 10) === key && o.status !== "cancelado");
-    const realSales = dayOrders.reduce((acc, o) => 
-      acc + (o.items?.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0) ?? 0)
-    , 0);
 
-    result.push({
-      label,
-      ventas: realSales,
-      ordenes: dayOrders.length,
-    });
-  }
-  return result;
-}
+
 
 function buildProfitData(salesData: { ventas: number }[]) {
   return salesData.slice(-4).map((day, i) => {
@@ -93,54 +72,88 @@ const MODULES = [
   { icon: "📊", label: "Reportes",   sub: "KPIs y estadísticas",  href: "/admin/reportes",   color: "#a78bfa" },
 ];
 
+import {
+  getSalesReportApi, getTopDishesApi, getRestaurantDashboardApi,
+  type ReportPeriod
+} from "@/lib/reportsApi";
+
+function mapPeriod(p: Period): ReportPeriod {
+  if (p === "hoy") return "today";
+  if (p === "semana") return "week";
+  if (p === "mes") return "month";
+  if (p === "trimestre") return "quarter";
+  return "year";
+}
+
 export default function DashboardPage() {
   const { user, isLoading } = useRoleGuard(["admin", "restaurant_admin", "manager"]);
   const { logout } = useAuth();
+  
   const [period, setPeriod] = useState<Period>("mes");
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [salesData, setSalesData] = useState<{ label: string; ventas: number; ordenes: number }[]>([]);
+  const [topDishes, setTopDishes] = useState<{ name: string; value: number }[]>([]);
+  const [kpis, setKpis] = useState({
+    totalVentas: 0,
+    validOrdersCount: 0,
+    ticketPromedio: 0,
+    enCocina: 0
+  });
+  
+  const [dataLoading, setDataLoading] = useState(true);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-    getOrdersApi({ limit: 500 }) // fetch plenty of orders for history map
-      .then(setOrders)
-      .catch(console.error)
-      .finally(() => setOrdersLoading(false));
-  }, [user]);
-
-  const salesData  = useMemo(() => buildSalesData(orders, period === "hoy" ? 1 : period === "semana" ? 7 : period === "mes" ? 30 : 90), [orders, period]);
-  const profitData = useMemo(() => buildProfitData(salesData), [salesData]);
-  const { data: dishesData, loading: dishesLoading, error: dishesError, empty: dishesEmpty, refetch: refetchDishes } = useFetchWithState<Dish[]>("/dishes");
+  const { data: dishesData, loading: dishesLoading, error: dishesError, refetch: refetchDishes } = useFetchWithState<Dish[]>("/dishes");
   const { data: ingredientsData, error: ingError } = useFetchWithState<Ingredient[]>("/inventory/items");
-  const isPremium = !ingError; // si no hay error de 403, tiene inventario
+  
   const dishes = dishesData ?? [];
   const alertIngredients = useMemo(() => ingredientsData?.filter(i => getAlertLevel(i) !== "ok") ?? [], [ingredientsData]);
-  const topDishes = useMemo(() => 
-    [...dishes]
-      .sort((a,b)=> (b.soldCount??0)-(a.soldCount??0))
-      .slice(0,5)
-      .map(d=>({
-        name: (d.name || "Sin nombre").length > 16 
-          ? (d.name || "Sin nombre").slice(0,16)+"…" 
-          : (d.name || "Sin nombre"), 
-        value: d.soldCount??0
-      })), 
-    [dishes]
-  );
+  const isPremium = !ingError;
 
+  useEffect(() => {
+    if (!user || isLoading) return;
 
-  if (dishesLoading || ordersLoading) return <DashboardSkeleton />;
+    const fetchData = async () => {
+      setDataLoading(true);
+      try {
+        const [sales, top, dash] = await Promise.all([
+          getSalesReportApi(mapPeriod(period)),
+          getTopDishesApi(5),
+          getRestaurantDashboardApi(String(user.restaurantId ?? ""))
+        ]);
+
+        setSalesData(sales);
+        setTopDishes(top.map(d => ({
+          name: d.name.length > 16 ? d.name.slice(0, 16) + "…" : d.name,
+          value: d.value
+        })));
+
+        const totalV = sales.reduce((acc, s) => acc + s.ventas, 0);
+        const totalO = sales.reduce((acc, s) => acc + s.ordenes, 0);
+
+        setKpis({
+          totalVentas: totalV,
+          validOrdersCount: totalO,
+          ticketPromedio: totalO > 0 ? Math.round(totalV / totalO) : 0,
+          enCocina: dash.activeOrders
+        });
+      } catch (err) {
+        console.error("Dashboard data load error:", err);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user, isLoading, period]);
+
+  const profitData = useMemo(() => buildProfitData(salesData), [salesData]);
+
+  if (dishesLoading || dataLoading) return <DashboardSkeleton />;
   if (dishesError) return <ErrorAlert message={dishesError} onRetry={refetchDishes} />;
-  const totalVentas      = salesData.reduce((s, d) => s + (d.ventas || 0), 0);
-  const validOrders      = orders.filter((o) => o && o.status !== "cancelado");
-  const ticketPromedio   = validOrders.length > 0
-    ? Math.round(validOrders.reduce((s, o) => s + (o.items?.reduce((t, it) => t + it.unitPrice * it.qty, 0) ?? 0), 0) / validOrders.length)
-    : 0;
-  const enCocina = orders.filter((o) => o?.status === "en_preparacion").length;
 
   if (isLoading || !user) return <DashboardSkeleton />;
 
+  const { totalVentas, ticketPromedio, enCocina, validOrdersCount } = kpis;
   return (
     <div className={styles.page}>
       {/* Header */}
@@ -202,7 +215,7 @@ export default function DashboardPage() {
         {/* KPI Grid */}
         <div className={styles.kpiGrid}>
           {[
-            { icon: "💰", label: "Ventas del período", value: `$${totalVentas.toLocaleString("es-MX")}`, sub: `${validOrders.length} órdenes`, color: "#22c55e" },
+            { icon: "💰", label: "Ventas del período", value: `$${totalVentas.toLocaleString("es-MX")}`, sub: `${validOrdersCount} órdenes`, color: "#22c55e" },
             { icon: "🧾", label: "Ticket promedio",    value: `$${ticketPromedio}`,                       sub: "Por orden",                    color: "#6366f1" },
             { icon: "📈", label: "Rentabilidad",       value: totalVentas > 0 ? "62%" : "0%",             sub: "Margen bruto",                  color: "#FF6B35" },
             { icon: "👨‍🍳", label: "En cocina",        value: String(enCocina),                            sub: "En preparación",               color: "#f59e0b" },

@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           u.branch = u.branch || u.restaurant?.name || "Sucursal";
         }
         setUser(u);
+        // Soportar tanto "token" (legacy mock) como "accessToken" (backend real)
         setToken(session.accessToken ?? session.token ?? null);
       }
     } catch {

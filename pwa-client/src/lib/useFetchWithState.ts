@@ -34,6 +34,7 @@ export function useFetchWithState<T>(url: string, options?: RequestInit) {
         setData(payload);
         setEmpty(false);
       }
+
     } catch (e: any) {
       let errMsg = "Error de conexión";
       const apiMsg = e.response?.data?.message;
