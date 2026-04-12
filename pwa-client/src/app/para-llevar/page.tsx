@@ -36,7 +36,7 @@ import CartModal from "./components/CartModal";
 function ParaLlevarContent() {
   const { dark } = useTheme();
   const { addOrder } = useGuestOrders();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const urlSlug = searchParams.get("slug");
 
@@ -58,23 +58,25 @@ function ParaLlevarContent() {
   // Load Data
   useEffect(() => {
     async function load() {
-      try {
-        let slugToUse = urlSlug || RESTAURANT_SLUG;
+      // Esperar a que cargue la sesión si no hay slug en URL
+      if (authLoading && !urlSlug) return;
 
-        // Si el usuario está logueado y no hay slug en la URL, intentamos obtener su slug real
-        if (!urlSlug && user?.restaurantId) {
+      try {
+        let slugToUse = urlSlug || user?.slug || RESTAURANT_SLUG;
+
+        // Si el usuario está logueado pero no tiene slug persistida, intentamos resolverla
+        if (!urlSlug && !user?.slug && user?.restaurantId) {
           try {
             const rest = await getRestaurantDetailsApi(user.restaurantId);
             if (rest.slug) slugToUse = rest.slug;
           } catch (e) {
-            console.warn("Could not fetch restaurant slug for logged user, using fallback.");
+            console.warn("Could not fetch restaurant slug, using fallback.");
           }
         }
 
         const res = await fetchPublicMenu(slugToUse, "takeout");
         setData(res);
         if (res.menus.length > 0) {
-          // Seleccionar primer menú activo por defecto, o el primero si ninguno está activo
           const firstActive = res.menus.find(m => m.isActiveNow) || res.menus[0];
           setActiveMenuId(firstActive.id);
         }
@@ -85,7 +87,7 @@ function ParaLlevarContent() {
       }
     }
     load();
-  }, [urlSlug, user?.restaurantId]);
+  }, [urlSlug, user?.restaurantId, user?.slug, authLoading]);
 
   // Derived State
   const activeMenu = useMemo(() => 

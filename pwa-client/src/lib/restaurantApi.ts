@@ -37,6 +37,7 @@ export async function getRestaurantDetailsApi(id: string): Promise<Restaurant> {
   return {
     ...r,
     id: String(r.id),
+    slug: r.slug ?? r.restaurant_slug ?? "",
   };
 }
 

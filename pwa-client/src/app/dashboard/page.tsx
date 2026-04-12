@@ -90,6 +90,8 @@ import {
   getSalesReportApi, getTopDishesApi, getRestaurantDashboardApi,
   type ReportPeriod
 } from "@/lib/reportsApi";
+import { getDishesApi } from "@/lib/menuApi";
+import { getInventoryItemsApi } from "@/lib/inventoryApi";
 
 function mapPeriod(p: Period): ReportPeriod {
   if (p === "hoy") return "today";
@@ -116,8 +118,8 @@ export default function DashboardPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
 
-  const { data: dishesData, loading: dishesLoading, error: dishesError, refetch: refetchDishes } = useFetchWithState<Dish[]>("/dishes");
-  const { data: ingredientsData, error: ingError } = useFetchWithState<Ingredient[]>("/inventory/items");
+  const { data: dishesData, loading: dishesLoading, error: dishesError, refetch: refetchDishes } = useFetchWithState<Dish[]>("/dishes", getDishesApi);
+  const { data: ingredientsData, error: ingError } = useFetchWithState<Ingredient[]>("/inventory/items", getInventoryItemsApi);
   
   const dishes = dishesData ?? [];
   const alertIngredients = useMemo(() => ingredientsData?.filter(i => getAlertLevel(i) !== "ok") ?? [], [ingredientsData]);

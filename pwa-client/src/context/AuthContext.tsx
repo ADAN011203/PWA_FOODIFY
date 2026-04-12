@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (u) {
           u.name   = u.name   || u.fullName || "Usuario";
           u.branch = u.branch || u.restaurant?.name || "Sucursal";
+          u.slug   = u.slug   || u.restaurant?.slug || u.restaurant?.restaurant_slug || "";
         }
         setUser(u);
         // Soportar tanto "token" (legacy mock) como "accessToken" (backend real)
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (u) {
       u.name   = u.name   || u.fullName || "Usuario";
       u.branch = u.branch || u.restaurant?.name || "Sucursal";
+      u.slug   = u.slug   || u.restaurant?.slug || u.restaurant?.restaurant_slug || "";
     }
     
     // Guardar en localStorage
