@@ -5,6 +5,8 @@ interface IconProps {
   size?: number;
   color?: string;
   strokeWidth?: number;
+  style?: React.CSSProperties;
+  className?: string;
 }
 
 export function IconBag({ size = 24, color = "currentColor", strokeWidth = 1.8 }: IconProps) {
@@ -94,9 +96,9 @@ export function IconMoon({ size = 20, color = "currentColor" }: IconProps) {
   );
 }
 
-export function IconSearch({ size = 18, color = "currentColor" }: IconProps) {
+export function IconSearch({ size = 18, color = "currentColor", style, className }: IconProps) {
   return (
-    <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24">
+    <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24" style={style} className={className}>
       <circle cx="11" cy="11" r="8"/>
       <path d="M21 21l-4.35-4.35"/>
     </svg>
