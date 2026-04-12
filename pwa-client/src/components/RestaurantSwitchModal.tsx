@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
-import { getOwnedRestaurantsApi, switchActiveRestaurantApi, Restaurant } from "@/lib/restaurantApi";
+import { getOwnedRestaurantsApi, switchActiveRestaurantApi, getRestaurantDetailsApi, Restaurant } from "@/lib/restaurantApi";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import styles from "./RestaurantSwitchModal.module.css";
