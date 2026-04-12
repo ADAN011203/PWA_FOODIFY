@@ -216,7 +216,7 @@ export default function CocinaPage() {
         )}
 
         {/* Cola vacía */}
-        {orders.length === 0 && (
+        {orders?.length === 0 && (
           <div style={{ textAlign: "center", padding: "80px 0", color: "#6b7280" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, color: "#22c55e" }}>
               <IconCheck size={48} />
