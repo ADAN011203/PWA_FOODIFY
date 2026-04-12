@@ -5,7 +5,7 @@ import { api, publicApi } from "./api";
  * Generic hook that fetches data.
  * Uses `publicApi` for public routes (/menu) and `api` for protected routes (which auto-appends /api/v1 and tokens).
  */
-export function useFetchWithState<T>(url: string, options?: RequestInit) {
+export function useFetchWithState<T>(url: string, fetcher?: () => Promise<T>) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,11 +15,16 @@ export function useFetchWithState<T>(url: string, options?: RequestInit) {
     setLoading(true);
     setError(null);
     try {
-      const client = url.startsWith("/menu") ? publicApi : api;
-      const res = await client.get(url);
-      
-      // Expected backend shape is usually { data: ... }
-      const payload = res.data?.data ?? res.data;
+      let payload: any;
+      if (fetcher) {
+        payload = await fetcher();
+      } else {
+        const client = url.startsWith("/menu") ? publicApi : api;
+        const res = await client.get(url);
+        
+        // Expected backend shape is usually { data: ... }
+        payload = res.data?.data ?? res.data;
+      }
       
       if (Array.isArray(payload)) {
         const cleanData = payload.filter(Boolean);
@@ -36,6 +41,7 @@ export function useFetchWithState<T>(url: string, options?: RequestInit) {
       }
 
     } catch (e: any) {
+      // ... same error handling ...
       let errMsg = "Error de conexión";
       const apiMsg = e.response?.data?.message;
       if (typeof apiMsg === "string") {
