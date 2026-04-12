@@ -15,7 +15,9 @@ interface Props {
 
 export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const toastContext = useToast() as any; // Cast to bypass property name inconsistencies (toast vs showToast)
+  const toast = toastContext.toast || toastContext.showToast || (() => {});
+  
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
         .catch(() => toast("Error al cargar sucursales", "error"))
         .finally(() => setLoading(false));
     }
-  }, [isOpen, toast]);
+  }, [isOpen]);
 
   const handleSwitch = async (restaurant: Restaurant) => {
     if (!user) return;

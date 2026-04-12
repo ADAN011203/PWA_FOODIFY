@@ -26,4 +26,6 @@ export interface Order {
   createdAt: string;    // ISO string
   attendedBy?: string;
   branch?: string;
+  total?: number;
+  waiterName?: string;
 }
