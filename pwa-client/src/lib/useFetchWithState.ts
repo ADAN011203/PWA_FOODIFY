@@ -21,9 +21,15 @@ export function useFetchWithState<T>(url: string, options?: RequestInit) {
       // Expected backend shape is usually { data: ... }
       const payload = res.data?.data ?? res.data;
       
-      if (Array.isArray(payload) && payload.length === 0) {
-        setEmpty(true);
-        setData(null);
+      if (Array.isArray(payload)) {
+        const cleanData = payload.filter(Boolean);
+        if (cleanData.length === 0) {
+          setEmpty(true);
+          setData(null);
+        } else {
+          setData(cleanData as T);
+          setEmpty(false);
+        }
       } else {
         setData(payload);
         setEmpty(false);

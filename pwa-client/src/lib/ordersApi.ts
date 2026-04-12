@@ -26,22 +26,21 @@ export function mapStatusToBackend(status: OrderStatus): string {
   }
 }
 
-function mapToInternalOrder(o: Record<string, unknown>): Order {
-  const items = (o.items as Record<string, unknown>[] ?? []).map((it) => ({
-    dishId:    String((it.dish as Record<string, unknown>)?.id ?? it.dishId ?? ""),
-    dishName:  String((it.dish as Record<string, unknown>)?.name ?? it.dishName ?? ""),
-    name:      String((it.dish as Record<string, unknown>)?.name ?? it.dishName ?? ""),
-    qty:       Number(it.quantity ?? it.qty ?? 1),
-    unitPrice: Number(it.unitPrice ?? it.unit_price ?? 0),
+function mapToInternalOrder(o: Record<string, any>): Order {
+  const items = (o.items ?? o.orderItems ?? o.order_items ?? []).map((it: any) => ({
+    dishId:    String(it.dish?.id ?? it.dishId ?? it.dish_id ?? ""),
+    dishName:  String(it.dish?.name ?? it.dishName ?? it.dish_name ?? it.name ?? "Platillo"),
+    qty:       Number(it.quantity ?? it.qty ?? it.cant ?? 1),
+    unitPrice: Number(it.unitPrice ?? it.unit_price ?? it.price ?? 0),
   }));
 
   return {
-    id:         String(o.id),
-    folio:      String(o.orderNumber ?? o.order_number ?? o.folio ?? o.id),
+    id:         String(o.id || ""),
+    folio:      String(o.orderNumber ?? o.order_number ?? o.folio ?? o.id ?? "S/F"),
     status:     mapStatus(String(o.status ?? "pending")),
     createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
-    attendedBy: String((o.waiter as Record<string, unknown>)?.fullName ?? o.attendedBy ?? "—"),
-    branch:     "Restaurante",
+    attendedBy: String(o.waiter?.fullName ?? o.waiter?.name ?? o.attendedBy ?? "—"),
+    branch:     String(o.restaurant?.name ?? o.branch ?? "Restaurante"),
     items,
   };
 }
