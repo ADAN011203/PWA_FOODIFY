@@ -82,7 +82,7 @@ export default function CocinaPage() {
 
   const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 
-  const OrderCard = ({ order, mode }: { order: typeof orders[0]; mode: "nueva" | "preparando" }) => {
+  const OrderCard = ({ order, mode }: { order: Order; mode: "nueva" | "preparando" }) => {
     const isNueva = mode === "nueva";
     return (
       <div style={{
