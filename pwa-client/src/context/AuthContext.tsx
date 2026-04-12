@@ -30,8 +30,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem("foodify_session");
       if (raw) {
         const session = JSON.parse(raw);
-        setUser(session.user);
-        // Soportar tanto "token" (legacy mock) como "accessToken" (backend real)
+        // Normalizar nombres de campos
+        const u = session.user;
+        if (u) {
+          u.name   = u.name   || u.fullName || "Usuario";
+          u.branch = u.branch || u.restaurant?.name || "Sucursal";
+        }
+        setUser(u);
         setToken(session.accessToken ?? session.token ?? null);
       }
     } catch {
@@ -42,15 +47,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = (session: AuthSession & { accessToken?: string; refreshToken?: string }) => {
-    // Guardar todo en localStorage (user + tokens)
+    // Normalizar
+    const u = session.user;
+    if (u) {
+      u.name   = u.name   || u.fullName || "Usuario";
+      u.branch = u.branch || u.restaurant?.name || "Sucursal";
+    }
+    
+    // Guardar en localStorage
     const stored = {
-      user:         session.user,
+      user:         u,
       token:        session.token ?? session.accessToken,
       accessToken:  session.accessToken ?? session.token,
       refreshToken: session.refreshToken ?? null,
     };
     localStorage.setItem("foodify_session", JSON.stringify(stored));
-    setUser(session.user);
+    setUser(u);
     setToken(stored.accessToken ?? null);
   };
 
