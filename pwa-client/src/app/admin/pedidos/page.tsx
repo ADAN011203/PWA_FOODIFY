@@ -10,6 +10,30 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import ui from "@/components/ui/AdminUI.module.css";
+import {
+  IconReceipt,
+  IconUser,
+  IconBuilding,
+  IconClock,
+  IconClipboard,
+  IconSearch,
+  IconArrowLeft,
+  IconChevronRight,
+} from "@/components/ui/Icons";
+
+function StatusDot({ color }: { color: string }) {
+  return (
+    <div 
+      style={{ 
+        width: 8, 
+        height: 8, 
+        borderRadius: "50%", 
+        background: color,
+        boxShadow: `0 0 6px ${color}`
+      }} 
+    />
+  );
+}
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
 function useAdminGuard() {
@@ -22,12 +46,12 @@ function useAdminGuard() {
 }
 
 // ─── Config de estados ────────────────────────────────────────────────────────
-const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string; emoji: string }> = {
-  nuevo:          { label: "Nuevo",        color: "#3b82f6", bg: "rgba(59,130,246,0.15)",  emoji: "🔵" },
-  en_preparacion: { label: "En Cocina",    color: "#f59e0b", bg: "rgba(245,158,11,0.15)",  emoji: "🟡" },
-  listo:          { label: "Listo",        color: "#22c55e", bg: "rgba(34,197,94,0.15)",   emoji: "🟢" },
-  entregado:      { label: "Entregado",    color: "#8a8f98", bg: "rgba(138,143,152,0.15)", emoji: "⚪" },
-  cancelado:      { label: "Cancelado",    color: "#ef4444", bg: "rgba(239,68,68,0.15)",   emoji: "🔴" },
+const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string }> = {
+  nuevo:          { label: "Nuevo",        color: "#3b82f6", bg: "rgba(59,130,246,0.15)" },
+  en_preparacion: { label: "En Cocina",    color: "#f59e0b", bg: "rgba(245,158,11,0.15)" },
+  listo:          { label: "Listo",        color: "#22c55e", bg: "rgba(34,197,94,0.15)"  },
+  entregado:      { label: "Entregado",    color: "#8a8f98", bg: "rgba(138,143,152,0.15)"},
+  cancelado:      { label: "Cancelado",    color: "#ef4444", bg: "rgba(239,68,68,0.15)"  },
 };
 
 const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
@@ -58,9 +82,12 @@ function OrderTotals({ order }: { order: Order }) {
           textTransform: "uppercase",
           letterSpacing: "0.06em",
           marginBottom: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
         }}
       >
-        🧾 Detalle de la orden
+        <IconReceipt size={14} /> Detalle de la orden
       </p>
       {(order.items ?? []).map((item, i) => (
         <div
@@ -133,7 +160,7 @@ function OrderDetailModal({
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           background: cfg.bg,
           color: cfg.color,
           padding: "4px 14px",
@@ -143,7 +170,7 @@ function OrderDetailModal({
           marginBottom: 16,
         }}
       >
-        {cfg.emoji} {cfg.label}
+        <StatusDot color={cfg.color} /> {cfg.label}
       </div>
 
       <div
@@ -155,10 +182,10 @@ function OrderDetailModal({
         }}
       >
         {[
-          { icon: "👤", label: "Atendido por", value: order.attendedBy ?? "—" },
-          { icon: "🏢", label: "Sucursal", value: order.branch ?? "—" },
+          { icon: <IconUser size={14} />, label: "Atendido por", value: order.attendedBy ?? "—" },
+          { icon: <IconBuilding size={14} />, label: "Sucursal", value: order.branch ?? "—" },
           {
-            icon: "🕐",
+            icon: <IconClock size={14} />,
             label: "Hora",
             value: new Date(order.createdAt).toLocaleTimeString("es-MX", {
               hour: "2-digit",
@@ -166,7 +193,7 @@ function OrderDetailModal({
             }),
           },
           {
-            icon: "📋",
+            icon: <IconClipboard size={14} />,
             label: "Artículos",
             value: `${(order.items ?? []).reduce((s, i) => s + i.qty, 0)} pzas`,
           },
@@ -201,7 +228,7 @@ function OrderDetailModal({
           onClick={() => handleAction(() => onAdvance(order.id, nextStatus))}
           style={{ marginBottom: 10 }}
         >
-          {cfg.emoji} → {STATUS_CFG[nextStatus].emoji} Avanzar a {STATUS_CFG[nextStatus].label}
+          Avanzar a {STATUS_CFG[nextStatus].label}
         </Button>
       )}
       {order.status !== "cancelado" && order.status !== "entregado" && (
@@ -254,14 +281,16 @@ function OrderCard({ order, onTap }: { order: Order; onTap: () => void }) {
             >
               #{order.folio.slice(-6)}
             </p>
-            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: 0 }}>
-              🕐 {time} · {order.attendedBy ?? "Sin atender"}
+            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+              <IconClock size={12} /> {time} · <IconUser size={12} /> {order.attendedBy ?? "Sin atender"}
             </p>
           </div>
           <div style={{ textAlign: "right" }}>
             <span
               style={{
-                display: "inline-block",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
                 background: cfg.bg,
                 color: cfg.color,
                 fontSize: "0.65rem",
@@ -271,7 +300,7 @@ function OrderCard({ order, onTap }: { order: Order; onTap: () => void }) {
                 marginBottom: 4,
               }}
             >
-              {cfg.emoji} {cfg.label}
+              <StatusDot color={cfg.color} /> {cfg.label}
             </span>
             <p
               style={{
@@ -371,7 +400,11 @@ export default function AdminPedidosPage() {
   return (
     <AdminLayout
       title="Pedidos"
-      subtitle={`📋 ${orders.length} pedidos · ${orders.filter(o => o.status !== "entregado" && o.status !== "cancelado").length} activos`}
+      subtitle={
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <IconClipboard size={14} /> {orders.length} pedidos · {orders.filter(o => o.status !== "entregado" && o.status !== "cancelado").length} activos
+        </div>
+      }
     >
       {/* KPIs */}
       <div className={`${ui.grid} ${ui.cols4}`}>
@@ -390,7 +423,7 @@ export default function AdminPedidosPage() {
 
       {/* Búsqueda */}
       <div className={ui.searchBar}>
-        <span className={ui.searchIcon}>🔍</span>
+        <IconSearch size={18} color="var(--text-muted)" style={{ marginLeft: 12 }} />
         <input
           className={ui.searchInput}
           value={search}
@@ -413,7 +446,6 @@ export default function AdminPedidosPage() {
         >
           Todos
         </button>
-        {(Object.keys(STATUS_CFG) as OrderStatus[]).map((s) => (
           <button
             key={s}
             className={`${ui.chip} ${filterStatus === s ? ui.active : ""}`}
@@ -421,16 +453,18 @@ export default function AdminPedidosPage() {
               setFilterStatus(s);
               setPage(1);
             }}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
-            {STATUS_CFG[s].emoji} {STATUS_CFG[s].label}
+            <StatusDot color={STATUS_CFG[s].color} /> {STATUS_CFG[s].label}
           </button>
-        ))}
       </div>
 
       {/* Lista */}
       {paginated.length === 0 ? (
         <div className={ui.emptyState}>
-          <p className={ui.emptyIcon}>📋</p>
+          <div style={{ color: "var(--text-muted)", marginBottom: 12 }}>
+            <IconClipboard size={48} />
+          </div>
           <p className={ui.emptyText}>No hay pedidos para mostrar</p>
         </div>
       ) : (
@@ -447,8 +481,9 @@ export default function AdminPedidosPage() {
             size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
+            style={{ display: "flex", alignItems: "center", gap: 4 }}
           >
-            ← Ant
+            <IconArrowLeft size={16} /> Ant
           </Button>
           <span
             style={{
@@ -465,8 +500,9 @@ export default function AdminPedidosPage() {
             size="sm"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
+            style={{ display: "flex", alignItems: "center", gap: 4 }}
           >
-            Sig →
+            Sig <IconChevronRight size={16} />
           </Button>
         </div>
       )}

@@ -15,6 +15,17 @@ import { Button } from "@/components/ui/Button";
 import ui from "@/components/ui/AdminUI.module.css";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { FoodSpinner } from "@/components/ui/FoodSpinner";
+import {
+  IconBarChart,
+  IconTrendingUp,
+  IconUtensils,
+  IconPackage,
+  IconDollarSign,
+  IconClipboard,
+  IconReceipt,
+  IconClock,
+  IconDownload,
+} from "@/components/ui/Icons";
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
 function useAdminGuard() {
@@ -87,9 +98,14 @@ export default function ReportesPage() {
   const ticketProm   = totalOrdenes > 0 ? Math.round(totalVentas / totalOrdenes) : 0;
 
   const handleExport = async (type: "sales" | "dishes" | "inventory") => {
+    if (!user) return;
     setExporting(true);
     try { 
-      await exportReportApi(type, "xlsx"); 
+      const restaurantId = user.restaurantId || user.restaurant?.id;
+      await exportReportApi(type, "xlsx", { 
+        restaurantId, 
+        period: type === "inventory" ? undefined : period 
+      }); 
     } catch (e: any) { 
       if (e.response?.status === 403) alert("Exportar datos avanzados requiere Plan Premium");
       else alert("Error al exportar"); 
@@ -130,9 +146,9 @@ export default function ReportesPage() {
           size="sm"
           onClick={() => handleExport("sales")}
           loading={exporting}
-          style={{ color: "var(--status-success)", borderColor: "rgba(34,197,94,0.3)" }}
+          style={{ color: "var(--status-success)", borderColor: "rgba(34,197,94,0.3)", display: "flex", alignItems: "center", gap: 6 }}
         >
-          ⬇ Exportar
+          <IconDownload size={16} /> Exportar
         </Button>
       }
     >
@@ -161,12 +177,12 @@ export default function ReportesPage() {
       {/* KPIs */}
       <div className={`${ui.grid} ${ui.cols3}`} style={{ marginBottom: 16 }}>
         {[
-          { icon: "💰", label: "Ventas totales",  value: `$${totalVentas.toLocaleString("es-MX")}`, color: "var(--status-success)" },
-          { icon: "📋", label: "Total órdenes",   value: String(totalOrdenes),                       color: "#6366f1" },
-          { icon: "🧾", label: "Ticket promedio", value: `$${ticketProm.toLocaleString("es-MX")}`,  color: "var(--color-primary)" },
+          { icon: <IconDollarSign size={20} />, label: "Ventas totales",  value: `$${totalVentas.toLocaleString("es-MX")}`, color: "var(--status-success)" },
+          { icon: <IconClipboard size={20} />,  label: "Total órdenes",   value: String(totalOrdenes),                       color: "#6366f1" },
+          { icon: <IconReceipt size={20} />,    label: "Ticket promedio", value: `$${ticketProm.toLocaleString("es-MX")}`,  color: "var(--color-primary)" },
         ].map(({ icon, label, value, color }) => (
           <div key={label} style={{ background: "var(--bg-card)", borderRadius: "var(--radius-md)", padding: "18px 20px", border: `1px solid ${color}30` }}>
-            <p style={{ fontSize: "1.25rem", margin: "0 0 10px" }}>{icon}</p>
+            <div style={{ marginBottom: 10, color }}>{icon}</div>
             <p style={{ fontSize: "1.75rem", fontWeight: 900, color, margin: "0 0 4px", letterSpacing: "-0.04em" }}>{value}</p>
             <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: 0, fontWeight: 600 }}>{label} · {PERIOD_LABELS[period]}</p>
           </div>
@@ -175,7 +191,9 @@ export default function ReportesPage() {
 
       {/* Bar chart ventas */}
       <div style={card}>
-        <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px" }}>📊 Ventas por día</p>
+        <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px", display: "flex", alignItems: "center", gap: 8 }}>
+          <IconBarChart size={18} color="var(--color-primary)" /> Ventas por día
+        </p>
         <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0 0 20px" }}>{PERIOD_LABELS[period]} · en MXN</p>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={salesData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -191,7 +209,9 @@ export default function ReportesPage() {
       {/* Top platillos + Categorías */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
         <div style={{ ...card, marginBottom: 0 }}>
-          <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px" }}>🍽️ Top platillos</p>
+          <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px", display: "flex", alignItems: "center", gap: 8 }}>
+            <IconUtensils size={18} color="var(--color-primary)" /> Top platillos
+          </p>
           <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0 0 14px" }}>Más vendidos del período</p>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <ResponsiveContainer width="45%" height={150}>
@@ -218,7 +238,9 @@ export default function ReportesPage() {
         </div>
 
         <div style={{ ...card, marginBottom: 0 }}>
-          <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px" }}>📂 Ingresos por categoría</p>
+          <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px", display: "flex", alignItems: "center", gap: 8 }}>
+            <IconPackage size={18} color="var(--color-primary)" /> Ingresos por categoría
+          </p>
           <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0 0 14px" }}>Distribución de ventas</p>
           <ResponsiveContainer width="100%" height={175}>
             <BarChart data={categoryData} layout="vertical" margin={{ top: 0, right: 0, left: 10, bottom: 0 }}>
@@ -233,7 +255,9 @@ export default function ReportesPage() {
 
       {/* Horas pico */}
       <div style={card}>
-        <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px" }}>⏰ Horas pico</p>
+        <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px", display: "flex", alignItems: "center", gap: 8 }}>
+          <IconClock size={18} color="#f59e0b" /> Horas pico
+        </p>
         <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0 0 18px" }}>Pedidos por hora del día</p>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={peakHours} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -248,14 +272,16 @@ export default function ReportesPage() {
 
       {/* Exportar */}
       <div style={card}>
-        <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px" }}>⬇ Exportar reportes</p>
+        <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 2px", display: "flex", alignItems: "center", gap: 8 }}>
+          <IconDownload size={18} color="var(--status-success)" /> Exportar reportes
+        </p>
         <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0 0 16px" }}>Descarga en formato Excel</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {[
-            { type: "sales" as const,     label: "📊 Ventas",     color: "var(--status-success)" },
-            { type: "dishes" as const,    label: "🍽️ Platillos", color: "var(--color-primary)" },
-            { type: "inventory" as const, label: "📦 Inventario", color: "#6366f1" },
-          ].map(({ type, label, color }) => (
+            { type: "sales" as const,     label: "Ventas",     icon: <IconBarChart size={14} />, color: "var(--status-success)" },
+            { type: "dishes" as const,    label: "Platillos",  icon: <IconUtensils size={14} />, color: "var(--color-primary)" },
+            { type: "inventory" as const, label: "Inventario", icon: <IconPackage size={14} />, color: "#6366f1" },
+          ].map(({ type, label, icon, color }) => (
             <button
               key={type}
               onClick={() => handleExport(type)}
@@ -274,7 +300,10 @@ export default function ReportesPage() {
                 transition: "all 0.2s",
               }}
             >
-              {label}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {icon}
+                <span>{label}</span>
+              </div>
             </button>
           ))}
         </div>

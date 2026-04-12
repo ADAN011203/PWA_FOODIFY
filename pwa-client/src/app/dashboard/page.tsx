@@ -64,12 +64,26 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   );
 }
 
+import {
+  IconUtensils,
+  IconClipboard,
+  IconPackage,
+  IconUsers,
+  IconBarChart,
+  IconDollarSign,
+  IconReceipt,
+  IconTrendingUp,
+  IconChefHat,
+  IconAlertCircle,
+  IconCheck,
+} from "@/components/ui/Icons";
+
 const MODULES = [
-  { icon: "🍽️", label: "Menú",       sub: "Gestiona platillos",  href: "/admin/menu",       color: "#FF6B35" },
-  { icon: "📋", label: "Pedidos",    sub: "Órdenes activas",      href: "/admin/pedidos",    color: "#6366f1" },
-  { icon: "📦", label: "Inventario", sub: "Stock y lotes",        href: "/admin/inventario", color: "#22c55e" },
-  { icon: "👥", label: "Staff",      sub: "Personal",             href: "/admin/staff",      color: "#f59e0b" },
-  { icon: "📊", label: "Reportes",   sub: "KPIs y estadísticas",  href: "/admin/reportes",   color: "#a78bfa" },
+  { icon: <IconUtensils size={24} />,   label: "Menú",       sub: "Gestiona platillos",  href: "/admin/menu",       color: "#FF6B35" },
+  { icon: <IconClipboard size={24} />,  label: "Pedidos",    sub: "Órdenes activas",      href: "/admin/pedidos",    color: "#6366f1" },
+  { icon: <IconPackage size={24} />,    label: "Inventario", sub: "Stock y lotes",        href: "/admin/inventario", color: "#22c55e" },
+  { icon: <IconUsers size={24} />,      label: "Staff",      sub: "Personal",             href: "/admin/staff",      color: "#f59e0b" },
+  { icon: <IconBarChart size={24} />,   label: "Reportes",   sub: "KPIs y estadísticas",  href: "/admin/reportes",   color: "#a78bfa" },
 ];
 
 import {
@@ -159,7 +173,9 @@ export default function DashboardPage() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <div className={styles.headerLogo}>🍽️</div>
+          <div className={styles.headerLogo}>
+            <IconUtensils size={28} color="#FF6B35" />
+          </div>
           <div>
             <p className={styles.headerTitle}>Foodify Admin</p>
             <div className={styles.branchSelector} onClick={() => setShowSwitchModal(true)}>
@@ -215,10 +231,10 @@ export default function DashboardPage() {
         {/* KPI Grid */}
         <div className={styles.kpiGrid}>
           {[
-            { icon: "💰", label: "Ventas del período", value: `$${totalVentas.toLocaleString("es-MX")}`, sub: `${validOrdersCount} órdenes`, color: "#22c55e" },
-            { icon: "🧾", label: "Ticket promedio",    value: `$${ticketPromedio}`,                       sub: "Por orden",                    color: "#6366f1" },
-            { icon: "📈", label: "Rentabilidad",       value: totalVentas > 0 ? "62%" : "0%",             sub: "Margen bruto",                  color: "#FF6B35" },
-            { icon: "👨‍🍳", label: "En cocina",        value: String(enCocina),                            sub: "En preparación",               color: "#f59e0b" },
+            { icon: <IconDollarSign size={24} />, label: "Ventas del período", value: `$${totalVentas.toLocaleString("es-MX")}`, sub: `${validOrdersCount} órdenes`, color: "#22c55e" },
+            { icon: <IconReceipt size={24} />,    label: "Ticket promedio",    value: `$${ticketPromedio}`,                       sub: "Por orden",                    color: "#6366f1" },
+            { icon: <IconTrendingUp size={24} />, label: "Rentabilidad",       value: totalVentas > 0 ? "62%" : "0%",             sub: "Margen bruto",                  color: "#FF6B35" },
+            { icon: <IconChefHat size={24} />,    label: "En cocina",        value: String(enCocina),                            sub: "En preparación",               color: "#f59e0b" },
           ].map(({ icon, label, value, sub, color }) => (
             <div key={label} className={styles.kpiCard} style={{ borderColor: `${color}25` }}>
               <div className={styles.kpiTop}>
@@ -238,7 +254,9 @@ export default function DashboardPage() {
             className={styles.stockAlert}
             onClick={() => window.location.href = "/admin/inventario"}
           >
-            <div className={styles.stockAlertIcon}>⚠️</div>
+            <div className={styles.stockAlertIcon}>
+              <IconAlertCircle size={24} color="#ef4444" />
+            </div>
             <div style={{ flex: 1 }}>
               <p className={styles.stockAlertTitle}>{alertIngredients.length} ingredientes con alerta de stock</p>
               <p className={styles.stockAlertSub}>{alertIngredients.map((i) => i.name).slice(0, 4).join(" · ")}{alertIngredients.length > 4 ? " · ..." : ""}</p>
@@ -340,7 +358,9 @@ export default function DashboardPage() {
             </div>
             {alertIngredients.length === 0 ? (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <p style={{ fontSize: "1.5rem", marginBottom: 6 }}>✅</p>
+                <div style={{ color: "#22c55e", marginBottom: 8 }}>
+                  <IconCheck size={32} />
+                </div>
                 <p style={{ fontSize: "0.8rem", color: "var(--status-success)", margin: 0, fontWeight: 600 }}>Inventario en orden</p>
               </div>
             ) : (

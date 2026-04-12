@@ -1,8 +1,6 @@
 import { api } from "./api";
-import { MOCK_INGREDIENTS } from "./mockInventory";
 import type { Ingredient, IngredientBatch } from "../types/inventory";
 
-export const USE_MOCK_INVENTORY = false;
 
 // ─── Mapear respuesta del backend al tipo interno ─────────────────────────────
 function mapItem(i: Record<string, unknown>): Ingredient {
@@ -29,7 +27,6 @@ function mapItem(i: Record<string, unknown>): Ingredient {
 
 // ─── Listar ingredientes ──────────────────────────────────────────────────────
 export async function getInventoryItemsApi(): Promise<Ingredient[]> {
-  if (USE_MOCK_INVENTORY) return MOCK_INGREDIENTS;
   try {
     const { data } = await api.get("/inventory/items");
     const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];

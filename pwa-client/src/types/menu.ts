@@ -2,6 +2,16 @@ export interface Category {
   id: string;
   name: string;
   emoji: string;
+  dishes?: Dish[]; // Optional dishes within the category
+}
+
+export interface PublicMenu {
+  id: string;
+  name: string;
+  isActiveNow: boolean;
+  isOrderableNow: boolean;
+  availabilityNote?: string;
+  categories: Category[];
 }
 
 export interface Dish {

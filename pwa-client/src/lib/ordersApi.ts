@@ -1,7 +1,7 @@
 import { api, publicApi } from "./api";
 import type { Order, OrderStatus } from "../types/orders";
 
-export const USE_MOCK_ORDERS = false;
+
 
 function mapStatus(s: string): OrderStatus {
   switch (s) {

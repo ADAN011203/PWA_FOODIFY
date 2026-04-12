@@ -5,13 +5,24 @@ import { getOrderByFolioApi } from "@/lib/ordersApi";
 import { RESTAURANT_SLUG } from "@/lib/menuApi";
 import { useParams } from "next/navigation";
 import type { Order, OrderStatus } from "@/types/orders";
+import {
+  IconPackage,
+  IconCheck,
+  IconClock,
+  IconChefHat,
+  IconArrowLeft,
+  IconClipboard,
+  IconUtensils,
+  IconSearch,
+  IconX,
+} from "@/components/ui/Icons";
 
 // ─── Configuración de estados (T38 — Recibido → En Cocina → Listo → Entregado)
-const STATUS_STEPS: { status: OrderStatus; label: string; icon: string; desc: string }[] = [
-  { status: "nuevo",          label: "Recibido",           icon: "📋", desc: "Tu orden fue recibida y está en espera" },
-  { status: "en_preparacion", label: "En cocina",          icon: "👨‍🍳", desc: "El equipo de cocina está preparando tu pedido" },
-  { status: "listo",          label: "Listo para recoger", icon: "✅", desc: "¡Tu orden está lista! Pasa a recogerla" },
-  { status: "entregado",      label: "Entregado",          icon: "🎉", desc: "¡Que lo disfrutes! Gracias por tu preferencia" },
+const STATUS_STEPS: { status: OrderStatus; label: string; icon: any; desc: string }[] = [
+  { status: "nuevo",          label: "Recibido",           icon: IconClipboard, desc: "Tu orden fue recibida y está en espera" },
+  { status: "en_preparacion", label: "En cocina",          icon: IconChefHat,   desc: "El equipo de cocina está preparando tu pedido" },
+  { status: "listo",          label: "Listo para recoger", icon: IconPackage,   desc: "¡Tu orden está lista! Pasa a recogerla" },
+  { status: "entregado",      label: "Entregado",          icon: IconCheck,     desc: "¡Que lo disfrutes! Gracias por tu preferencia" },
 ];
 
 const STATUS_ORDER: Record<OrderStatus, number> = {
@@ -89,7 +100,7 @@ function TimelineStep({
           boxShadow: isActive ? "0 0 0 6px #FF6B3520" : "none",
           animation: isActive ? "pulse-ring 2s infinite" : "none",
         }}>
-          {isDone ? "✓" : step.icon}
+          {isDone ? <IconCheck size={16} color="white" /> : <step.icon size={isActive ? 18 : 16} color={isActive ? "white" : "#9B7B6B"} />}
         </div>
         {/* Línea hacia abajo */}
         {!isLast && (
@@ -164,7 +175,9 @@ export default function OrderTrackingPage() {
   if (order === null) {
     return (
       <div style={{ minHeight: "100dvh", background: "#FFF0DC", fontFamily: "'Outfit', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
-        <p style={{ fontSize: "3rem", marginBottom: 12 }}>🔍</p>
+        <div style={{ marginBottom: 12, color: "#9B7B6B" }}>
+          <IconSearch size={48} />
+        </div>
         <p style={{ fontWeight: 800, fontSize: "1.125rem", color: "#2C1810", marginBottom: 8 }}>Orden no encontrada</p>
         <p style={{ fontSize: "0.875rem", color: "#9B7B6B", marginBottom: 24 }}>
           No encontramos la orden <strong>#{folio}</strong>.<br />Verifica el folio e intenta de nuevo.
@@ -211,8 +224,8 @@ export default function OrderTrackingPage() {
       <div style={{ background: "#FF6B35", padding: "16px 20px 24px", color: "white" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <button onClick={() => window.location.href = "/ordenes"}
-            style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem" }}>
-            ←
+            style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <IconArrowLeft size={16} />
           </button>
           <p style={{ fontWeight: 800, fontSize: "1rem", margin: 0 }}>Seguimiento de orden</p>
         </div>
@@ -225,26 +238,30 @@ export default function OrderTrackingPage() {
 
           {isCancelled ? (
             <div style={{ animation: "bounce-in 0.5s ease both" }}>
-              <p style={{ fontSize: "3rem", margin: "8px 0 4px" }}>❌</p>
+              <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 12px" }}>
+                <IconX size={48} />
+              </div>
               <p style={{ fontWeight: 900, fontSize: "1.375rem", margin: 0 }}>Orden cancelada</p>
             </div>
           ) : isDelivered ? (
             <div style={{ animation: "bounce-in 0.5s ease both" }}>
-              <p style={{ fontSize: "3rem", margin: "8px 0 4px" }}>🎉</p>
+              <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 12px" }}>
+                <IconCheck size={48} />
+              </div>
               <p style={{ fontWeight: 900, fontSize: "1.375rem", margin: 0 }}>¡Entregada!</p>
               <p style={{ fontSize: "0.8rem", opacity: 0.85, margin: "4px 0 0" }}>Que lo disfrutes · {fmtElapsed(order.createdAt)}</p>
             </div>
           ) : (
             <>
-              <p style={{ fontSize: "2.75rem", margin: "8px 0 4px", animation: "bounce-in 0.5s ease both" }}>
-                {currentStep?.icon}
-              </p>
+              <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 12px", animation: "bounce-in 0.5s ease both" }}>
+                <currentStep.icon size={48} />
+              </div>
               <p style={{ fontWeight: 900, fontSize: "1.375rem", margin: "0 0 4px" }}>
                 {currentStep?.label}
               </p>
               {estimatedMins !== null && estimatedMins > 0 && (
                 <p style={{ fontSize: "0.8rem", opacity: 0.85, margin: 0 }}>
-                  ⏱ Tiempo estimado: ~{estimatedMins} min
+                  ⏱ <IconClock size={12} style={{ display: "inline", verticalAlign: "middle", marginTop: -2 }} /> Tiempo estimado: ~{estimatedMins} min
                 </p>
               )}
               {estimatedMins === 0 && (
@@ -292,7 +309,9 @@ export default function OrderTrackingPage() {
 
         {/* ── Detalle de items ── */}
         <div style={{ background: "white", borderRadius: 16, padding: "20px", marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-          <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 14px", color: "#2C1810" }}>📋 Detalle del pedido</p>
+          <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: "0 0 14px", color: "#2C1810", display: "flex", alignItems: "center", gap: 6 }}>
+            <IconClipboard size={16} /> Detalle del pedido
+          </p>
           {order.items.map((item, i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, marginBottom: 10, borderBottom: i < order.items.length - 1 ? "1px solid #f0e4d0" : "none" }}>
               <div style={{ flex: 1 }}>
@@ -340,13 +359,13 @@ export default function OrderTrackingPage() {
         {/* ── Botón de acción ── */}
         {isDelivered ? (
           <button onClick={() => window.location.href = "/para-llevar"}
-            style={{ width: "100%", background: "#FF6B35", color: "white", border: "none", padding: "14px", borderRadius: 14, fontWeight: 700, fontSize: "0.9375rem", cursor: "pointer", fontFamily: "inherit" }}>
-            🍽️ Pedir de nuevo
+            style={{ width: "100%", background: "#FF6B35", color: "white", border: "none", padding: "14px", borderRadius: 14, fontWeight: 700, fontSize: "0.9375rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <IconUtensils size={18} /> Pedir de nuevo
           </button>
         ) : (
           <button onClick={() => window.location.href = "/ordenes"}
-            style={{ width: "100%", background: "white", color: "#FF6B35", border: "2px solid #FF6B35", padding: "13px", borderRadius: 14, fontWeight: 700, fontSize: "0.9375rem", cursor: "pointer", fontFamily: "inherit" }}>
-            ← Ver todas mis órdenes
+            style={{ width: "100%", background: "white", color: "#FF6B35", border: "2px solid #FF6B35", padding: "13px", borderRadius: 14, fontWeight: 700, fontSize: "0.9375rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <IconArrowLeft size={18} /> Ver todas mis órdenes
           </button>
         )}
       </div>

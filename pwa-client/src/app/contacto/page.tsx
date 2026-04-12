@@ -2,29 +2,39 @@
 
 import { useTheme } from "@/context/ThemeContext";
 import { PageHeader } from "@/components/layout/TabBar";
-import { IconChevronRight } from "@/components/ui/Icons";
+import {
+  IconChevronRight,
+  IconMapPin,
+  IconSmartphone,
+  IconClock,
+  IconMail,
+  IconInstagram,
+  IconFacebook,
+  IconMessageCircle,
+  IconMap,
+} from "@/components/ui/Icons";
 
 const INFO = [
   {
-    emoji: "📍",
+    icon: IconMapPin,
     label: "Dirección",
     value: "Av. Reforma 123, Centro Histórico, CDMX",
     href: "https://maps.google.com/?q=Av+Reforma+123+CDMX",
   },
   {
-    emoji: "📞",
+    icon: IconSmartphone,
     label: "Teléfono",
     value: "+52 55 1234 5678",
     href: "tel:+525512345678",
   },
   {
-    emoji: "🕐",
+    icon: IconClock,
     label: "Horario",
     value: "Lun – Dom: 8:00 am – 10:00 pm",
     href: undefined,
   },
   {
-    emoji: "✉️",
+    icon: IconMail,
     label: "Correo",
     value: "contacto@foodify.mx",
     href: "mailto:contacto@foodify.mx",
@@ -32,9 +42,9 @@ const INFO = [
 ];
 
 const REDES = [
-  { label: "Instagram", emoji: "📷" },
-  { label: "Facebook",  emoji: "👍" },
-  { label: "WhatsApp",  emoji: "💬" },
+  { label: "Instagram", icon: IconInstagram },
+  { label: "Facebook",  icon: IconFacebook },
+  { label: "WhatsApp",  icon: IconMessageCircle },
 ];
 
 export default function ContactoPage() {
@@ -67,7 +77,7 @@ export default function ContactoPage() {
         </div>
 
         {/* ── Tarjetas de info ── */}
-        {INFO.map(({ emoji, label, value, href }) => (
+        {INFO.map(({ icon: Icon, label, value, href }) => (
           <div
             key={label}
             onClick={() => href && window.open(href, "_blank")}
@@ -82,9 +92,9 @@ export default function ContactoPage() {
               width: 48, height: 48, borderRadius: "50%",
               background: iconBg, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "1.25rem",
+              color: "#FF6B35",
             }}>
-              {emoji}
+              <Icon size={22} />
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: "0.75rem", color: mutedC, fontWeight: 600, marginBottom: 2 }}>{label}</p>
@@ -101,9 +111,9 @@ export default function ContactoPage() {
         }}>
           <p style={{ fontSize: "0.75rem", color: mutedC, fontWeight: 600, marginBottom: 14 }}>Síguenos</p>
           <div style={{ display: "flex", gap: 12 }}>
-            {REDES.map(({ label, emoji }) => (
+            {REDES.map((item) => (
               <button
-                key={label}
+                key={item.label}
                 style={{
                   flex: 1, padding: "10px 0", borderRadius: 12, border: "none",
                   background: chipBg, cursor: "pointer",
@@ -111,8 +121,8 @@ export default function ContactoPage() {
                   fontFamily: "inherit",
                 }}
               >
-                <span style={{ fontSize: "1.25rem" }}>{emoji}</span>
-                <span style={{ fontSize: "0.7rem", color: mutedC, fontWeight: 600 }}>{label}</span>
+                <item.icon size={22} color="#FF6B35" />
+                <span style={{ fontSize: "0.7rem", color: mutedC, fontWeight: 600 }}>{item.label}</span>
               </button>
             ))}
           </div>
@@ -124,11 +134,12 @@ export default function ContactoPage() {
           boxShadow: dark ? "none" : "0 1px 8px rgba(44,24,16,0.06)",
         }}>
           <div style={{
-            height: 160, background: dark ? "#1e2a1e" : "#e8f5e9",
+            height: 160, background: dark ? "#1a251a" : "#e8f5e9",
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center", gap: 6,
+            color: dark ? "#22c55e" : "#2e7d32",
           }}>
-            <span style={{ fontSize: "2.5rem" }}>🗺️</span>
+            <IconMap size={48} />
             <p style={{ color: mutedC, fontSize: "0.875rem" }}>Ver en Google Maps</p>
           </div>
           <div style={{ padding: "14px 20px" }}>

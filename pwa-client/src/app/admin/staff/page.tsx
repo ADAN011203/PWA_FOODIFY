@@ -19,6 +19,50 @@ import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import ui from "@/components/ui/AdminUI.module.css";
+import {
+  IconUser,
+  IconPackage,
+  IconBell,
+  IconChefHat,
+  IconDollarSign,
+  IconMail,
+  IconSmartphone,
+  IconBuilding,
+  IconCalendar,
+  IconLock,
+  IconTrash,
+  IconSearch,
+  IconUsers,
+  IconClock,
+  IconCheck,
+  IconPlus,
+  IconEdit,
+} from "@/components/ui/Icons";
+
+function RoleIcon({ icon, size = 18, color }: { icon: string; size?: number; color?: string }) {
+  switch (icon) {
+    case "user":    return <IconUser size={size} color={color} />;
+    case "package": return <IconPackage size={size} color={color} />;
+    case "bell":    return <IconBell size={size} color={color} />;
+    case "chef":    return <IconChefHat size={size} color={color} />;
+    case "dollar":  return <IconDollarSign size={size} color={color} />;
+    default:        return <IconUser size={size} color={color} />;
+  }
+}
+
+function StatusDot({ color }: { color: string }) {
+  return (
+    <div 
+      style={{ 
+        width: 6, 
+        height: 6, 
+        borderRadius: "50%", 
+        background: color,
+        boxShadow: `0 0 4px ${color}`
+      }} 
+    />
+  );
+}
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
 function useAdminGuard() {
@@ -125,7 +169,12 @@ function StaffFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={member ? "✏️ Editar Empleado" : "➕ Nuevo Empleado"}
+      title={
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {member ? <IconEdit size={20} color="var(--color-primary)" /> : <IconPlus size={20} color="var(--color-primary)" />}
+          {member ? "Editar Empleado" : "Nuevo Empleado"}
+        </div>
+      }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <Input
@@ -170,7 +219,7 @@ function StaffFormModal({
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
-                {ROLE_CFG[r].icon} {ROLE_CFG[r].label}
+                {ROLE_CFG[r].label}
               </option>
             ))}
           </Select>
@@ -204,7 +253,9 @@ function StaffFormModal({
             gap: 10,
           }}
         >
-          <span style={{ fontSize: "1.5rem" }}>{roleCfg.icon}</span>
+          <div style={{ color: roleCfg.color }}>
+            <RoleIcon icon={roleCfg.icon} size={28} />
+          </div>
           <div>
             <p style={{ fontWeight: 700, color: roleCfg.color, fontSize: "0.875rem", margin: 0 }}>
               {roleCfg.label}
@@ -281,8 +332,10 @@ function StaffCard({ member, onTap }: { member: StaffMember; onTap: () => void }
             >
               {member.name}
             </p>
-            <span
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
                 background: statusCfg.bg,
                 color: statusCfg.color,
                 fontSize: "0.6rem",
@@ -293,12 +346,15 @@ function StaffCard({ member, onTap }: { member: StaffMember; onTap: () => void }
                 marginLeft: 6,
               }}
             >
-              ● {statusCfg.label}
+              <StatusDot color={statusCfg.color} /> {statusCfg.label}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
                 background: roleCfg.bg,
                 color: roleCfg.color,
                 fontSize: "0.65rem",
@@ -307,7 +363,7 @@ function StaffCard({ member, onTap }: { member: StaffMember; onTap: () => void }
                 borderRadius: 999,
               }}
             >
-              {roleCfg.icon} {roleCfg.label}
+              <RoleIcon icon={roleCfg.icon} size={11} /> {roleCfg.label}
             </span>
             <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: 0 }}>
               {fmtRelative(member.lastLogin)}
@@ -370,30 +426,21 @@ function StaffDetailModal({
           <p style={{ fontWeight: 800, color: "var(--text-primary)", fontSize: "1rem", margin: 0 }}>
             {member.name}
           </p>
-          <span
-            style={{
-              background: roleCfg.bg,
-              color: roleCfg.color,
-              fontSize: "0.7rem",
-              fontWeight: 700,
-              padding: "2px 10px",
-              borderRadius: 999,
-            }}
-          >
-            {roleCfg.icon} {roleCfg.label}
-          </span>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: roleCfg.bg, color: roleCfg.color, fontSize: "0.7rem", fontWeight: 700, padding: "2px 10px", borderRadius: 999 }}>
+            <RoleIcon icon={roleCfg.icon} size={14} /> {roleCfg.label}
+          </div>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
         {[
-          { icon: "📧", label: "Email", value: member.email },
-          { icon: "📱", label: "Teléfono", value: member.phone },
-          { icon: "🏢", label: "Sucursal", value: member.branch },
-          { icon: "📅", label: "Alta", value: fmtDate(member.createdAt) },
-          { icon: "🔐", label: "Último acceso", value: fmtRelative(member.lastLogin) },
+          { icon: <IconMail size={14} />,         label: "Email", value: member.email },
+          { icon: <IconSmartphone size={14} />,   label: "Teléfono", value: member.phone },
+          { icon: <IconBuilding size={14} />,     label: "Sucursal", value: member.branch },
+          { icon: <IconCalendar size={14} />,     label: "Alta", value: fmtDate(member.createdAt) },
+          { icon: <IconClock size={14} />,        label: "Último acceso", value: fmtRelative(member.lastLogin) },
           {
-            icon: "●",
+            icon: <StatusDot color={statusCfg.color} />,
             label: "Estado",
             value: statusCfg.label,
             color: statusCfg.color,
@@ -407,9 +454,9 @@ function StaffDetailModal({
               padding: "12px",
             }}
           >
-            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0 0 3px" }}>
-              {icon} {label}
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.7rem", color: "var(--text-muted)", margin: "0 0 3px" }}>
+              {icon} <span>{label}</span>
+            </div>
             <p
               style={{
                 fontSize: "0.8125rem",
@@ -424,8 +471,8 @@ function StaffDetailModal({
         ))}
       </div>
 
-      <Button variant="primary" size="md" fullWidth onClick={onEdit} style={{ marginBottom: 10 }}>
-        ✏️ Editar empleado
+      <Button variant="primary" size="md" fullWidth onClick={onEdit} style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <IconEdit size={18} /> Editar empleado
       </Button>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
@@ -456,8 +503,9 @@ function StaffDetailModal({
           fullWidth
           loading={loading}
           onClick={() => run(() => onDelete(member.id))}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
         >
-          🗑️ Eliminar
+          <IconTrash size={18} /> Eliminar
         </Button>
       </div>
 
@@ -576,7 +624,11 @@ export default function AdminStaffPage() {
   return (
     <AdminLayout
       title="Staff / Personal"
-      subtitle={`👥 ${staff.length} empleados · ${totalActive} activos`}
+      subtitle={
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <IconUsers size={14} /> {staff.length} empleados · {totalActive} activos
+        </div>
+      }
       actions={
         <Button
           variant="primary"
@@ -585,8 +637,9 @@ export default function AdminStaffPage() {
             setEditMember(null);
             setShowForm(true);
           }}
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
         >
-          ＋ Agregar
+          <IconPlus size={16} /> Agregar
         </Button>
       }
     >
@@ -610,7 +663,9 @@ export default function AdminStaffPage() {
                 textAlign: "center",
               }}
             >
-              <p style={{ fontSize: "1.125rem", margin: "0 0 2px" }}>{cfg.icon}</p>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 4, color: cfg.color }}>
+                <RoleIcon icon={cfg.icon} size={22} />
+              </div>
               <p style={{ fontSize: "1.1rem", fontWeight: 900, color: cfg.color, margin: "0 0 2px" }}>{count}</p>
               <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", margin: 0 }}>{cfg.label}</p>
             </div>
@@ -620,7 +675,7 @@ export default function AdminStaffPage() {
 
       {/* Búsqueda */}
       <div className={ui.searchBar}>
-        <span className={ui.searchIcon}>🔍</span>
+        <IconSearch size={18} color="var(--text-muted)" style={{ marginLeft: 12 }} />
         <input
           className={ui.searchInput}
           value={search}
@@ -634,18 +689,18 @@ export default function AdminStaffPage() {
         <button
           className={`${ui.chip} ${filterRole === "todos" ? ui.active : ""}`}
           onClick={() => setFilterRole("todos")}
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
         >
-          👥 Todos
+          <IconUsers size={14} /> Todos
         </button>
-        {ROLES.map((r) => (
           <button
             key={r}
             className={`${ui.chip} ${filterRole === r ? ui.active : ""}`}
             onClick={() => setFilterRole(r)}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
-            {ROLE_CFG[r].icon} {ROLE_CFG[r].label}
+            <RoleIcon icon={ROLE_CFG[r].icon} size={14} /> {ROLE_CFG[r].label}
           </button>
-        ))}
       </div>
 
       {/* Filtros estado */}
@@ -668,7 +723,9 @@ export default function AdminStaffPage() {
       {/* Lista */}
       {filtered.length === 0 ? (
         <div className={ui.emptyState}>
-          <p className={ui.emptyIcon}>👥</p>
+          <div style={{ color: "var(--text-muted)", marginBottom: 12 }}>
+            <IconUsers size={48} />
+          </div>
           <p className={ui.emptyText}>No se encontraron empleados</p>
         </div>
       ) : (

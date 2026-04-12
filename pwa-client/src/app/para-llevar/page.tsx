@@ -1,827 +1,354 @@
 "use client";
-import { MenuSkeleton } from "@/components/ui/Skeletons";
 
-import { useState, useMemo, useEffect } from "react";
-import { useGuestOrders } from "@/lib/useGuestOrders";
+import { useState, useEffect, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { PageHeader } from "@/components/layout/TabBar";
-import { useFetchWithState } from "@/lib/useFetchWithState";
-import { ErrorAlert } from "@/components/ErrorAlert";
-import { EmptyState } from "@/components/EmptyState";
 import { fetchPublicMenu, RESTAURANT_SLUG } from "@/lib/menuApi";
 import { createPublicOrderApi } from "@/lib/ordersApi";
-import type { Dish, Category, CartItem } from "@/types/menu";
-import {
-  IconBag, IconSearch, IconFilter,
-  IconGrid, IconList, IconTrash, IconX,
+import { useGuestOrders } from "@/lib/useGuestOrders";
+import { 
+  IconSearch, 
+  IconGrid, 
+  IconList, 
+  IconBag, 
+  IconClock, 
+  IconAlertCircle,
+  IconCheck,
+  IconUtensils,
+  IconTag,
+  IconSmartphone,
+  IconMapPin,
+  IconChevronRight,
 } from "@/components/ui/Icons";
+import { useAuth } from "@/context/AuthContext";
+import { MenuSkeleton } from "@/components/ui/Skeletons";
+import type { PublicMenu, Dish, Category, CartItem } from "@/types/menu";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MODAL: Detalle de platillo
-// ─────────────────────────────────────────────────────────────────────────────
-function DishModal({
-  dish,
-  onClose,
-  onAdd,
-  dark,
-  categories,
-}: {
-  dish: Dish;
-  onClose: () => void;
-  onAdd: (dish: Dish, qty: number) => void;
-  dark: boolean;
-  categories: Category[];
-}) {
-  const [qty, setQty] = useState(1);
+// CSS Module
+import s from "./para-llevar.module.css";
 
-  const bg     = dark ? "#1e1e1e" : "#ffffff";
-  const text   = dark ? "#f0ede8" : "#1a1a1a";
-  const mutedC = dark ? "#6b7280" : "#6b7280";
-  const chipBg = dark ? "#2e2e2e" : "#f3f4f6";
-  const catName = categories.find((c) => c.id === dish.categoryId)?.name ?? "Platillo";
+// Components
+import DishModal from "./components/DishModal";
+import CartModal from "./components/CartModal";
 
-  return (
-    <div
-      className="anim-fade-in"
-      style={{
-        position: "fixed", inset: 0, zIndex: 100,
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: "blur(4px)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="anim-slide-up"
-        style={{
-          background: bg,
-          borderRadius: "24px 24px 0 0",
-          width: "100%", maxWidth: 480,
-          maxHeight: "92vh", overflowY: "auto",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Imagen hero */}
-        <div style={{ position: "relative", height: 220, background: "#F3E5D5", overflow: "hidden" }}>
-          {dish.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={dish.imageUrl}
-              alt={dish.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "5rem" }}>
-              {dish.emoji ?? "🍽️"}
-            </div>
-          )}
-          {/* botón cerrar arriba */}
-          <button
-            onClick={onClose}
-            style={{
-              position: "absolute", top: 12, right: 12,
-              width: 36, height: 36, borderRadius: "50%",
-              background: "rgba(0,0,0,0.5)", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <IconX size={14} color="white" />
-          </button>
-        </div>
-
-        {/* Contenido */}
-        <div style={{ padding: "20px 24px 40px" }}>
-          {/* Nombre + precio */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-            <div>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: text, marginBottom: 6 }}>
-                {dish.name}
-              </h2>
-              <span style={{
-                background: chipBg, color: mutedC,
-                fontSize: "0.75rem", padding: "3px 12px",
-                borderRadius: 999, fontWeight: 600,
-              }}>
-                {catName}
-              </span>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "1.5rem", fontWeight: 900, color: "#FF6B35" }}>${dish.price}</p>
-              {dish.isAvailable && (
-                <p style={{ fontSize: "0.75rem", color: "#22c55e", fontWeight: 600 }}>● Disponible</p>
-              )}
-            </div>
-          </div>
-
-          {/* Descripción */}
-          <p style={{ color: mutedC, fontSize: "0.9375rem", lineHeight: 1.6, margin: "14px 0 24px" }}>
-            {dish.description}
-          </p>
-
-          {/* Cantidad */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-            <span style={{ color: text, fontWeight: 600, fontSize: "0.9375rem" }}>Cantidad:</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <button
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: chipBg, border: "none", cursor: "pointer",
-                  fontSize: "1.25rem", color: text,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
-              >−</button>
-              <span style={{ fontSize: "1.125rem", fontWeight: 700, color: text, minWidth: 20, textAlign: "center" }}>
-                {qty}
-              </span>
-              <button
-                onClick={() => setQty((q) => q + 1)}
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: chipBg, border: "none", cursor: "pointer",
-                  fontSize: "1.25rem", color: text,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
-              >+</button>
-            </div>
-          </div>
-
-          {/* CTAs */}
-          <button
-            onClick={() => { onAdd(dish, qty); onClose(); }}
-            style={{
-              width: "100%", background: "#FF6B35", color: "white",
-              border: "none", padding: "16px", borderRadius: 16,
-              fontSize: "1rem", fontWeight: 700, cursor: "pointer", marginBottom: 12,
-            }}
-          >
-            Agregar al Carrito — ${dish.price * qty}
-          </button>
-          <button
-            onClick={onClose}
-            style={{
-              width: "100%", background: chipBg, color: text,
-              border: "none", padding: "14px", borderRadius: 16,
-              fontSize: "1rem", fontWeight: 600, cursor: "pointer",
-            }}
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MODAL: Carrito
-// ─────────────────────────────────────────────────────────────────────────────
-function CartModal({
-  cart,
-  onClose,
-  onUpdateQty,
-  onDelete,
-  onOrder,
-  dark,
-}: {
-  cart: CartItem[];
-  onClose: () => void;
-  onUpdateQty: (id: string, delta: number) => void;
-  onDelete: (id: string) => void;
-  onOrder: () => void;
-  dark: boolean;
-}) {
-  const total  = cart.reduce((s, i) => s + i.dish.price * i.qty, 0);
-  const bg     = dark ? "#1e1e1e" : "#ffffff";
-  const text   = dark ? "#f0ede8" : "#1a1a1a";
-  const mutedC = dark ? "#6b7280" : "#6b7280";
-  const chipBg = dark ? "#2a2a2a" : "#f9f9f9";
-  const btnBg  = dark ? "#2e2e2e" : "#e5e7eb";
-
-  return (
-    <div
-      className="anim-fade-in"
-      style={{
-        position: "fixed", inset: 0, zIndex: 100,
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: "blur(4px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 20,
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="anim-fade-up"
-        style={{
-          background: bg, borderRadius: 24,
-          width: "100%", maxWidth: 440,
-          maxHeight: "80vh", overflowY: "auto",
-          padding: 24,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <IconBag size={22} color="#FF6B35" />
-            <div>
-              <p style={{ fontWeight: 800, color: text, fontSize: "1.125rem" }}>Carrito</p>
-              <p style={{ fontSize: "0.8rem", color: mutedC }}>
-                {cart.length} producto{cart.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: mutedC, fontSize: "1.5rem", lineHeight: 1 }}
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Vacío */}
-        {cart.length === 0 && (
-          <div style={{ textAlign: "center", padding: "48px 0" }}>
-            <IconBag size={56} color="#d1d5db" />
-            <p style={{ color: mutedC, marginTop: 12 }}>Tu carrito está vacío</p>
-          </div>
-        )}
-
-        {/* Items */}
-        {cart.map((item) => (
-          <div key={item.dish.id} style={{ background: chipBg, borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
-            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              {/* thumbnail */}
-              <div style={{
-                width: 52, height: 52, borderRadius: 10, flexShrink: 0,
-                background: "#F3E5D5", overflow: "hidden",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem",
-              }}>
-                {item.dish.imageUrl
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={item.dish.imageUrl} alt={item.dish.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <span>{item.dish.emoji ?? "🍽️"}</span>}
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <p style={{ fontWeight: 700, color: text, fontSize: "0.9375rem" }}>{item.dish.name}</p>
-                  <button onClick={() => onDelete(item.dish.id)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-                    <IconTrash size={16} color="#ef4444" />
-                  </button>
-                </div>
-                <p style={{ color: "#FF6B35", fontWeight: 600, fontSize: "0.875rem", marginTop: 2 }}>
-                  ${item.dish.price}
-                </p>
-                {/* stepper */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
-                  <button
-                    onClick={() => onUpdateQty(item.dish.id, -1)}
-                    style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: btnBg, border: "none", cursor: "pointer",
-                      color: text, fontWeight: 700, fontSize: "1rem",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}
-                  >−</button>
-                  <span style={{ fontWeight: 700, color: text }}>{item.qty}</span>
-                  <button
-                    onClick={() => onUpdateQty(item.dish.id, 1)}
-                    style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: btnBg, border: "none", cursor: "pointer",
-                      color: text, fontWeight: 700, fontSize: "1rem",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}
-                  >+</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Total + CTA */}
-        {cart.length > 0 && (
-          <>
-            <div style={{
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "14px 0",
-              borderTop: `1px solid ${dark ? "#2e2e2e" : "#e5e7eb"}`,
-              marginTop: 4,
-            }}>
-              <span style={{ fontWeight: 600, color: text }}>Total:</span>
-              <span style={{ fontSize: "1.5rem", fontWeight: 900, color: "#FF6B35" }}>${total}</span>
-            </div>
-            <button
-              onClick={onOrder}
-              style={{
-                width: "100%", background: "#FF6B35", color: "white",
-                border: "none", padding: "16px", borderRadius: 16,
-                fontSize: "1rem", fontWeight: 700, cursor: "pointer",
-              }}
-            >
-              Realizar Orden
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TARJETA: vista lista (móvil)
-// ─────────────────────────────────────────────────────────────────────────────
-function CardList({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => void; dark: boolean; categories: Category[] }) {
-  const bg     = dark ? "#1e1e1e" : "#ffffff";
-  const text   = dark ? "#f0ede8" : "#1a1a1a";
-  const mutedC = dark ? "#6b7280" : "#9B7B6B";
-  const chipBg = dark ? "#2e2e2e" : "#f3f4f6";
-  const catName = categories.find((c) => c.id === dish.categoryId)?.name ?? "";
-
-  return (
-    <div
-      onClick={onTap}
-      style={{
-        background: bg, borderRadius: 16, padding: 16,
-        display: "flex", gap: 14, cursor: "pointer",
-        opacity: dish.isAvailable ? 1 : 0.55,
-        boxShadow: dark ? "none" : "0 1px 8px rgba(44,24,16,0.06)",
-        marginBottom: 12,
-      }}
-    >
-      {/* thumbnail */}
-      <div style={{
-        width: 100, height: 80, borderRadius: 12, flexShrink: 0,
-        background: "#F3E5D5", overflow: "hidden",
-        display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem",
-      }}>
-        {dish.imageUrl
-          // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={dish.imageUrl} alt={dish.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : <span>{dish.emoji ?? "🍽️"}</span>}
-      </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <p style={{ fontWeight: 700, color: text, fontSize: "1rem", marginBottom: 4 }}>{dish.name}</p>
-          <span style={{ fontSize: "0.72rem", color: "#22c55e", fontWeight: 600, flexShrink: 0, marginLeft: 6 }}>
-            ● {dish.isAvailable ? "Disponible" : "Agotado"}
-          </span>
-        </div>
-        <p style={{
-          fontSize: "0.8125rem", color: mutedC, lineHeight: 1.45, marginBottom: 8,
-          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-        }}>
-          {dish.description}
-        </p>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "1.125rem", fontWeight: 800, color: "#FF6B35" }}>${dish.price}</span>
-          <span style={{ background: chipBg, color: mutedC, fontSize: "0.7rem", padding: "2px 10px", borderRadius: 999, fontWeight: 600 }}>
-            {catName}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TARJETA: vista grid (tablet+)
-// ─────────────────────────────────────────────────────────────────────────────
-function CardGrid({ dish, onTap, dark, categories }: { dish: Dish; onTap: () => void; dark: boolean; categories: Category[] }) {
-  const bg     = dark ? "#1e1e1e" : "#ffffff";
-  const text   = dark ? "#f0ede8" : "#1a1a1a";
-  const mutedC = dark ? "#6b7280" : "#9B7B6B";
-  const chipBg = dark ? "#2e2e2e" : "#f3f4f6";
-  const catName = categories.find((c) => c.id === dish.categoryId)?.name ?? "";
-
-  return (
-    <div
-      onClick={onTap}
-      style={{
-        background: bg, borderRadius: 16, overflow: "hidden", cursor: "pointer",
-        opacity: dish.isAvailable ? 1 : 0.55,
-        boxShadow: dark ? "none" : "0 1px 8px rgba(44,24,16,0.06)",
-      }}
-    >
-      {/* imagen */}
-      <div style={{
-        height: 140, background: "#F3E5D5", overflow: "hidden", position: "relative",
-        display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3rem",
-      }}>
-        {dish.imageUrl
-          // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={dish.imageUrl} alt={dish.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : <span>{dish.emoji ?? "🍽️"}</span>}
-        <span style={{
-          position: "absolute", top: 8, right: 8,
-          background: "rgba(0,0,0,0.6)", color: "#22c55e",
-          fontSize: "0.65rem", fontWeight: 700, padding: "2px 8px", borderRadius: 999,
-        }}>
-          ● {dish.isAvailable ? "Disponible" : "Agotado"}
-        </span>
-      </div>
-
-      <div style={{ padding: 12 }}>
-        <p style={{ fontWeight: 700, color: text, fontSize: "0.9375rem", marginBottom: 4 }}>{dish.name}</p>
-        <p style={{
-          fontSize: "0.75rem", color: mutedC, marginBottom: 8,
-          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-        }}>
-          {dish.description}
-        </p>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontWeight: 800, color: "#FF6B35" }}>${dish.price}</span>
-          <span style={{ background: chipBg, color: mutedC, fontSize: "0.65rem", padding: "2px 8px", borderRadius: 999, fontWeight: 600 }}>
-            {catName}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PÁGINA PRINCIPAL
-// ─────────────────────────────────────────────────────────────────────────────
 export default function ParaLlevarPage() {
   const { dark } = useTheme();
-
-  // T41 — Skeleton: mostrar skeleton hasta que el componente hidrate en cliente
-  const [mounted] = useState(true);
-
-  // States y hooks primero
-  const [activeCat, setActiveCat]     = useState("todos");
-  const [search, setSearch]           = useState("");
-  const [viewMode, setViewMode]       = useState<"grid" | "list">("grid");
-  const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
-  const [showCart, setShowCart]       = useState(false);
-  const [cart, setCart]               = useState<CartItem[]>([]);
   const { addOrder } = useGuestOrders();
-  const [orderDone, setOrderDone]     = useState(false);
 
-  // Datos del menú desde el backend
-  const [menuData, setMenuData] = useState<{ dishes: Dish[]; categories: Category[]; restaurantName: string; restaurantId: number } | null>(null);
+  // State
+  const [data, setData] = useState<{
+    menus: PublicMenu[];
+    restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
+  } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [empty, setEmpty] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [activeCatId, setActiveCatId] = useState<string>("todos");
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [orderDone, setOrderDone] = useState(false);
 
+  // Load Data
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetchPublicMenu(RESTAURANT_SLUG, "takeout")
-      .then((result) => {
-        if (cancelled) return;
-        if (result.dishes.length === 0) setEmpty(true);
-        setMenuData(result);
-      })
-      .catch(() => {
-        if (!cancelled) setError("No se pudo cargar el menú");
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    async function load() {
+      try {
+        const res = await fetchPublicMenu(RESTAURANT_SLUG, "takeout");
+        setData(res);
+        if (res.menus.length > 0) {
+          // Seleccionar primer menú activo por defecto, o el primero si ninguno está activo
+          const firstActive = res.menus.find(m => m.isActiveNow) || res.menus[0];
+          setActiveMenuId(firstActive.id);
+        }
+      } catch (err) {
+        console.error("Error loading menu:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
   }, []);
 
-  const dishes = menuData?.dishes ?? [];
-  const categories = menuData?.categories ?? [];
-  const restaurantId = menuData?.restaurantId ?? 1;
+  // Derived State
+  const activeMenu = useMemo(() => 
+    data?.menus.find(m => m.id === activeMenuId) || null
+  , [data, activeMenuId]);
 
-  // Colores según tema
-  const bg      = dark ? "#121212" : "#FFF0DC";
-  const cardBg  = dark ? "#1a1a1a" : "#ffffff";
-  const text    = dark ? "#f0ede8" : "#1a1a1a";
-  const mutedC  = dark ? "#6b7280" : "#9B7B6B";
-  const border  = dark ? "#2e2e2e" : "#e5e0d8";
+  const filteredCategories = useMemo(() => {
+    if (!activeMenu) return [];
+    if (activeCatId === "todos") return activeMenu.categories;
+    return activeMenu.categories.filter(c => c.id === activeCatId);
+  }, [activeMenu, activeCatId]);
 
-  const totalItems = cart.reduce((s, i) => s + i.qty, 0);
+  const itemsToShow = useMemo(() => {
+    const dishes: Dish[] = [];
+    filteredCategories.forEach(cat => {
+      cat.dishes?.forEach(d => {
+        if (search && !d.name.toLowerCase().includes(search.toLowerCase())) return;
+        dishes.push(d);
+      });
+    });
+    return dishes;
+  }, [filteredCategories, search]);
 
-  // Categorías con "Todos" al inicio — debe ir ANTES del early return (Rules of Hooks)
-  const cats = [{ id: "todos", name: "Todos", emoji: "" }, ...categories];
-
-  // Platillos filtrados — useMemo siempre antes de cualquier early return
-  const filteredDishes = useMemo(() => {
-    let list = dishes;
-    if (activeCat !== "todos") list = list.filter((d) => d.categoryId === activeCat);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((d) => d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q));
-    }
-    return list;
-  }, [activeCat, search, dishes]);
-
-  // Top 3 más vendidos para "Recomendaciones"
-  const topDishes = [...dishes]
-    .sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0))
-    .slice(0, 3);
-
-  // T41 — Skeleton mientras hidrata (DESPUÉS de todos los hooks)
-  if (!mounted) return <MenuSkeleton dark={dark} />;
-
-  // Carrito: agregar
+  // Cart Handlers
   const addToCart = (dish: Dish, qty: number) => {
     setCart((prev) => {
-      const existing = prev.find((i) => i.dish.id === dish.id);
-      if (existing) return prev.map((i) => i.dish.id === dish.id ? { ...i, qty: i.qty + qty } : i);
+      const idx = prev.findIndex(i => i.dish.id === dish.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx].qty += qty;
+        return next;
+      }
       return [...prev, { dish, qty }];
     });
+    setSelectedDish(null);
   };
 
-  // Carrito: actualizar cantidad
   const updateQty = (id: string, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((i) => i.dish.id === id ? { ...i, qty: i.qty + delta } : i)
-        .filter((i) => i.qty > 0)
-    );
+    setCart(prev => prev.map(i => 
+      i.dish.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i
+    ));
   };
 
-  // Carrito: realizar orden — guarda en backend y localStorage
-  const handleOrder = async () => {
+  const handleOrder = async (customerName: string) => {
+    if (!data) return;
     try {
-      // Intentar crear en backend (público, sin JWT)
-      const backendOrder = await createPublicOrderApi({
-        restaurantId,
-        customerName: "Comensal",
-        items: cart.map((item) => ({
-          dishId:   Number(item.dish.id),
-          quantity: item.qty,
-        })),
-      });
-      // Guardar en localStorage para seguimiento local
+      const orderData = {
+        restaurantId: data.restaurant.id,
+        items: cart.map(i => ({ dishId: Number(i.dish.id), quantity: i.qty })),
+        customerName,
+        mode: "takeout" as const,
+      };
+      const res = await createPublicOrderApi(orderData);
+      
+      // Guardar en local para rastreo
       addOrder({
-        id:        backendOrder.id,
-        folio:     backendOrder.folio,
-        status:    "nuevo",
-        createdAt: backendOrder.createdAt,
-        attendedBy: "—",
-        branch:    "Restaurante",
-        items: cart.map((item) => ({
-          dishId:    item.dish.id,
-          dishName:  item.dish.name,
-          name:      item.dish.name,
-          qty:       item.qty,
-          unitPrice: item.dish.price,
-        })),
-      });
-    } catch {
-      // Si el backend falla, guardar solo en localStorage
-      addOrder({
-        id:        `ord-${Date.now()}`,
-        folio:     String(Math.floor(Math.random() * 9000) + 1000),
-        status:    "nuevo",
+        id: String(res.id),
+        folio: res.folio,
+        status: "nuevo",
         createdAt: new Date().toISOString(),
-        attendedBy: "—",
-        branch:    "Restaurante",
-        items: cart.map((item) => ({
-          dishId:    item.dish.id,
-          dishName:  item.dish.name,
-          name:      item.dish.name,
-          qty:       item.qty,
-          unitPrice: item.dish.price,
-        })),
+        items: cart.map(i => ({
+          dishId: i.dish.id,
+          dishName: i.dish.name,
+          qty: i.qty,
+          unitPrice: i.dish.price
+        }))
       });
+
+      setCart([]);
+      setShowCart(false);
+      setOrderDone(true);
+      setTimeout(() => setOrderDone(false), 3000);
+    } catch (err) {
+      alert("Error al crear la orden. Inténtalo de nuevo.");
     }
-    setShowCart(false);
-    setCart([]);
-    setOrderDone(true);
-    setTimeout(() => setOrderDone(false), 3000);
   };
+
+  if (loading) return <MenuSkeleton />;
+  if (!data) return <div className={s.container}>Error al cargar el menú.</div>;
 
   return (
-    <div style={{ background: bg, minHeight: "100dvh" }}>
-
-      {/* ── Header ── */}
-      <PageHeader
-        title="Para Llevar"
-        subtitle="Ordena y recoge en restaurante"
-        right={
-          <button
-            onClick={() => setShowCart(true)}
-            style={{
-              width: 44, height: 44, borderRadius: "50%",
-              background: "#FF6B35", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              position: "relative",
-            }}
-          >
-            <IconBag size={20} color="white" />
-            {totalItems > 0 && (
-              <span style={{
-                position: "absolute", top: -4, right: -4,
-                background: "#22c55e", color: "white",
-                width: 18, height: 18, borderRadius: "50%",
-                fontSize: "0.6rem", fontWeight: 800,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                {totalItems}
-              </span>
-            )}
-          </button>
-        }
-      />
-
-      <div style={{ padding: "12px 16px 0" }}>
-
-        {/* ── Card de categorías ── */}
-        <div style={{ background: cardBg, borderRadius: 16, padding: 16, marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-            <IconFilter size={14} color={mutedC} />
-            <span style={{ fontSize: "0.875rem", color: mutedC, fontWeight: 600 }}>Categorías</span>
+    <div className={`${s.container} ${dark ? "dark" : ""}`}>
+      {/* ─── Hero Header ─── */}
+      <div className={s.hero}>
+        <div className={s.heroOverlay} />
+        <div className={s.heroContent}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
+            <div>
+              <span className={s.brandBadge}>PREMIUM</span>
+              <h1 className={s.heroTitle}>{data.restaurant.name}</h1>
+              <div className={s.statusPill}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: data.restaurant.isOpen ? "#4ade80" : "#fb7185" }} />
+                {data.restaurant.isOpen ? "Abierto ahora" : "Cerrado"}
+              </div>
+            </div>
+            <button onClick={() => window.location.href = "/login"} style={{
+              background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.2)", width: 40, height: 40,
+              borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer"
+            }}>
+              <IconSmartphone size={18} color="white" />
+            </button>
           </div>
-          <div className="scrollbar-hide" style={{ display: "flex", gap: 8, overflowX: "auto" }}>
-            {cats.map((cat) => (
+          
+          <div className={s.heroFooter}>
+            <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.9, display: "flex", alignItems: "center", gap: 4 }}>
+              <IconMapPin size={12} /> Centro Histórico, CDMX
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <main className={s.mainContent}>
+        {/* Menus Tabs (Filter Pills) */}
+        {data.menus.length > 1 && (
+          <div className={s.chipRow}>
+            {data.menus.map(m => (
               <button
-                key={cat.id}
-                onClick={() => setActiveCat(cat.id)}
-                style={{
-                  flexShrink: 0, padding: "8px 18px", borderRadius: 999, border: "none", cursor: "pointer",
-                  background: activeCat === cat.id ? "#FF6B35" : dark ? "#2e2e2e" : "#f3f4f6",
-                  color:      activeCat === cat.id ? "white"    : mutedC,
-                  fontWeight: activeCat === cat.id ? 700        : 500,
-                  fontSize: "0.875rem",
-                  fontFamily: "inherit",
+                key={m.id}
+                className={`${s.chip} ${activeMenuId === m.id ? s.chipActive : s.chipInactive}`}
+                onClick={() => {
+                  setActiveMenuId(m.id);
+                  setActiveCatId("todos");
                 }}
               >
-                {cat.name}
+                {m.name}
+                {!m.isActiveNow && <IconClock size={12} style={{ marginLeft: 6 }} />}
               </button>
             ))}
           </div>
-        </div>
+        )}
 
-        {/* ── Búsqueda + toggle vista ── */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-          <div style={{
-            flex: 1, background: cardBg, borderRadius: 999,
-            display: "flex", alignItems: "center", padding: "0 16px", gap: 8,
-            border: `1px solid ${border}`,
-          }}>
-            <IconSearch size={16} color={mutedC} />
-            <input
-              type="text"
+        {/* Menu Info Banner */}
+        {activeMenu && !activeMenu.isActiveNow && (
+          <div className={`${s.statusBanner} ${s.statusBannerClosed}`}>
+            <IconClock size={18} />
+            <span>{activeMenu.availabilityNote || "Este menú no está disponible por ahora"}</span>
+          </div>
+        )}
+
+        {/* Category Tabs (Icon Chips) */}
+        {activeMenu && (
+          <div className={s.chipRow}>
+            <button
+              className={`${s.chip} ${activeCatId === "todos" ? s.chipActive : s.chipInactive}`}
+              onClick={() => setActiveCatId("todos")}
+            >
+              <IconGrid size={14} /> Todos
+            </button>
+            {activeMenu.categories.map(c => (
+              <button
+                key={c.id}
+                className={`${s.chip} ${activeCatId === c.id ? s.chipActive : s.chipInactive}`}
+                onClick={() => setActiveCatId(c.id)}
+              >
+                <IconTag size={14} /> {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Search & View Toggle */}
+        <div className={s.controls}>
+          <div className={s.searchWrapper}>
+            <IconSearch size={18} color={dark ? "#6b7280" : "#9B7B6B"} />
+            <input 
+              className={s.searchInput}
               placeholder="Buscar platillos..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{
-                flex: 1, border: "none", outline: "none", background: "transparent",
-                color: text, fontSize: "0.9375rem", padding: "12px 0", fontFamily: "inherit",
-              }}
             />
           </div>
-          {/* Botón grid */}
-          <button
+          <button 
+            className={`${s.viewToggle} ${viewMode === "grid" ? s.viewToggleActive : ""}`}
             onClick={() => setViewMode("grid")}
-            style={{
-              width: 44, height: 44, borderRadius: 12, border: "none", cursor: "pointer",
-              background: viewMode === "grid" ? "#FF6B35" : cardBg,
-              color:      viewMode === "grid" ? "white"   : mutedC,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
           >
-            <IconGrid size={18} color={viewMode === "grid" ? "white" : mutedC} />
+            <IconGrid size={20} />
           </button>
-          {/* Botón lista */}
-          <button
+          <button 
+            className={`${s.viewToggle} ${viewMode === "list" ? s.viewToggleActive : ""}`}
             onClick={() => setViewMode("list")}
-            style={{
-              width: 44, height: 44, borderRadius: 12, border: "none", cursor: "pointer",
-              background: viewMode === "list" ? "#FF6B35" : cardBg,
-              color:      viewMode === "list" ? "white"   : mutedC,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
           >
-            <IconList size={18} color={viewMode === "list" ? "white" : mutedC} />
+            <IconList size={20} />
           </button>
         </div>
 
-        {/* ── Recomendaciones (solo cuando no hay búsqueda y cat = todos) ── */}
-        {!search && activeCat === "todos" && (
-          <div style={{
-            background: dark ? "#1a1a1a" : "#fff8f0",
-            borderRadius: 16, padding: 16, marginBottom: 12,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: "50%", background: "#FF6B35",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <span style={{ fontSize: "1rem" }}>⭐</span>
+        {/* Dishes Grid/List */}
+        <div className={viewMode === "grid" ? s.dishGrid : s.dishList}>
+          {itemsToShow.map(dish => (
+            <div 
+              key={dish.id} 
+              className={`${s.card} ${viewMode === "list" ? s.cardList : ""} anim-fade-up`}
+              onClick={() => setSelectedDish(dish)}
+            >
+              <div className={`${s.imageWrapper} ${viewMode === "list" ? s.imageList : ""}`}>
+                {dish.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={dish.imageUrl} alt={dish.name} className={s.dishImage} />
+                ) : (
+                  <div style={{ color: dark ? "#333" : "#e5e7eb" }}>
+                    <IconUtensils size={40} />
+                  </div>
+                )}
+                
+                {dish.badge && <span className={s.badge} style={{ background: "#FF6B35" }}>{dish.badge}</span>}
+                
+                {!dish.isAvailable && (
+                  <div className={s.soldOutOverlay}>
+                    <span className={s.soldOutLabel}>AGOTADO</span>
+                  </div>
+                )}
               </div>
-              <div>
-                <p style={{ fontWeight: 700, color: text, fontSize: "0.9375rem" }}>
-                  Recomendaciones de la Casa ✨
-                </p>
-                <p style={{ fontSize: "0.75rem", color: mutedC }}>
-                  Los platillos más populares y deliciosos
-                </p>
+
+              <div className={s.cardInfo}>
+                <h3 className={s.dishName}>{dish.name}</h3>
+                <p className={s.price}>${dish.price}</p>
+                {viewMode === "list" && <p style={{ fontSize: "0.8rem", color: dark ? "#6b7280" : "#9B7B6B" }}>{dish.description}</p>}
               </div>
             </div>
+          ))}
+        </div>
 
-            <div className="scrollbar-hide" style={{ display: "flex", gap: 12, overflowX: "auto" }}>
-              {topDishes.map((dish) => (
-                <div
-                  key={dish.id}
-                  onClick={() => setSelectedDish(dish)}
-                  style={{
-                    flexShrink: 0, width: 148, borderRadius: 14, overflow: "hidden", cursor: "pointer",
-                    background: dark ? "#2a2a2a" : "#ffffff",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                  }}
-                >
-                  <div style={{
-                    height: 96, background: "#F3E5D5", overflow: "hidden", position: "relative",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem",
-                  }}>
-                    {dish.imageUrl
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={dish.imageUrl} alt={dish.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <span>{dish.emoji ?? "🍽️"}</span>}
-                    <div style={{ position: "absolute", bottom: 4, left: 4, display: "flex", gap: 3 }}>
-                      <span style={{ background: "#22c55e", color: "white", fontSize: "0.58rem", fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>
-                        ⭐ Popular
-                      </span>
-                      <span style={{ background: "#FF6B35", color: "white", fontSize: "0.58rem", fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>
-                        📈 {dish.soldCount} vendidos
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ padding: "8px 10px" }}>
-                    <p style={{ fontWeight: 700, color: text, fontSize: "0.8rem", marginBottom: 2 }}>{dish.name}</p>
-                    <p style={{ color: "#FF6B35", fontWeight: 700, fontSize: "0.875rem" }}>${dish.price}</p>
-                  </div>
-                </div>
-              ))}
+        {itemsToShow.length === 0 && (
+          <div style={{ textAlign: "center", padding: "60px 0", color: dark ? "#6b7280" : "#9B7B6B" }}>
+            <div style={{ marginBottom: 16, opacity: 0.5 }}>
+              <IconAlertCircle size={48} />
+            </div>
+            <p>No se encontraron platillos en esta sección.</p>
+          </div>
+        )}
+      </main>
+
+      {/* Floating Cart Bar (Modern Bottom Bar) */}
+      {cart.length > 0 && !showCart && (
+        <div className={s.bottomBar} onClick={() => setShowCart(true)}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className={s.cartCount}>{cart.length}</div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "0.875rem", fontWeight: 800 }}>Ver Carrito</span>
+              <span style={{ fontSize: "0.75rem", opacity: 0.8 }}>
+                {cart.reduce((s, i) => s + i.qty, 0)} items · ${cart.reduce((s, i) => s + i.dish.price * i.qty, 0)}
+              </span>
             </div>
           </div>
-        )}
-
-        {/* ── Platillos ── */}
-        {filteredDishes.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "64px 0", color: mutedC }}>
-            <div style={{ fontSize: "3rem", marginBottom: 12 }}>🍽️</div>
-            <p>No encontramos platillos</p>
-          </div>
-        ) : viewMode === "grid" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {filteredDishes.map((dish, i) => (
-              <div key={dish.id} className="anim-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-                <CardGrid dish={dish} onTap={() => setSelectedDish(dish)} dark={dark} categories={categories} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div>
-            {filteredDishes.map((dish, i) => (
-              <div key={dish.id} className="anim-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-                <CardList dish={dish} onTap={() => setSelectedDish(dish)} dark={dark} categories={categories} />
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={{ height: 24 }} />
-      </div>
-
-      {/* ── Toast orden exitosa ── */}
-      {orderDone && (
-        <div
-          className="anim-fade-up"
-          style={{
-            position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
-            background: "#22c55e", color: "white",
-            padding: "12px 24px", borderRadius: 999,
-            fontWeight: 700, zIndex: 200,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          ✅ ¡Orden realizada con éxito!
+          <IconChevronRight size={20} />
         </div>
       )}
 
-      {/* ── Modal platillo ── */}
+      {/* Modals */}
       {selectedDish && (
-        <DishModal
-          dish={selectedDish}
-          onClose={() => setSelectedDish(null)}
+        <DishModal 
+          dish={selectedDish} 
+          onClose={() => setSelectedDish(null)} 
           onAdd={addToCart}
           dark={dark}
-          categories={categories}
         />
       )}
 
-      {/* ── Modal carrito ── */}
       {showCart && (
         <CartModal
           cart={cart}
           onClose={() => setShowCart(false)}
           onUpdateQty={updateQty}
-          onDelete={(id) => setCart((p) => p.filter((i) => i.dish.id !== id))}
+          onRemove={(id) => setCart(p => p.filter(i => i.dish.id !== id))}
           onOrder={handleOrder}
           dark={dark}
         />
       )}
+
+      {/* Success Toast */}
+      {orderDone && (
+        <div style={{
+          position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)",
+          background: "#22c55e", color: "white", padding: "12px 24px", borderRadius: 999,
+          fontWeight: 700, zIndex: 1000, boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+          display: "flex", alignItems: "center", gap: 8
+        }}>
+          <IconCheck size={18} /> ¡Orden realizada con éxito!
+        </div>
+      )}
     </div>
   );
 }
-

@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { loginApi } from "@/lib/authApi";
 import { Button } from "@/components/ui/Button";
 import styles from "./login.module.css";
+import { IconUtensils, IconAlertCircle } from "@/components/ui/Icons";
 
 function IconEye({ open }: { open: boolean }) {
   return open ? (
@@ -65,7 +66,9 @@ export default function LoginPage() {
       <div className={styles.card}>
         {/* Logo */}
         <div className={styles.logoWrap}>
-          <div className={styles.logoIcon}>🍽️</div>
+          <div className={styles.logoIcon}>
+            <IconUtensils size={32} color="white" />
+          </div>
         </div>
 
         <h1 className={styles.title}>Foodify</h1>
@@ -120,7 +123,7 @@ export default function LoginPage() {
           {/* Error */}
           {error && (
             <div className={styles.errorBox} role="alert">
-              <span>⚠️</span>
+              <IconAlertCircle size={18} />
               <p>{error}</p>
             </div>
           )}

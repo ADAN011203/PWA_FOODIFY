@@ -8,6 +8,37 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { EmptyState } from "@/components/EmptyState";
 import type { StaffMember, StaffRole, StaffStatus } from "@/types/staff";
 import { ROLE_CFG, STATUS_CFG } from "@/types/staff";
+import {
+  IconUser,
+  IconPackage,
+  IconBell,
+  IconChefHat,
+  IconDollarSign,
+  IconMail,
+  IconSmartphone,
+  IconBuilding,
+  IconCalendar,
+  IconLock,
+  IconTrash,
+  IconSearch,
+  IconUsers,
+  IconClock,
+  IconCheck,
+  IconPlus,
+  IconEdit,
+  IconArrowLeft,
+} from "@/components/ui/Icons";
+
+function RoleIcon({ icon, size = 18, color }: { icon: string; size?: number; color?: string }) {
+  switch (icon) {
+    case "user":    return <IconUser size={size} color={color} />;
+    case "package": return <IconPackage size={size} color={color} />;
+    case "bell":    return <IconBell size={size} color={color} />;
+    case "chef":    return <IconChefHat size={size} color={color} />;
+    case "dollar":  return <IconDollarSign size={size} color={color} />;
+    default:        return <IconUser size={size} color={color} />;
+  }
+}
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
 function useAdminGuard() {
@@ -99,8 +130,9 @@ function StaffFormModal({
       >
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
-          <h2 style={{ fontWeight: 800, fontSize: "1.125rem", color: "#f0ede8", margin: 0 }}>
-            {member ? "✏️ Editar Empleado" : "➕ Nuevo Empleado"}
+          <h2 style={{ fontWeight: 800, fontSize: "1.125rem", color: "#f0ede8", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+            {member ? <IconEdit size={20} color="#FF6B35" /> : <IconPlus size={20} color="#FF6B35" />}
+            {member ? "Editar Empleado" : "Nuevo Empleado"}
           </h2>
           <button onClick={onClose} style={{ background: "#2e3238", border: "none", color: "#8a8f98", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
         </div>
@@ -132,7 +164,7 @@ function StaffFormModal({
             <label style={labelStyle}>Rol *</label>
             <select value={form.role} onChange={(e) => set("role", e.target.value)} style={{ ...inputStyle(), appearance: "none" }}>
               {ROLES.map((r) => (
-                <option key={r} value={r}>{ROLE_CFG[r].icon} {ROLE_CFG[r].label}</option>
+                <option key={r} value={r}>{ROLE_CFG[r].label}</option>
               ))}
             </select>
           </div>
@@ -159,7 +191,9 @@ function StaffFormModal({
           borderRadius: 12, padding: "12px 16px", marginBottom: 20,
           display: "flex", alignItems: "center", gap: 10,
         }}>
-          <span style={{ fontSize: "1.5rem" }}>{ROLE_CFG[form.role].icon}</span>
+          <div style={{ color: ROLE_CFG[form.role].color }}>
+            <RoleIcon icon={ROLE_CFG[form.role].icon} size={28} />
+          </div>
           <div>
             <p style={{ fontWeight: 700, color: ROLE_CFG[form.role].color, fontSize: "0.875rem", margin: 0 }}>
               {ROLE_CFG[form.role].label}
@@ -231,9 +265,9 @@ function StaffDetailModal({
             </div>
             <div>
               <p style={{ fontWeight: 800, color: "#f0ede8", fontSize: "1rem", margin: 0 }}>{member.name}</p>
-              <span style={{ background: roleCfg.bg, color: roleCfg.color, fontSize: "0.7rem", fontWeight: 700, padding: "2px 10px", borderRadius: 999 }}>
-                {roleCfg.icon} {roleCfg.label}
-              </span>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: roleCfg.bg, color: roleCfg.color, fontSize: "0.7rem", fontWeight: 700, padding: "2px 10px", borderRadius: 999 }}>
+                <RoleIcon icon={roleCfg.icon} size={14} /> {roleCfg.label}
+              </div>
             </div>
           </div>
           <button onClick={onClose} style={{ background: "#2e3238", border: "none", color: "#8a8f98", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
@@ -242,18 +276,21 @@ function StaffDetailModal({
         {/* Info grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           {[
-            { icon: "📧", label: "Email",         value: member.email                },
-            { icon: "📱", label: "Teléfono",       value: member.phone                },
-            { icon: "🏢", label: "Sucursal",        value: member.branch               },
-            { icon: "📅", label: "Alta",            value: fmtDate(member.createdAt)   },
-            { icon: "🔐", label: "Último acceso",   value: fmtRelative(member.lastLogin) },
-            { icon: "●",  label: "Estado",
+            { icon: <IconMail size={14} />,         label: "Email",         value: member.email                },
+            { icon: <IconSmartphone size={14} />,   label: "Teléfono",       value: member.phone                },
+            { icon: <IconBuilding size={14} />,     label: "Sucursal",        value: member.branch               },
+            { icon: <IconCalendar size={14} />,     label: "Alta",            value: fmtDate(member.createdAt)   },
+            { icon: <IconClock size={14} />,        label: "Último acceso",   value: fmtRelative(member.lastLogin) },
+            { icon: <div style={{ width: 6, height: 6, borderRadius: "50%", background: statusCfg.color }} />, label: "Estado",
               value: statusCfg.label,
               color: statusCfg.color,
             },
           ].map(({ icon, label, value, color }) => (
             <div key={label} style={{ background: "#22262c", borderRadius: 10, padding: "12px" }}>
-              <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: "0 0 3px" }}>{icon} {label}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.7rem", color: "#6b7280", margin: "0 0 3px" }}>
+                {icon}
+                <span>{label}</span>
+              </div>
               <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: color ?? "#f0ede8", margin: 0 }}>{value}</p>
             </div>
           ))}
@@ -262,32 +299,32 @@ function StaffDetailModal({
         {/* Acciones */}
         <button
           onClick={onEdit}
-          style={{ width: "100%", background: "#FF6B35", color: "white", border: "none", padding: "13px", borderRadius: 12, fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}
+          style={{ width: "100%", background: "#FF6B35", color: "white", border: "none", padding: "13px", borderRadius: 12, fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
         >
-          ✏️ Editar empleado
+          <IconEdit size={18} /> Editar empleado
         </button>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
           {member.status === "active" ? (
             <button
               onClick={() => { onToggleStatus(member.id, "suspended"); onClose(); }}
-              style={{ padding: "12px", background: "#2e3238", color: "#f59e0b", border: "1px solid #3d2e0a", borderRadius: 12, fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}
+              style={{ padding: "12px", background: "#2e3238", color: "#f59e0b", border: "1px solid #3d2e0a", borderRadius: 12, fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
             >
-              ⏸ Suspender
+              <IconClock size={16} /> Suspender
             </button>
           ) : (
             <button
               onClick={() => { onToggleStatus(member.id, "active"); onClose(); }}
-              style={{ padding: "12px", background: "#2e3238", color: "#22c55e", border: "1px solid #0d3320", borderRadius: 12, fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}
+              style={{ padding: "12px", background: "#2e3238", color: "#22c55e", border: "1px solid #0d3320", borderRadius: 12, fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
             >
-              ▶ Activar
+              <IconCheck size={16} /> Activar
             </button>
           )}
           <button
             onClick={() => { onDelete(member.id); onClose(); }}
-            style={{ padding: "12px", background: "#2e3238", color: "#ef4444", border: "1px solid #3d1010", borderRadius: 12, fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}
+            style={{ padding: "12px", background: "#2e3238", color: "#ef4444", border: "1px solid #3d1010", borderRadius: 12, fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
           >
-            🗑️ Eliminar
+            <IconTrash size={16} /> Eliminar
           </button>
         </div>
 
@@ -339,9 +376,9 @@ function StaffCard({ member, onTap }: { member: StaffMember; onTap: () => void }
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ background: roleCfg.bg, color: roleCfg.color, fontSize: "0.65rem", fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
-            {roleCfg.icon} {roleCfg.label}
-          </span>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: roleCfg.bg, color: roleCfg.color, fontSize: "0.65rem", fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
+            <RoleIcon icon={roleCfg.icon} size={11} /> {roleCfg.label}
+          </div>
           <p style={{ fontSize: "0.68rem", color: "#4b5563", margin: 0 }}>
             {fmtRelative(member.lastLogin)}
           </p>
@@ -389,40 +426,15 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
   // CRUD
-  const handleSave = (form: typeof EMPTY_FORM, id?: string) => {
-    if (id && setStaff) {
-      setStaff((prev) => (prev ?? []).map((s) => s.id === id ? { ...s, ...form } : s));
-      showToast("✅ Empleado actualizado");
-    } else {
-      const newMember: StaffMember = {
-        id: `s-${Date.now()}`,
-        ...form,
-        createdAt: new Date().toISOString(),
-        avatarInitials: form.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase(),
-      };
-      if (setStaff) {
-        setStaff((prev) => [newMember, ...(prev ?? [])]);
-      }
-      showToast("✅ Empleado agregado");
+      showToast(`Empleado ${labels[status]}`);
     }
-    setShowForm(false);
-    setEditMember(null);
-    setSelected(null);
-  };
-
-  const handleToggleStatus = (id: string, status: StaffStatus) => {
-    if (setStaff) {
-      setStaff((prev) => (prev ?? []).map((s) => s.id === id ? { ...s, status } : s));
-    }
-    const labels: Record<StaffStatus, string> = { active: "activado", inactive: "desactivado", suspended: "suspendido" };
-    showToast(`✅ Empleado ${labels[status]}`);
   };
 
   const handleDelete = (id: string) => {
     if (setStaff) {
       setStaff((prev) => (prev ?? []).filter((s) => s.id !== id));
     }
-    showToast("🗑️ Empleado eliminado");
+    showToast("Empleado eliminado");
   };
 
   // KPIs por rol
@@ -439,10 +451,14 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
       {/* ── Header ── */}
       <div style={{ background: "#1a1d21", borderBottom: "1px solid #2e3238", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => window.location.href = "/dashboard"} style={{ background: "#2e3238", border: "none", color: "#8a8f98", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
+          <button onClick={() => window.location.href = "/dashboard"} style={{ background: "#2e3238", border: "none", color: "#8a8f98", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <IconArrowLeft size={18} />
+          </button>
           <div>
             <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: 0 }}>Staff / Personal</p>
-            <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0 }}>👥 {(staff ?? []).length} empleados · {totalActive} activos</p>
+            <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+              <IconUsers size={12} /> {(staff ?? []).length} empleados · {totalActive} activos
+            </p>
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -469,7 +485,9 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
                 flexShrink: 0, background: "#1a1d21", borderRadius: 12, padding: "12px 16px",
                 border: `1px solid ${cfg.color}30`, minWidth: 100, textAlign: "center",
               }}>
-                <p style={{ fontSize: "1.25rem", margin: "0 0 2px" }}>{cfg.icon}</p>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 4, color: cfg.color }}>
+                  <RoleIcon icon={cfg.icon} size={22} />
+                </div>
                 <p style={{ fontSize: "1rem", fontWeight: 900, color: cfg.color, margin: "0 0 2px" }}>{count}</p>
                 <p style={{ fontSize: "0.62rem", color: "#6b7280", margin: 0 }}>{cfg.label}</p>
               </div>
@@ -479,7 +497,7 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
 
         {/* ── Búsqueda ── */}
         <div style={{ background: "#1a1d21", borderRadius: 10, border: "1px solid #2e3238", display: "flex", alignItems: "center", padding: "0 14px", marginBottom: 12 }}>
-          <span style={{ color: "#6b7280", marginRight: 8 }}>🔍</span>
+          <IconSearch size={18} color="#6b7280" style={{ marginRight: 8 }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -490,7 +508,7 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
 
         {/* ── Filtro por rol ── */}
         <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 10 }} className="scrollbar-hide">
-          {([{ key: "todos", label: "Todos", icon: "👥" }, ...ROLES.map((r) => ({ key: r, label: ROLE_CFG[r].label, icon: ROLE_CFG[r].icon }))] as const).map(({ key, label, icon }) => (
+          {([{ key: "todos", label: "Todos", icon: <IconUsers size={14} /> }, ...ROLES.map((r) => ({ key: r, label: ROLE_CFG[r].label, icon: <RoleIcon icon={ROLE_CFG[r].icon} size={14} /> }))] as const).map(({ key, label, icon }) => (
             <button
               key={key}
               onClick={() => setFilterRole(key as StaffRole | "todos")}
@@ -503,7 +521,10 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
                 border: filterRole === key ? "none" : "1px solid #2e3238",
               }}
             >
-              {icon} {label}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {icon}
+                <span>{label}</span>
+              </div>
             </button>
           ))}
         </div>
@@ -535,7 +556,9 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
 
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#6b7280" }}>
-            <p style={{ fontSize: "2.5rem", marginBottom: 12 }}>👥</p>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+              <IconUsers size={48} />
+            </div>
             <p>No se encontraron empleados</p>
           </div>
         ) : filtered.map((member) => (
@@ -574,7 +597,9 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
           fontWeight: 600, fontSize: "0.875rem", zIndex: 300,
           boxShadow: "0 8px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap",
           animation: "fadeUp 0.25s ease both",
+          display: "flex", alignItems: "center", gap: 8
         }}>
+          <IconCheck size={18} color="#22c55e" />
           {toast}
         </div>
       )}

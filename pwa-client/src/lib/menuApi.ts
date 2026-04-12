@@ -1,57 +1,54 @@
 import { publicApi, api } from "./api";
-import { type Dish, type Category } from "../types/menu";
+import { type Dish, type Category, type PublicMenu } from "../types/menu";
 
 export const RESTAURANT_SLUG = "demo-restaurant";
 
 export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "takeout" | "dine_in" = "takeout"): Promise<{
-  dishes: Dish[];
-  categories: Category[];
-  restaurantName: string;
-  restaurantId: number;
+  menus: PublicMenu[];
+  restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
 }> {
-  // IMPORTANTE: El backend excluye /menu/:slug del prefijo global /api/v1
+  // El backend excluye /menu/:slug del prefijo global /api/v1
   const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
-  const { restaurant, menus, isActiveNow: globalIsActive } = data.data;
-  const isRestaurantOpen = globalIsActive ?? true;
+  const { restaurant, menus } = data.data;
 
-  const allDishes: Dish[] = [];
-  const categoryMap = new Map<string, Category>();
+  const mappedMenus: PublicMenu[] = (menus ?? []).map((m: any) => ({
+    id: String(m.id),
+    name: m.name,
+    isActiveNow: Boolean(m.isActiveNow),
+    isOrderableNow: Boolean(m.isOrderableNow),
+    availabilityNote: m.availabilityNote,
+    categories: (m.categories ?? []).filter((c: any) => c.isActive).map((c: any) => ({
+      id: String(c.id),
+      name: c.name,
+      emoji: c.icon ?? c.emoji ?? "tag",
+      dishes: (c.dishes ?? [])
+        .filter((d: any) => !d.deletedAt && (d.isAvailable !== false))
+        .map((d: any) => ({
+          id: String(d.id),
+          name: d.name,
+          description: d.description ?? "",
+          price: Number(d.price),
+          prepTime: Number(d.prepTimeMin ?? 15),
+          imageUrl: Array.isArray(d.images) ? d.images[0] : (d.imageUrl ?? ""),
+          images: Array.isArray(d.images) ? d.images : (d.imageUrl ? [d.imageUrl] : []),
+          isAvailable: Boolean(d.isAvailable ?? true),
+          categoryId: String(c.id),
+          soldCount: Number(d.soldCount ?? 0),
+        })),
+    })),
+  }));
 
-  for (const menu of (menus ?? [])) {
-    const isMenuVisible = (menu.isActiveNow ?? isRestaurantOpen) || mode === "takeout";
-    if (!isMenuVisible) continue;
-    for (const cat of (menu.categories ?? [])) {
-      if (!categoryMap.has(String(cat.id))) {
-        categoryMap.set(String(cat.id), {
-          id:    String(cat.id),
-          name:  cat.name,
-          emoji: cat.icon ?? cat.emoji ?? "",
-        });
-      }
-      for (const d of (cat.dishes ?? [])) {
-        allDishes.push({
-          id:              String(d.id),
-          name:            d.name,
-          description:     d.description ?? "",
-          price:           Number(d.price),
-          prepTime:        Number(d.prepTimeMin ?? d.prep_time_min ?? 15),
-          images:          Array.isArray(d.images) ? d.images : [],
-          isAvailable:     Boolean(d.isAvailable ?? true),
-          available:       Boolean(d.isAvailable ?? true),
-          categoryId:      String(cat.id),
-          soldCount:       Number(d.soldCount ?? d.sold_count ?? 0),
-          allergens:       Array.isArray(d.allergens) ? d.allergens : [],
-          availabilityNote: d.availabilityNote,
-        });
-      }
-    }
-  }
+  // Consideramos el restaurante "abierto" si al menos un menú está activo ahora
+  const isRestaurantOpen = mappedMenus.some(m => m.isActiveNow);
 
   return {
-    dishes:         allDishes,
-    categories:     Array.from(categoryMap.values()),
-    restaurantName: restaurant?.name ?? "Foodify",
-    restaurantId:   Number(restaurant?.id ?? 1),
+    menus: mappedMenus,
+    restaurant: {
+      id: Number(restaurant?.id ?? 1),
+      name: restaurant?.name ?? "Foodify",
+      logoUrl: restaurant?.logoUrl,
+      isOpen: isRestaurantOpen,
+    },
   };
 }
 
@@ -70,7 +67,7 @@ export async function getAdminCategoriesApi(): Promise<Category[]> {
         categories.push({
           id: String(c.id),
           name: c.name,
-          emoji: c.icon ?? c.emoji ?? "🏷️"
+          emoji: c.icon ?? c.emoji ?? "tag"
         });
       }
     } catch {
@@ -158,7 +155,7 @@ export async function createCategoryApi(menuId: string, name: string): Promise<C
   return {
     id: String(c.id),
     name: c.name,
-    emoji: c.icon || "🏷️",
+    emoji: c.icon || "tag",
   };
 }
 
