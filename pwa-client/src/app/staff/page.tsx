@@ -393,10 +393,7 @@ export default function AdminStaffPage() {
   const { user, isLoading } = useAdminGuard();
   const { logout } = useAuth();
 
-  const { data: staff, setData: setStaff, loading, error, empty, refetch } = useFetchWithState<StaffMember[]>("/staff");
-if (loading) return <FoodSpinner fullScreen={false} />;
-if (error) return <ErrorAlert message={error} onRetry={refetch} />;
-if (empty) return <EmptyState title="No hay personal" description="Agrega empleados desde la PWA." />;
+  // 1. Definir todos los estados primero (Regla de Hooks)
   const [search, setSearch]       = useState("");
   const [filterRole, setFilterRole] = useState<StaffRole | "todos">("todos");
   const [filterStatus, setFilterStatus] = useState<StaffStatus | "todos">("todos");
@@ -405,7 +402,11 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
   const [editMember, setEditMember] = useState<StaffMember | null>(null);
   const [toast, setToast]         = useState("");
 
-  // Filtrado — antes de cualquier early return
+  const { data: staff, setData: setStaff, loading, error, empty, refetch } = useFetchWithState<StaffMember[]>("/staff");
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
+
+  // 2. Lógica de filtrado
   const filtered = useMemo(() => {
     let list = staff ?? [];
     if (filterRole   !== "todos") list = list.filter((s) => s.role   === filterRole);
@@ -421,13 +422,42 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
     return list;
   }, [staff, filterRole, filterStatus, search]);
 
-  if (isLoading || !user) return <FoodSpinner />;
+  // 3. Early returns DESPUÉS de definir todos los hooks
+  if (isLoading || !user || loading) return <FoodSpinner />;
+  if (error) return <ErrorAlert message={error} onRetry={refetch} />;
+  if (empty && !showForm) return <EmptyState title="No hay personal" description="Agrega empleados desde el botón superior." />;
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
+  // 4. Handlers CRUD
+  const handleSave = (form: StaffForm, id?: string) => {
+    const newMember: StaffMember = {
+      id: id ?? Math.random().toString(36).substr(2, 9),
+      ...form,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+    };
 
-  // CRUD
-      showToast(`Empleado ${labels[status]}`);
+    if (setStaff) {
+      if (id) {
+        setStaff((prev) => (prev ?? []).map((s) => (s.id === id ? newMember : s)));
+        showToast("Empleado actualizado");
+      } else {
+        setStaff((prev) => [newMember, ...(prev ?? [])]);
+        showToast("Empleado agregado");
+      }
     }
+    setShowForm(false);
+  };
+
+  const handleToggleStatus = (id: string, current: StaffStatus) => {
+    const nextStatus: StaffStatus = 
+      current === "active" ? "inactive" : 
+      current === "inactive" ? "suspended" : "active";
+    
+    if (setStaff) {
+      setStaff((prev) => (prev ?? []).map((s) => s.id === id ? { ...s, status: nextStatus } : s));
+    }
+    const labels: Record<StaffStatus, string> = { active: "Activado", inactive: "Desactivado", suspended: "Suspendido" };
+    showToast(`Empleado ${labels[nextStatus]}`);
   };
 
   const handleDelete = (id: string) => {
@@ -435,15 +465,16 @@ if (empty) return <EmptyState title="No hay personal" description="Agrega emplea
       setStaff((prev) => (prev ?? []).filter((s) => s.id !== id));
     }
     showToast("Empleado eliminado");
+    setSelected(null);
   };
 
-  // KPIs por rol
   const kpis = ROLES.map((r) => ({
     role: r,
     count: (staff ?? []).filter((s) => s.role === r && s.status === "active").length,
   }));
 
   const totalActive = (staff ?? []).filter((s) => s.status === "active").length;
+
 
   return (
     <div style={{ minHeight: "100dvh", background: "#111214", fontFamily: "'Outfit', sans-serif", color: "#f0ede8" }}>
