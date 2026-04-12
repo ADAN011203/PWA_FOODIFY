@@ -694,6 +694,7 @@ export default function AdminStaffPage() {
         >
           <IconUsers size={14} /> Todos
         </button>
+        {ROLES.map((r) => (
           <button
             key={r}
             className={`${ui.chip} ${filterRole === r ? ui.active : ""}`}
@@ -702,6 +703,7 @@ export default function AdminStaffPage() {
           >
             <RoleIcon icon={ROLE_CFG[r].icon} size={14} /> {ROLE_CFG[r].label}
           </button>
+        ))}
       </div>
 
       {/* Filtros estado */}
