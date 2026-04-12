@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { AuthUser, AuthSession } from "@/types/auth";
 import { logoutApi } from "@/lib/authApi";
+import { getOwnedRestaurantsApi } from "@/lib/restaurantApi";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -47,6 +48,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   }, []);
+  
+  // Auto-resolución de slug para sesiones antiguas
+  useEffect(() => {
+    if (user && !user.slug && user.restaurantId) {
+      getOwnedRestaurantsApi().then(list => {
+        const current = list.find(r => String(r.id) === String(user.restaurantId));
+        if (current?.slug) {
+          const updated = { ...user, slug: current.slug };
+          setUser(updated);
+          // Actualizar localStorage
+          const raw = localStorage.getItem("foodify_session");
+          if (raw) {
+            const session = JSON.parse(raw);
+            session.user = updated;
+            localStorage.setItem("foodify_session", JSON.stringify(session));
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [user?.id, user?.restaurantId, user?.slug]);
 
   const login = (session: AuthSession & { accessToken?: string; refreshToken?: string }) => {
     // Normalizar

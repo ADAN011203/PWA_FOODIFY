@@ -61,7 +61,7 @@ export function useFetchWithState<T>(url: string, fetcher?: () => Promise<T>) {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url]);
+  }, [url, fetcher]);
 
   return { data, setData, loading, error, empty, refetch: fetchData };
 }

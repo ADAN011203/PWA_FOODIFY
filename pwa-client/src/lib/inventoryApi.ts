@@ -18,8 +18,8 @@ function mapItem(i: Record<string, unknown>): Ingredient {
     id:           String(i.id),
     name:         String(i.name),
     unit:         String(i.unit ?? "kg"),
-    currentStock: Number(i.currentStock ?? i.current_stock ?? 0),
-    minStock:     Number(i.minStock ?? i.min_stock ?? 0),
+    currentStock: Number(i.currentStock ?? i.current_stock ?? i.stock_actual ?? 0),
+    minStock:     Number(i.minStock ?? i.min_stock ?? i.stock_minimo ?? 0),
     category:     String(i.category ?? "General"),
     batches:      lots,
   };
