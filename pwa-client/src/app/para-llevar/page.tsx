@@ -23,6 +23,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { MenuSkeleton } from "@/components/ui/Skeletons";
 import type { PublicMenu, Dish, Category, CartItem } from "@/types/menu";
+import { useSearchParams } from "next/navigation";
+import { getRestaurantDetailsApi } from "@/lib/restaurantApi";
 
 // CSS Module
 import s from "./para-llevar.module.css";
@@ -34,6 +36,9 @@ import CartModal from "./components/CartModal";
 export default function ParaLlevarPage() {
   const { dark } = useTheme();
   const { addOrder } = useGuestOrders();
+  const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const urlSlug = searchParams.get("slug");
 
   // State
   const [data, setData] = useState<{
@@ -54,7 +59,19 @@ export default function ParaLlevarPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetchPublicMenu(RESTAURANT_SLUG, "takeout");
+        let slugToUse = urlSlug || RESTAURANT_SLUG;
+
+        // Si el usuario está logueado y no hay slug en la URL, intentamos obtener su slug real
+        if (!urlSlug && user?.restaurantId) {
+          try {
+            const rest = await getRestaurantDetailsApi(user.restaurantId);
+            if (rest.slug) slugToUse = rest.slug;
+          } catch (e) {
+            console.warn("Could not fetch restaurant slug for logged user, using fallback.");
+          }
+        }
+
+        const res = await fetchPublicMenu(slugToUse, "takeout");
         setData(res);
         if (res.menus.length > 0) {
           // Seleccionar primer menú activo por defecto, o el primero si ninguno está activo
@@ -68,7 +85,7 @@ export default function ParaLlevarPage() {
       }
     }
     load();
-  }, []);
+  }, [urlSlug, user?.restaurantId]);
 
   // Derived State
   const activeMenu = useMemo(() => 

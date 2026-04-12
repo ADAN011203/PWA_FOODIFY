@@ -7,8 +7,9 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   branch?: string;   // PWA branch name
-  restaurant?: { id: string; name: string }; // Backend shape
+  restaurant?: { id: string; name: string; slug?: string }; // Backend shape
   restaurantId?: string;
+  slug?: string;
 }
 
 

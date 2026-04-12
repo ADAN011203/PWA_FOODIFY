@@ -3,6 +3,7 @@ import { api } from "./api";
 export interface Restaurant {
   id: string;
   name: string;
+  slug: string;
   address: string | null;
   logoUrl: string | null;
   isActive: boolean;
@@ -16,11 +17,27 @@ export async function getOwnedRestaurantsApi(): Promise<Restaurant[]> {
   try {
     const { data } = await api.get("/restaurants");
     // El backend retorna un array directamente o dentro de data.data
-    return Array.isArray(data) ? data : (data.data ?? []);
+    const list = Array.isArray(data) ? data : (data.data ?? []);
+    return list.map((r: any) => ({
+      ...r,
+      id: String(r.id),
+    }));
   } catch (e) {
     console.error("Error fetching owned restaurants:", e);
     throw e;
   }
+}
+
+/**
+ * Obtiene los detalles de un restaurante específico por su ID.
+ */
+export async function getRestaurantDetailsApi(id: string): Promise<Restaurant> {
+  const { data } = await api.get(`/restaurants/${id}`);
+  const r = data.data ?? data;
+  return {
+    ...r,
+    id: String(r.id),
+  };
 }
 
 /**
