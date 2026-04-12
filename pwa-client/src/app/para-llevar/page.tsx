@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { PageHeader } from "@/components/layout/TabBar";
 import { fetchPublicMenu, RESTAURANT_SLUG } from "@/lib/menuApi";
@@ -33,7 +33,7 @@ import s from "./para-llevar.module.css";
 import DishModal from "./components/DishModal";
 import CartModal from "./components/CartModal";
 
-export default function ParaLlevarPage() {
+function ParaLlevarContent() {
   const { dark } = useTheme();
   const { addOrder } = useGuestOrders();
   const { user } = useAuth();
@@ -367,5 +367,13 @@ export default function ParaLlevarPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ParaLlevarPage() {
+  return (
+    <Suspense fallback={<MenuSkeleton />}>
+      <ParaLlevarContent />
+    </Suspense>
   );
 }
