@@ -1,4 +1,0 @@
-{
-  "buildCommand": "cd pwa-client && next build",
-  "outputDirectory": "pwa-client/.next"
-}
