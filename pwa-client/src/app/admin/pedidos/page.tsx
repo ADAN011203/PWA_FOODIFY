@@ -446,6 +446,7 @@ export default function AdminPedidosPage() {
         >
           Todos
         </button>
+        {(Object.keys(STATUS_CFG) as OrderStatus[]).map((s) => (
           <button
             key={s}
             className={`${ui.chip} ${filterStatus === s ? ui.active : ""}`}
@@ -457,6 +458,7 @@ export default function AdminPedidosPage() {
           >
             <StatusDot color={STATUS_CFG[s].color} /> {STATUS_CFG[s].label}
           </button>
+        ))}
       </div>
 
       {/* Lista */}
