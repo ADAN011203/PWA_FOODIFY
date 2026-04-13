@@ -4,12 +4,14 @@ import type { Order, OrderStatus } from "../types/orders";
 
 
 function mapStatus(s: string): OrderStatus {
-  switch (s) {
+  switch (s.toLowerCase()) {
     case "pending":    return "nuevo";
     case "confirmed":  return "nuevo";
     case "preparing":  return "en_preparacion";
     case "ready":      return "listo";
+    case "prepared":   return "listo";
     case "delivered":  return "entregado";
+    case "completed":  return "entregado";
     case "cancelled":  return "cancelado";
     default:           return "nuevo";
   }
@@ -17,7 +19,7 @@ function mapStatus(s: string): OrderStatus {
 
 export function mapStatusToBackend(status: OrderStatus): string {
   switch (status) {
-    case "nuevo":          return "pending";
+    case "nuevo":          return "confirmed";
     case "en_preparacion": return "preparing";
     case "listo":          return "ready";
     case "entregado":      return "delivered";

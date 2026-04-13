@@ -382,8 +382,10 @@ export default function AdminPedidosPage() {
       await updateOrderStatusApi(id, newStatus);
       refetch();
       toast.success(`Orden → ${STATUS_CFG[newStatus].label}`);
-    } catch {
-      toast.error("No se pudo actualizar el estado");
+    } catch (e: any) {
+      const msg = e.response?.data?.message || e.message || "Error desconocido";
+      toast.error(`Error: ${msg}`);
+      console.error("Order update failed:", e);
     }
   };
 
@@ -392,8 +394,9 @@ export default function AdminPedidosPage() {
       await cancelOrderApi(id);
       refetch();
       toast.success("Orden cancelada");
-    } catch {
-      toast.error("No se pudo cancelar la orden");
+    } catch (e: any) {
+      const msg = e.response?.data?.message || e.message || "Error desconocido";
+      toast.error(`Error: ${msg}`);
     }
   };
 
