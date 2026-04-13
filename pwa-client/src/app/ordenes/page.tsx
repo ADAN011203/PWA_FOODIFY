@@ -23,6 +23,7 @@ import type { Order, OrderStatus } from "@/types/orders";
 // ─── Badge de estado ──────────────────────────────────────────────────────────
 const STATUS_MAP: Record<OrderStatus, { label: string; bg: string; color: string; icon: string }> = {
   nuevo:          { label: "En Orden",  bg: "#dbeafe", color: "#3b82f6", icon: "" },
+  confirmado:      { label: "Confirmado", bg: "#dbeafe", color: "#3b82f6", icon: "" },
   en_preparacion: { label: "En Cocina", bg: "#fef3c7", color: "#d97706", icon: "" },
   listo:          { label: "Listo",     bg: "#dcfce7", color: "#16a34a", icon: "" },
   entregado:      { label: "Entregado", bg: "#f3f4f6", color: "#6b7280", icon: "" },
