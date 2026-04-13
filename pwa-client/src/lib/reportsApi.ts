@@ -11,11 +11,12 @@ export async function getSalesReportApi(params?: {
   label: string; ventas: number; ordenes: number;
 }[]> {
   const { data } = await api.get("/reports/sales", { params });
-  const list = Array.isArray(data.data?.byDay) ? data.data.byDay : [];
+  const list = Array.isArray(data.data?.byDay) ? data.data.byDay : 
+               Array.isArray(data.data) ? data.data : [];
   return list.map((d: Record<string, unknown>) => ({
-    label:   String(d.date ?? d.label ?? ""),
-    ventas:  Number(d.total ?? d.ventas ?? 0),
-    ordenes: Number(d.orders ?? d.ordenes ?? 0),
+    label:   String(d.label ?? d.date ?? ""),
+    ventas:  Number(d.ventas ?? d.total ?? 0),
+    ordenes: Number(d.ordenes ?? d.orders ?? 0),
   }));
 }
 
@@ -32,7 +33,7 @@ export async function getTopDishesApi(params?: {
   const list = Array.isArray(data.data) ? data.data : [];
   return list.map((d: Record<string, unknown>) => ({
     name:   String(d.name ?? d.dishName ?? ""),
-    value:  Number(d.soldCount ?? d.quantity ?? 0),
+    value:  Number(d.value ?? d.soldCount ?? d.quantity ?? 0),
     income: Number(d.income ?? d.total ?? 0),
   }));
 }
@@ -44,8 +45,8 @@ export async function getPeakHoursApi(): Promise<{
   const { data } = await api.get("/reports/peak-hours");
   const list = Array.isArray(data.data) ? data.data : [];
   return list.map((d: Record<string, unknown>) => ({
-    hour:    `${String(d.hour ?? "0").padStart(2, "0")}:00`,
-    ordenes: Number(d.orders ?? d.count ?? 0),
+    hour:    String(d.hour).includes(':') ? String(d.hour) : `${String(d.hour ?? "0").padStart(2, "0")}:00`,
+    ordenes: Number(d.ordenes ?? d.orders ?? d.count ?? 0),
   }));
 }
 
