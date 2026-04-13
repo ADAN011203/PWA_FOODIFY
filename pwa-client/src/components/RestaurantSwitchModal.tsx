@@ -51,7 +51,7 @@ export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
         const session = JSON.parse(raw);
         session.user.restaurantId = restaurant.id;
         session.user.branch = details.name || restaurant.name;
-        session.user.slug = details.slug || details.restaurant_slug || "";
+        session.user.slug = details.slug || "";
         localStorage.setItem("foodify_session", JSON.stringify(session));
       }
 
