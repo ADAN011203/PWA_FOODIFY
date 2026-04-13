@@ -16,8 +16,9 @@ class SocketManager {
     
     const socket = io(`${SOCKET_URL}${namespace}`, {
       auth: { token: `Bearer ${token}` },
-      transports: ["websocket"],
+      transports: ["polling", "websocket"], // Use polling first to ensure Vercel compatibility
       reconnection: true,
+      reconnectionAttempts: 5,
     });
 
     socket.on("connect", () => {
