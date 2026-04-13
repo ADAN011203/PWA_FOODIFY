@@ -20,7 +20,6 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import type { Order } from "@/types/orders";
 
 const statusSteps = [
@@ -140,7 +139,7 @@ export default function OrderTrackingPage() {
           <span className="font-bold"># {order.folio}</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => fetchOrder(true)} disabled={isRefreshing}>
-          <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
+          <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
         </Button>
       </header>
 
@@ -184,18 +183,16 @@ export default function OrderTrackingPage() {
 
                 return (
                   <div key={step.id} className="flex flex-col items-center gap-3">
-                    <div className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center border-4 transition-all duration-500",
-                      isCompleted && "bg-foodify-orange border-foodify-orange text-white",
-                      isActive && "bg-white border-foodify-orange text-foodify-orange scale-110 shadow-lg shadow-foodify-orange/20",
-                      isPending && "bg-white border-gray-100 text-gray-300"
-                    )}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${
+                      isCompleted ? "bg-foodify-orange border-foodify-orange text-white" :
+                      isActive ? "bg-white border-foodify-orange text-foodify-orange scale-110 shadow-lg shadow-foodify-orange/20" :
+                      "bg-white border-gray-100 text-gray-300"
+                    }`}>
                       {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : (idx + 1)}
                     </div>
-                    <span className={cn(
-                      "text-[10px] sm:text-xs font-bold uppercase tracking-tighter sm:tracking-normal",
+                    <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-tighter sm:tracking-normal ${
                       isActive ? "text-foodify-orange" : "text-text-secondary"
-                    )}>
+                    }`}>
                       {step.customerLabel}
                     </span>
                   </div>
