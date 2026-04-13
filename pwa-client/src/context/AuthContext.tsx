@@ -40,8 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Refuerzo manual para asegurar carga de datos reales
           if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
             u.slug = "centro-educativo";
-          }
-          if (u.email === "admin@demo.foodify.mx") {
+          } else if (u.email === "admin@demo.foodify.mx") {
             u.slug = "demo";
           }
         }
@@ -66,8 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (user.branch?.toLowerCase().includes("centro educativo") || user.name?.toLowerCase().includes("centro educativo")) {
            updateUserSlug("centro-educativo");
            return;
-        }
-        if (user.email === "admin@demo.foodify.mx") {
+        } else if (user.email === "admin@demo.foodify.mx") {
            updateUserSlug("demo");
            return;
         }
@@ -121,8 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Refuerzo manual para asegurar carga de datos reales
       if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
         u.slug = "centro-educativo";
-      }
-      if (u.email === "admin@demo.foodify.mx") {
+      } else if (u.email === "admin@demo.foodify.mx") {
         u.slug = "demo";
       }
     }

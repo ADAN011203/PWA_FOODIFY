@@ -30,7 +30,7 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
   restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
 }> {
   console.log(`[Menu] Fetching public menu for slug: "${slug}", mode: "${mode}"`);
-  const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
+  const { data } = await publicApi.get(`/api/v1/menu/${slug}`, { params: { mode } });
   const { restaurant, menus } = data.data;
 
   const mappedMenus: PublicMenu[] = (menus ?? []).map((m: any) => ({
@@ -66,7 +66,7 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
 // ─── PUBLIC ACCESS TO ALL DISHES (Backup) ───────────────────────────────────
 
 export async function getPublicDishesApi(): Promise<Dish[]> {
-  const { data } = await publicApi.get("/dishes");
+  const { data } = await publicApi.get("/api/v1/dishes");
   const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
   return list.map((d: any) => mapDish(d));
 }

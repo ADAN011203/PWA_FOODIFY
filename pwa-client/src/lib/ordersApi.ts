@@ -80,7 +80,7 @@ export async function createPublicOrderApi(payload: {
 // ─── Seguimiento de orden por folio (público) ─────────────────────────────────
 export async function getOrderByFolioApi(slug: string, folio: string): Promise<Order | null> {
   try {
-    const { data } = await publicApi.get(`/menu/${slug}/order/${folio}`);
+    const { data } = await publicApi.get(`/api/v1/menu/${slug}/order/${folio}`);
     return mapToInternalOrder(data.data ?? data);
   } catch { return null; }
 }

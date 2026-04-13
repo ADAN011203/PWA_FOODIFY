@@ -55,7 +55,7 @@ function ParaLlevarContent() {
     async function load() {
       if (authLoading && !urlSlug) return;
       try {
-        const slugToUse = urlSlug || user?.slug || RESTAURANT_SLUG;
+        const slugToUse = urlSlug || (user?.slug && user.slug.trim() !== "" ? user.slug : null) || RESTAURANT_SLUG;
         // Strict fetch from API - No fallbacks
         const res = await fetchPublicMenu(slugToUse, "takeout");
         
