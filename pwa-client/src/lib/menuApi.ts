@@ -1,7 +1,7 @@
 import { publicApi, api } from "./api";
 import { type Dish, type Category, type PublicMenu } from "../types/menu";
 
-export const RESTAURANT_SLUG = "demo-restaurant";
+export const RESTAURANT_SLUG = "demo";
 
 function mapDish(d: any, categoryId?: string): Dish {
   const rawImages = Array.isArray(d.images) ? d.images : (d.imageUrl ? [d.imageUrl] : []);

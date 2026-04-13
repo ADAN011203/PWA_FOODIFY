@@ -41,6 +41,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
             u.slug = "centro-educativo";
           }
+          if (u.email === "admin@demo.foodify.mx") {
+            u.slug = "demo";
+          }
         }
         setUser(u);
         // Soportar tanto "token" (legacy mock) como "accessToken" (backend real)
@@ -62,6 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Intento 2: Mapeo manual de emergencia (para asegurar que "Centro educativo" cargue)
         if (user.branch?.toLowerCase().includes("centro educativo") || user.name?.toLowerCase().includes("centro educativo")) {
            updateUserSlug("centro-educativo");
+           return;
+        }
+        if (user.email === "admin@demo.foodify.mx") {
+           updateUserSlug("demo");
            return;
         }
 
@@ -114,6 +121,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Refuerzo manual para asegurar carga de datos reales
       if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
         u.slug = "centro-educativo";
+      }
+      if (u.email === "admin@demo.foodify.mx") {
+        u.slug = "demo";
       }
     }
     
