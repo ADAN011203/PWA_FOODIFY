@@ -19,7 +19,8 @@ function mapStatus(s: string): OrderStatus {
 
 export function mapStatusToBackend(status: OrderStatus): string {
   switch (status) {
-    case "nuevo":          return "confirmed";
+    case "nuevo":          return "pending";
+    case "confirmado":     return "confirmed";
     case "en_preparacion": return "preparing";
     case "listo":          return "ready";
     case "entregado":      return "delivered";

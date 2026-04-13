@@ -48,15 +48,17 @@ function useAdminGuard() {
 
 // ─── Config de estados ────────────────────────────────────────────────────────
 const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string }> = {
-  nuevo:          { label: "Nuevo",        color: "#3b82f6", bg: "rgba(59,130,246,0.15)" },
+  nuevo:          { label: "Pendiente",    color: "#8a8f98", bg: "rgba(138,143,152,0.15)"},
+  confirmado:     { label: "Confirmado",   color: "#3b82f6", bg: "rgba(59,130,246,0.15)" },
   en_preparacion: { label: "En Cocina",    color: "#f59e0b", bg: "rgba(245,158,11,0.15)" },
   listo:          { label: "Listo",        color: "#22c55e", bg: "rgba(34,197,94,0.15)"  },
-  entregado:      { label: "Entregado",    color: "#8a8f98", bg: "rgba(138,143,152,0.15)"},
+  entregado:      { label: "Entregado",    color: "#10b981", bg: "rgba(16,185,129,0.15)"},
   cancelado:      { label: "Cancelado",    color: "#ef4444", bg: "rgba(239,68,68,0.15)"  },
 };
 
 const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
-  nuevo:          "en_preparacion",
+  nuevo:          "confirmado",
+  confirmado:     "en_preparacion",
   en_preparacion: "listo",
   listo:          "entregado",
 };
