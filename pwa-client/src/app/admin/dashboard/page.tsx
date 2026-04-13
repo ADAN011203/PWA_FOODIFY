@@ -11,6 +11,39 @@ import { getInventoryItemsApi } from "@/lib/inventoryApi";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useFetchWithState } from "@/lib/useFetchWithState";
+import { 
+  BarChart3, 
+  ShoppingBag, 
+  Users, 
+  Package, 
+  TrendingUp, 
+  ArrowUpRight,
+  Layers
+} from "lucide-react";
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent 
+} from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  LineChart,
+  Line
+} from "recharts";
 
 const COLORS = ["#E8673A", "#D4592E", "#F59E0B", "#10B981", "#6B7280"];
 
@@ -265,6 +298,3 @@ function KPIItem({ icon: Icon, label, value, trend, trendType }: any) {
   );
 }
 
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
-}
