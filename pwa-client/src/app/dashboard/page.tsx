@@ -14,9 +14,9 @@ import { EmptyState } from "@/components/EmptyState";
 import type { Dish } from "@/types/menu";
 import type { Ingredient } from "@/types/inventory";
 import { getAlertLevel } from "@/types/inventory";
-import type { Order } from "@/types/orders";
 import { getOrdersApi } from "@/lib/ordersApi";
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
 import { RestaurantSwitchModal } from "@/components/RestaurantSwitchModal";
 import styles from "./dashboard.module.css";
 
