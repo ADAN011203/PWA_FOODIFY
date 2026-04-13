@@ -29,7 +29,7 @@ export default function AdminDashboard() {
 
   const { data: salesData } = useFetchWithState("sales", () => getSalesReportApi({ period: reportPeriod }), 15000);
   const { data: topDishes } = useFetchWithState("top-dishes", () => getTopDishesApi({ period: reportPeriod }), 15000);
-  const { data: peakData } = useFetchWithState("peak-hours", () => getPeakHoursApi({ period: reportPeriod }), 15000);
+  const { data: peakData } = useFetchWithState("peak-hours", () => getPeakHoursApi(), 15000);
   const { data: dashboard } = useFetchWithState("dash-kpis", () => user?.restaurantId ? getRestaurantDashboardApi(String(user.restaurantId)) : Promise.reject(), 15000);
   const { data: inventory } = useFetchWithState("inventory", getInventoryItemsApi, 15000);
 
