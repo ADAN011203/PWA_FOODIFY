@@ -66,9 +66,9 @@ function ParaLlevarContent() {
         const modeToUse = urlMode || "takeout";
         
         setErrorType(null);
-        // If we have a token, we prioritize sync with the Admin panel to show all configured items.
-        // Otherwise, fallback to the filtered public menu.
-        const res = user?.role ? await getFullAdminMenuApi() : await fetchPublicMenu(slugToUse, modeToUse);
+        // Forzamos el uso del Menú Público para todos (comensales y staff)
+        // para asegurar que todos vean exactamente lo mismo que se configuró para el cliente.
+        const res = await fetchPublicMenu(slugToUse, modeToUse);
         
         setData(res);
         if (res.menus.length > 0) {
