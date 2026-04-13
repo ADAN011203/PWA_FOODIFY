@@ -17,7 +17,7 @@ interface AddStaffModalProps {
 export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     email: "",
     phone: "",
     role: "waiter" as StaffRole,
@@ -34,7 +34,7 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
       onClose();
       // Reset form
       setFormData({
-        fullName: "",
+        name: "",
         email: "",
         phone: "",
         role: "waiter",
@@ -55,8 +55,8 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
           <Input 
             required
             placeholder="Ej. Juan Pérez"
-            value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
         </div>
 

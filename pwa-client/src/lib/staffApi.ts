@@ -17,7 +17,7 @@ function mapStatus(isActive: unknown): StaffStatus {
 }
 
 function mapMember(u: Record<string, unknown>): StaffMember {
-  const name = String(u.fullName ?? u.name ?? "Sin nombre");
+  const name = String(u.name ?? "Sin nombre");
   return {
     id:             String(u.id),
     name,
@@ -44,17 +44,25 @@ export async function getStaffApi(): Promise<StaffMember[]> {
 }
 
 export async function createStaffApi(payload: {
-  fullName: string; email: string; phone: string;
+  name: string; email: string; phone: string;
   role: StaffRole; password: string;
 }): Promise<StaffMember> {
-  const { data } = await api.post("/users", payload);
+  // Map name to fullName for backend compatibility if needed, 
+  // but keeping signature consistent with StaffMember
+  const { data } = await api.post("/users", {
+    ...payload,
+    fullName: payload.name // Backend v3.2 controller might still use this field
+  });
   return mapMember(data.data);
 }
 
 export async function updateStaffApi(id: string, payload: Partial<{
-  fullName: string; email: string; phone: string; role: StaffRole;
+  name: string; email: string; phone: string; role: StaffRole;
 }>): Promise<StaffMember> {
-  const { data } = await api.put(`/users/${id}`, payload);
+  const { data } = await api.put(`/users/${id}`, {
+    ...payload,
+    fullName: payload.name
+  });
   return mapMember(data.data);
 }
 

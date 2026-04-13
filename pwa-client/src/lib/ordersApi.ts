@@ -56,7 +56,7 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
     folio:      String(o.orderNumber ?? o.order_number ?? o.folio ?? o.id),
     status:     finalStatus,
     createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
-    attendedBy: String((o.waiter as Record<string, unknown>)?.fullName ?? o.attendedBy ?? "—"),
+    attendedBy: String((o.waiter as Record<string, unknown>)?.name ?? o.attendedBy ?? "—"),
     branch:     "Restaurante",
     items,
     qrCode:     String(o.qr_code ?? o.qrCode ?? ""),

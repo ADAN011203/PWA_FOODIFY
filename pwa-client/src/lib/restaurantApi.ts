@@ -28,7 +28,7 @@ export async function getOwnedRestaurantsApi(): Promise<Restaurant[]> {
     return list.map((r: any) => ({
       ...r,
       id: String(r.id),
-      slug: r.slug ?? r.restaurant_slug ?? "",
+      slug: r.slug ?? "",
     }));
   } catch (e) {
     console.error("Error fetching owned restaurants:", e);
@@ -45,7 +45,7 @@ export async function getRestaurantDetailsApi(id: string): Promise<Restaurant> {
   return {
     ...r,
     id: String(r.id),
-    slug: r.slug ?? r.restaurant_slug ?? "",
+    slug: r.slug ?? "",
   };
 }
 
@@ -73,6 +73,6 @@ export async function updateRestaurantApi(id: string, payload: Partial<Restauran
   return {
     ...r,
     id: String(r.id),
-    slug: r.slug ?? r.restaurant_slug ?? "",
+    slug: r.slug ?? "",
   };
 }

@@ -42,7 +42,7 @@ export async function loginApi(
 
     const user: AuthUser = {
       id:     String(me.id ?? me.userId ?? me.sub ?? ""),
-      name:   String(me.fullName ?? me.name ?? email.split("@")[0]),
+      name:   String(me.name ?? email.split("@")[0]),
       email:  String(me.email ?? email),
       role:   mapRole(authData.role),
       branch: String(me.restaurant?.name ?? me.restaurantName ?? "Foodify"),
@@ -65,7 +65,7 @@ export async function getMeApi(): Promise<AuthUser> {
   const me = data.data;
   return {
     id:     String(me.id ?? me.userId ?? me.sub ?? ""),
-    name:   String(me.fullName ?? me.name ?? ""),
+    name:   String(me.name ?? ""),
     email:  String(me.email),
     role:   mapRole(me.role),
     branch: String(me.restaurant?.name ?? "Foodify"),
