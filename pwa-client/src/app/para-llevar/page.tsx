@@ -59,14 +59,11 @@ function ParaLlevarContent() {
         // Strict fetch from API - No fallbacks
         const res = await fetchPublicMenu(slugToUse, "takeout");
         
-        // Filter out inactive menus (the API might return them, but we only show active ones)
-        // isActiveNow usually accounts for both manual toggle and schedule
-        const activeMenus = res.menus.filter(m => m.isActiveNow);
-        res.menus = activeMenus;
-
+        // "Show all" - Public API usually only returns manually enabled menus.
+        // We show them regardless of their current schedule (isActiveNow).
         setData(res);
-        if (activeMenus.length > 0) {
-          setActiveMenuId(activeMenus[0].id);
+        if (res.menus.length > 0) {
+          setActiveMenuId(res.menus[0].id);
         }
       } catch (err) {
         console.error("Error loading menu:", err);

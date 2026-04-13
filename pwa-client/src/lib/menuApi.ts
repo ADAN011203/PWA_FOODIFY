@@ -37,6 +37,7 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
     id: String(m.id),
     name: m.name,
     isActiveNow: Boolean(m.isActiveNow),
+    isActive: Boolean(m.isActive ?? true),
     isOrderableNow: Boolean(m.isOrderableNow),
     availabilityNote: m.availabilityNote,
     categories: (m.categories ?? []).filter((c: any) => c.isActive !== false).map((c: any) => ({
