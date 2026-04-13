@@ -106,15 +106,15 @@ export async function getKitchenPerformanceApi(params?: {
 }
 
 // ─── KPIs del restaurante ─────────────────────────────────────────────────────
-export async function getRestaurantDashboardApi(restaurantId: string): Promise<{
+export async function getRestaurantDashboardApi(): Promise<{
   salesToday: number;
   activeOrders: number;
   topDishes: { name: string; count: number }[];
   stockAlerts: number;
 }> {
   try {
-    const { data } = await api.get(`/restaurants/${restaurantId}/dashboard`);
-    const d = data.data ?? {};
+    const { data } = await api.get("/reports/dashboard");
+    const d = data.data ?? data ?? {};
     return {
       salesToday:   Number(d.salesToday ?? d.sales_today ?? 0),
       activeOrders: Number(d.activeOrders ?? d.active_orders ?? 0),

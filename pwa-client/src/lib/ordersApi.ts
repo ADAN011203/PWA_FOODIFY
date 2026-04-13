@@ -54,9 +54,10 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
   return {
     id:         String(o.id),
     folio:      String(o.orderNumber ?? o.order_number ?? o.folio ?? o.id),
+    tableId:    o.tableNumber ? String(o.tableNumber) : (o.table as any)?.number ? String((o.table as any).number) : (o.tableId ? String(o.tableId) : undefined),
     status:     finalStatus,
     createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
-    attendedBy: String((o.waiter as Record<string, unknown>)?.name ?? o.attendedBy ?? "—"),
+    attendedBy: String(o.waiterName ?? (o.waiter as any)?.fullName ?? (o.waiter as any)?.name ?? o.attendedBy ?? "—"),
     branch:     "Restaurante",
     items,
     qrCode:     String(o.qr_code ?? o.qrCode ?? ""),

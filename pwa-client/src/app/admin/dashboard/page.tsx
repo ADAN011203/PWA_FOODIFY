@@ -59,15 +59,13 @@ export default function AdminDashboard() {
   // Memoize fetchers para evitar re-creación en cada render
   const salesFetcher = useMemo(() => () => getSalesReportApi({ period: reportPeriod }), [reportPeriod]);
   const topDishesFetcher = useMemo(() => () => getTopDishesApi({ period: reportPeriod }), [reportPeriod]);
-  const dashFetcher = useMemo(() => () => user?.restaurantId 
-    ? getRestaurantDashboardApi(String(user.restaurantId)) 
-    : Promise.reject("No restaurant ID"), [user?.restaurantId]);
+  const dashFetcher = useMemo(() => () => getRestaurantDashboardApi(), []);
 
-  const { data: salesData } = useFetchWithState("sales", salesFetcher, 15000);
-  const { data: topDishesData } = useFetchWithState("top-dishes", topDishesFetcher, 15000);
-  const { data: peakData } = useFetchWithState("peak-hours", getPeakHoursApi, 15000);
-  const { data: dashboard } = useFetchWithState("dash-kpis", dashFetcher, 15000);
-  const { data: inventory } = useFetchWithState("inventory", getInventoryItemsApi, 15000);
+  const { data: salesData, loading: salesLoading } = useFetchWithState("sales", salesFetcher, 15000);
+  const { data: topDishesData, loading: topDishesLoading } = useFetchWithState("top-dishes", topDishesFetcher, 15000);
+  const { data: peakData, loading: peakLoading } = useFetchWithState("peak-hours", getPeakHoursApi, 15000);
+  const { data: dashboard, loading: dashLoading } = useFetchWithState("dash-kpis", dashFetcher, 15000);
+  const { data: inventory, loading: invLoading } = useFetchWithState("inventory", getInventoryItemsApi, 15000);
 
   // Transformaciones de datos
   const sales = (salesData || []).map(s => ({ name: s.label, sales: s.ventas }));

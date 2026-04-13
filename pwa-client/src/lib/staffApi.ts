@@ -17,7 +17,16 @@ function mapStatus(isActive: unknown): StaffStatus {
 }
 
 function mapMember(u: Record<string, unknown>): StaffMember {
-  const name = String(u.name ?? "Sin nombre");
+  // El backend v3.2 suele devolver fullName o full_name en lugar de name.
+  // El interceptor del backend a veces duplica los campos en ambos formatos.
+  const name = String(
+    u.fullName ?? 
+    u.full_name ?? 
+    u.waiterName ?? // Caso especial de órdenes mapeadas
+    u.name ?? 
+    "Sin nombre"
+  );
+  
   return {
     id:             String(u.id),
     name,
@@ -28,7 +37,9 @@ function mapMember(u: Record<string, unknown>): StaffMember {
     branch:         String((u.restaurant as Record<string, unknown>)?.name ?? u.branch ?? "Principal"),
     createdAt:      String(u.createdAt ?? new Date().toISOString()),
     lastLogin:      u.lastLoginAt ? String(u.lastLoginAt) : (u.lastLogin ? String(u.lastLogin) : undefined),
-    avatarInitials: name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
+    avatarInitials: name !== "Sin nombre" 
+      ? name.split(" ").filter(Boolean).map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
+      : "??",
   };
 }
 
