@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { DashboardSkeleton } from "@/components/ui/Skeletons";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -417,16 +418,16 @@ export default function DashboardPage() {
             <p className={styles.chartSub} style={{ marginBottom: 18 }}>Acceso rápido</p>
             <div className={styles.modulesGrid}>
               {MODULES.map(({ icon, label, sub, href, color }) => (
-                <div
+                <Link
                   key={label}
+                  href={href}
                   className={styles.moduleCard}
-                  style={{ borderColor: `${color}20` }}
-                  onClick={() => window.location.href = href}
+                  style={{ borderColor: `${color}20`, textDecoration: "none" }}
                 >
                   <p className={styles.moduleIcon}>{icon}</p>
                   <p className={styles.moduleLabel}>{label}</p>
                   <p className={styles.moduleSub}>{sub}</p>
-                </div>
+                </Link>
               ))}
             </div>
           </div>

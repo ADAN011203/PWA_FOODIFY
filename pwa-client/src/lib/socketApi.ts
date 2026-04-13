@@ -19,13 +19,13 @@ class SocketManager {
       auth: { token: `Bearer ${token}` },
       transports: ["polling"],
       upgrade: false,
-      multiplex: true, // Shared connection for kitchen/restaurant to maintain a single session (SID) through proxy
+      multiplex: true,
       withCredentials: true,
-      forceNew: true, // Crucial for Vercel proxy to force new session attempts on failure
-      timestampRequests: true, // Avoid caching of polling segments
+      forceNew: false, // Share the manager across namespaces
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
+      reconnectionAttempts: 20,
+      reconnectionDelay: 2000,
+      randomizationFactor: 0.5,
     });
 
     socket.on("connect", () => {

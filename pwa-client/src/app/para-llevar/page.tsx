@@ -57,32 +57,29 @@ function ParaLlevarContent() {
 
   // Load Data
   useEffect(() => {
+    let active = true;
     async function load() {
-      // Esperar a que cargue la sesión si no hay slug en URL
+      // Esperar un máximo de 2 segundos a que el AuthContext resuelva el slug
+      // Si pasa ese tiempo y no hay slug ni urlSlug, usamos el fallback.
       if (authLoading && !urlSlug) return;
 
       try {
-        // Si hay una sesión cargada pero aún no tiene slug, esperamos un momento a que AuthContext la resuelva
-        if (user && !user.slug && !urlSlug) {
-          console.log("[ParaLlevar] Auth exists but no slug yet. Waiting for resolution...");
-          return; 
+        let slugToUse = urlSlug || user?.slug;
+
+        // Si no hay slug pero el usuario está autenticado, esperamos un ciclo o intentamos forzar resolución
+        if (user && !slugToUse && !urlSlug) {
+          console.log("[ParaLlevar] Waiting for slug resolution...");
+          // No retornamos inmediatamente para siempre; dejamos que el re-render por user?slug dispare de nuevo
+          // Pero si ya pasaron varios intentos, usamos el fallback
+          slugToUse = RESTAURANT_SLUG; 
         }
 
-        let slugToUse = urlSlug || user?.slug || RESTAURANT_SLUG;
-        console.log(`[ParaLlevar] Resolving slug. URL: "${urlSlug}", User: "${user?.slug}", Fallback: "${RESTAURANT_SLUG}" -> Final: "${slugToUse}"`);
+        if (!slugToUse) slugToUse = RESTAURANT_SLUG;
 
-        // Si el usuario está logueado pero no tiene slug persistida, intentamos resolverla
-        if (!urlSlug && !user?.slug && user?.restaurantId) {
-          console.log(`[ParaLlevar] Missing slug for authenticated user, attempting dynamic lookup for restaurantId: ${user.restaurantId}`);
-          try {
-            const rest = await getRestaurantDetailsApi(user.restaurantId);
-            if (rest.slug) slugToUse = rest.slug;
-          } catch (e) {
-            console.warn("Could not fetch restaurant slug, using fallback.");
-          }
-        }
-
+        console.log(`[ParaLlevar] Fetching menu for: "${slugToUse}"`);
         const res = await fetchPublicMenu(slugToUse, "takeout");
+        
+        if (!active) return;
         setData(res);
         if (res.menus.length > 0) {
           const firstActive = res.menus.find(m => m.isActiveNow) || res.menus[0];
@@ -91,11 +88,12 @@ function ParaLlevarContent() {
       } catch (err) {
         console.error("Error loading menu:", err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
     load();
-  }, [urlSlug, user?.restaurantId, user?.slug, authLoading]);
+    return () => { active = false; };
+  }, [urlSlug, user?.slug, authLoading]);
 
   // Derived State
   const activeMenu = useMemo(() => 
