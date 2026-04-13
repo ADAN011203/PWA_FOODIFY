@@ -26,7 +26,7 @@ const STATUS_STEPS: { status: OrderStatus; label: string; icon: any; desc: strin
 ];
 
 const STATUS_ORDER: Record<OrderStatus, number> = {
-  nuevo: 0, en_preparacion: 1, listo: 2, entregado: 3, cancelado: -1,
+  nuevo: 0, confirmado: 0, en_preparacion: 1, listo: 2, entregado: 3, cancelado: -1,
 };
 
 // ─── Helpers
