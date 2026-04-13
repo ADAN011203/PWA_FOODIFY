@@ -1,4 +1,4 @@
-import { publicApi, api } from "./api";
+import { publicApi, api } from "./api/axios";
 import { type Dish, type Category, type PublicMenu } from "../types/menu";
 
 export const RESTAURANT_SLUG = "demo";

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { api, publicApi } from "./api";
+import { api, publicApi } from "./api/axios";
 
 /**
  * Generic hook that fetches data.

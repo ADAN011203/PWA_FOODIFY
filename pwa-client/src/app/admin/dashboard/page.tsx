@@ -8,7 +8,7 @@ import {
   type ReportPeriod
 } from "@/lib/reportsApi";
 import { getInventoryItemsApi } from "@/lib/inventoryApi";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useFetchWithState } from "@/lib/useFetchWithState";
 import { 
@@ -57,6 +57,11 @@ function mapPeriod(p: string): ReportPeriod {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [period, setPeriod] = useState("Mes");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const reportPeriod = mapPeriod(period);
 
@@ -77,6 +82,18 @@ export default function AdminDashboard() {
   const top = (topDishes || []).map(d => ({ name: d.name, value: d.value }));
   const peak = (peakData || []).map(p => ({ hour: p.hour, orders: p.ordenes }));
   const lowStock = (inventory || []).filter(i => i.currentStock <= i.minStock).length;
+
+  if (!isMounted) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="h-20 bg-gray-100 dark:bg-zinc-800 rounded-2xl" />
+        <div className="grid grid-cols-4 gap-6">
+          {[1,2,3,4].map(i => <div key={i} className="h-32 bg-gray-100 dark:bg-zinc-800 rounded-2xl" />)}
+        </div>
+        <div className="h-[400px] bg-gray-100 dark:bg-zinc-800 rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

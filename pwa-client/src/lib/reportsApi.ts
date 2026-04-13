@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api } from "./api/axios";
 
 export type ReportPeriod = "today" | "week" | "month" | "quarter" | "year";
 

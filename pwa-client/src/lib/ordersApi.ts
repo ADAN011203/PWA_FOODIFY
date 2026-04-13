@@ -1,4 +1,4 @@
-import { api, publicApi } from "./api";
+import { api, publicApi } from "./api/axios";
 import type { Order, OrderStatus } from "../types/orders";
 
 

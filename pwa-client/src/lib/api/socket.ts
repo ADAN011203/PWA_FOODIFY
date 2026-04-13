@@ -16,7 +16,7 @@ class SocketManager {
     
     const socket = io(namespace, {
       path: "/api_proxy/socket.io/",
-      // En v3.2, enviamos el token puro sin el prefijo 'Bearer' en el handshake auth para compatibilidad con NestJS
+      // En v3.2, enviamos el token puro en el handshake auth para compatibilidad con NestJS
       auth: { token }, 
       transports: ["websocket", "polling"],
       reconnection: true,
@@ -26,11 +26,11 @@ class SocketManager {
     });
 
     socket.on("connect", () => {
-      console.log(`Connected to Socket.io [${namespace}]`);
+      console.log(`[Socket] Connected to namespace: ${namespace}`);
     });
 
     socket.on("connect_error", (error: any) => {
-      console.error(`Socket connection error [${namespace}]:`, error);
+      console.error(`[Socket] Connection error [${namespace}]:`, error);
     });
 
     this.sockets.set(namespace, socket);

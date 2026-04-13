@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api } from "./api/axios";
 import type { StaffMember, StaffRole, StaffStatus } from "../types/staff";
 
 function mapRole(r: string): StaffRole {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Order, OrderStatus } from "@/types/orders";
 import { getActiveOrdersApi, updateOrderStatusApi, getKitchenOrdersApi, updateKitchenStatusApi } from "@/lib/ordersApi";
-import { getRestaurantSocket } from "@/lib/socketApi";
+import { getRestaurantSocket } from "@/lib/api/socket";
 
 const STORAGE_KEY = "foodify_guest_orders";
 const POLL_FALLBACK_INTERVAL = 15000; // 15sfallback if socket fails
