@@ -27,18 +27,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// ─── Interceptor RESPONSE — refresh automático en 401 ────────────────────────
-let isRefreshing = false;
-let failedQueue: { resolve: (v: unknown) => void; reject: (e: unknown) => void }[] = [];
-
-function processQueue(error: unknown, token: string | null = null) {
-  failedQueue.forEach(({ resolve, reject }) => {
-    if (error) reject(error);
-    else resolve(token);
-  });
-  failedQueue = [];
-}
-
 // ─── Interceptor RESPONSE — refresh automatically on 401 ─────────────────────
 let isRefreshing = false;
 let failedQueue: { resolve: (v: unknown) => void; reject: (e: unknown) => void }[] = [];
