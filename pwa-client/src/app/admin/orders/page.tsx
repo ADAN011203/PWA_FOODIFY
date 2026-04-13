@@ -139,7 +139,7 @@ export default function AdminOrdersPage() {
                     <div key={idx} className="flex justify-between items-center text-sm">
                        <span className="text-text-primary font-medium">
                          <span className="font-black text-foodify-orange mr-2">{item.qty}x</span>
-                         {item.dishName || item.name}
+                         {item.dishName}
                        </span>
                        <span className="font-black">${(item.unitPrice || 0).toFixed(2)}</span>
                     </div>
