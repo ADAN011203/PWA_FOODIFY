@@ -176,8 +176,10 @@ function ParaLlevarContent() {
           </div>
         </div>
       ), { duration: 5000 });
-    } catch {
-      toast.error("Error al crear el pedido");
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || "Error al crear el pedido";
+      console.error("Order creation failed:", errorMsg, err.response?.data);
+      toast.error(`Error: ${errorMsg}`);
     }
   };
 

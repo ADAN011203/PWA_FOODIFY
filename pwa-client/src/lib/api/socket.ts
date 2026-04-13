@@ -7,12 +7,17 @@ const SOCKET_URL = "/api_proxy";
 class SocketManager {
   private sockets: Map<string, Socket> = new Map();
 
-  getSocket(namespace: string = "/"): Socket {
+  getSocket(namespace: string = "/"): Socket | null {
     if (this.sockets.has(namespace)) {
       return this.sockets.get(namespace)!;
     }
 
     const token = useAuthStore.getState().token;
+    
+    // Si no hay token, no intentamos conectar (evita errores 401/Invalid Token en consola)
+    if (!token) {
+      return null;
+    }
     
     const socket = io(namespace, {
       path: "/api_proxy/socket.io/",
