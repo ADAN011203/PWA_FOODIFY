@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
-import { api } from "@/lib/api";
+import { api } from "@/lib/api/axios";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api, publicApi } from "@/lib/api";
+import { api, publicApi } from "@/lib/api/axios";
 import { useCartStore } from "@/store/cartStore";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";

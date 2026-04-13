@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { socketManager, getKitchenSocket, getRestaurantSocket } from "@/lib/socketApi";
+import { socketManager, getKitchenSocket, getRestaurantSocket } from "@/lib/api/socket";
 import toast from "react-hot-toast";
 
 const SocketContext = createContext<null>(null);
