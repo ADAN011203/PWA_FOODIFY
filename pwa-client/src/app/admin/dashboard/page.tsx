@@ -8,7 +8,7 @@ import {
   type ReportPeriod
 } from "@/lib/reportsApi";
 import { getInventoryItemsApi } from "@/lib/inventoryApi";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useFetchWithState } from "@/lib/useFetchWithState";
 import { 
