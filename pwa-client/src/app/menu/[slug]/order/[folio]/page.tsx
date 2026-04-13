@@ -20,7 +20,6 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { Order } from "@/types/orders";
 
 const statusSteps = [
   { id: "pending", label: "Recibido", customerLabel: "Recibido" },
@@ -228,7 +227,7 @@ export default function OrderTrackingPage() {
           <h3 className="font-black text-lg">Resumen de tu pedido</h3>
           <Card>
              <CardContent className="p-0 divide-y">
-               {order.items.map((item) => (
+               {order.items.map((item: any) => (
                  <div key={item.id} className="p-4 flex justify-between items-center">
                     <div className="flex flex-col">
                       <span className="font-bold text-sm">{item.dishName}</span>
