@@ -62,7 +62,7 @@ function ParaLlevarContent() {
       if (authLoading && !urlSlug) return;
       try {
         // Prioridad: URL > Slug Global (demo-restaurant) > Perfil de usuario
-        const slugToUse = urlSlug || RESTAURANT_SLUG || (user?.slug && user.slug.trim() !== "" ? user.slug : null);
+        const slugToUse = urlSlug || RESTAURANT_SLUG || (user?.slug && user.slug.trim() !== "" ? user.slug : undefined);
         const modeToUse = urlMode || "takeout";
         
         setErrorType(null);
