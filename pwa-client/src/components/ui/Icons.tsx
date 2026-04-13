@@ -2,6 +2,7 @@
 // Uso: <IconBag size={24} color="#FF6B35" />
 
 import React from "react";
+import { cn } from "@/lib/utils";
 
 interface IconProps {
   size?: number;
