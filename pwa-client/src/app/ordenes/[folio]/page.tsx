@@ -17,16 +17,15 @@ import {
   IconX,
 } from "@/components/ui/Icons";
 
-// ─── Configuración de estados (T38 — Recibido → En Cocina → Listo → Entregado)
+// ─── Configuración de estados simplificada para comensales (T38)
 const STATUS_STEPS: { status: OrderStatus; label: string; icon: any; desc: string }[] = [
-  { status: "nuevo",          label: "Recibido",           icon: IconClipboard, desc: "Tu orden fue recibida y está en espera" },
-  { status: "en_preparacion", label: "En cocina",          icon: IconChefHat,   desc: "El equipo de cocina está preparando tu pedido" },
-  { status: "listo",          label: "Listo para recoger", icon: IconPackage,   desc: "¡Tu orden está lista! Pasa a recogerla" },
+  { status: "nuevo",          label: "Pedido Recibido",    icon: IconClipboard, desc: "Tu orden fue recibida y está en espera" },
+  { status: "en_preparacion", label: "En Proceso",         icon: IconChefHat,   desc: "Tu pedido está siendo preparado por nuestro equipo" },
   { status: "entregado",      label: "Entregado",          icon: IconCheck,     desc: "¡Que lo disfrutes! Gracias por tu preferencia" },
 ];
 
 const STATUS_ORDER: Record<OrderStatus, number> = {
-  nuevo: 0, confirmado: 0, en_preparacion: 1, listo: 2, entregado: 3, cancelado: -1,
+  nuevo: 0, confirmado: 0, en_preparacion: 1, listo: 1, entregado: 2, cancelado: -1,
 };
 
 // ─── Helpers

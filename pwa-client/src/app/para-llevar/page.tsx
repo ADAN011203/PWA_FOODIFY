@@ -35,6 +35,11 @@ function ParaLlevarContent() {
   const { user, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const urlSlug = searchParams.get("slug");
+  const urlTable = searchParams.get("table");
+  const urlMode = searchParams.get("mode") as "takeout" | "dine_in" | null;
+  
+  const [customerName, setCustomerName] = useState(user?.fullName || user?.name || "");
+  const [customerPhone, setCustomerPhone] = useState("");
 
   // State
   const [data, setData] = useState<{
@@ -56,8 +61,9 @@ function ParaLlevarContent() {
       if (authLoading && !urlSlug) return;
       try {
         const slugToUse = urlSlug || (user?.slug && user.slug.trim() !== "" ? user.slug : null) || RESTAURANT_SLUG;
+        const modeToUse = urlMode || "takeout";
         // Strict fetch from API - No fallbacks
-        const res = await fetchPublicMenu(slugToUse, "takeout");
+        const res = await fetchPublicMenu(slugToUse, modeToUse);
         
         // "Show all" - Public API usually only returns manually enabled menus.
         // We show them regardless of their current schedule (isActiveNow).
@@ -73,7 +79,7 @@ function ParaLlevarContent() {
       }
     }
     load();
-  }, [urlSlug, user?.slug, authLoading]);
+  }, [urlSlug, user?.slug, authLoading, urlMode]);
 
   // Derived State
   const activeMenu = useMemo(() => 
@@ -123,10 +129,17 @@ function ParaLlevarContent() {
 
   const handleCreateOrder = async (name: string) => {
     if (!data || cart.length === 0) return;
+    if (!customerName.trim()) {
+      toast.error("Por favor, ingresa tu nombre");
+      return;
+    }
     try {
       const res = await createPublicOrderApi({
         restaurantId: data.restaurant.id,
-        customerName: name,
+        customerName: customerName,
+        customerPhone: customerPhone,
+        table: urlTable || undefined,
+        mode: urlMode || "takeout",
         items: cart.map(i => ({ dishId: Number(i.dish.id), quantity: i.qty })),
       });
       
@@ -488,8 +501,30 @@ function ParaLlevarContent() {
               )}
             </div>
 
-            <div className="p-10 space-y-6 bg-zinc-50 dark:bg-white/5 border-t dark:border-white/5">
-              <div className="space-y-2">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em]">Tu Nombre</p>
+                  <input 
+                    type="text" 
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Ej. Juan Pérez"
+                    className="w-full h-14 bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-foodify-orange transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em]">Tu Teléfono (Para seguimiento)</p>
+                  <input 
+                    type="tel" 
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Ej. 3312345678"
+                    className="w-full h-14 bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-foodify-orange transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t dark:border-white/5">
                 <div className="flex justify-between items-center text-sm font-bold text-text-secondary uppercase tracking-widest">
                   <span>Subtotal</span>
                   <span>${cartTotal.toFixed(2)}</span>
@@ -500,7 +535,7 @@ function ParaLlevarContent() {
                 </div>
               </div>
               <Button 
-                onClick={() => handleCreateOrder(user?.fullName || "Cliente")}
+                onClick={handleCreateOrder}
                 disabled={cart.length === 0}
                 className="w-full h-20 bg-foodify-orange hover:bg-foodify-orange/90 text-white font-black text-2xl rounded-[1.5rem] shadow-2xl shadow-foodify-orange/40 transition-all active:scale-[0.98]"
               >
