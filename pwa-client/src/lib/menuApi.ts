@@ -137,13 +137,18 @@ export async function toggleDishAvailabilityApi(id: string, status: boolean): Pr
   await api.patch(`/dishes/${id}/availability`, { isAvailable: status });
 }
 
-export async function getAdminMenusApi(): Promise<{ id: string; name: string }[]> {
+export async function getAdminMenusApi(): Promise<{ id: string; name: string; isActive: boolean }[]> {
   const { data } = await api.get("/menus");
   const items = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
   return items.map((m: any) => ({
     id: String(m.id),
     name: m.name,
+    isActive: Boolean(m.isActive ?? true),
   }));
+}
+
+export async function toggleMenuAvailabilityApi(id: string, status: boolean): Promise<void> {
+  await api.patch(`/menus/${id}/availability`, { isActive: status });
 }
 
 export async function createCategoryApi(menuId: string, name: string): Promise<Category> {

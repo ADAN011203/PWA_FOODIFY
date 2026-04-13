@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 import { useFetchWithState } from "@/lib/useFetchWithState";
-import { getAdminMenusApi, getAdminCategoriesApi, getDishesApi, toggleDishAvailabilityApi } from "@/lib/menuApi";
+import { getAdminMenusApi, getAdminCategoriesApi, getDishesApi, toggleDishAvailabilityApi, toggleMenuAvailabilityApi } from "@/lib/menuApi";
 import { AddCategoryModal } from "@/components/modals/AddCategoryModal";
 import { AddDishModal } from "@/components/modals/AddDishModal";
 import toast from "react-hot-toast";
@@ -43,10 +43,20 @@ export default function AdminMenuPage() {
   const toggleDish = async (id: string, current: boolean) => {
     try {
       await toggleDishAvailabilityApi(id, !current);
-      toast.success("Estado actualizado");
+      toast.success("Estado del platillo actualizado");
       refetchDishes();
     } catch {
-      toast.error("Error al actualizar estado");
+      toast.error("Error al actualizar estado del platillo");
+    }
+  };
+
+  const toggleMenu = async (id: string, current: boolean) => {
+    try {
+      await toggleMenuAvailabilityApi(id, !current);
+      toast.success("Estado del menú actualizado");
+      refetchMenus();
+    } catch {
+      toast.error("Error al actualizar estado del menú");
     }
   };
 
@@ -120,7 +130,10 @@ export default function AdminMenuPage() {
                    <div className="flex items-center gap-6 w-full sm:w-auto justify-between border-t sm:border-t-0 pt-4 sm:pt-0">
                       <div className="flex items-center gap-2">
                          <span className="text-[10px] font-black uppercase text-text-secondary tracking-widest">Estado</span>
-                         <Switch defaultChecked={true} />
+                         <Switch 
+                           checked={menu.isActive} 
+                           onCheckedChange={() => toggleMenu(menu.id, menu.isActive)} 
+                         />
                       </div>
                       <div className="flex items-center gap-2">
                          <Button variant="outline" size="sm" className="font-bold h-9">Gestionar</Button>
