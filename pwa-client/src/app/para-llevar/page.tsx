@@ -127,7 +127,7 @@ function ParaLlevarContent() {
     toast.error("Producto eliminado");
   };
 
-  const handleCreateOrder = async (name: string) => {
+  const handleCreateOrder = async () => {
     if (!data || cart.length === 0) return;
     if (!customerName.trim()) {
       toast.error("Por favor, ingresa tu nombre");
@@ -501,6 +501,7 @@ function ParaLlevarContent() {
               )}
             </div>
 
+            <div className="p-10 space-y-6 bg-zinc-50 dark:bg-white/5 border-t dark:border-white/5">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em]">Tu Nombre</p>
@@ -535,7 +536,7 @@ function ParaLlevarContent() {
                 </div>
               </div>
               <Button 
-                onClick={handleCreateOrder}
+                onClick={() => handleCreateOrder()}
                 disabled={cart.length === 0}
                 className="w-full h-20 bg-foodify-orange hover:bg-foodify-orange/90 text-white font-black text-2xl rounded-[1.5rem] shadow-2xl shadow-foodify-orange/40 transition-all active:scale-[0.98]"
               >

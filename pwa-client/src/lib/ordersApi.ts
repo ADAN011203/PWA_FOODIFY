@@ -68,6 +68,8 @@ export async function createPublicOrderApi(payload: {
   customerName: string;
   customerPhone?: string;
   notes?: string;
+  table?: string;
+  mode?: string;
   items: { dishId: number; quantity: number; specialNotes?: string }[];
 }): Promise<Order> {
   const { data } = await publicApi.post("/api/v1/orders", {
