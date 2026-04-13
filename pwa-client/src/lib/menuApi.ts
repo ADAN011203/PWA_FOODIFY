@@ -1,7 +1,7 @@
 import { publicApi, api } from "./api/axios";
 import { type Dish, type Category, type PublicMenu } from "../types/menu";
 
-export const RESTAURANT_SLUG = "demo";
+export const RESTAURANT_SLUG = "demo-restaurant";
 
 function mapDish(d: any, categoryId?: string): Dish {
   const rawImages = Array.isArray(d.images) ? d.images : (d.imageUrl ? [d.imageUrl] : []);

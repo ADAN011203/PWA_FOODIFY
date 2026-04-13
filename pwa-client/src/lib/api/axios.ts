@@ -3,7 +3,7 @@ import { useAuthStore } from "@/store/authStore";
 
 // Use relative path for production (to trigger Vercel proxy and avoid Mixed Content)
 const API_URL = "/api_proxy/api/v1";
-const PUBLIC_API_URL = "/api_proxy";
+const PUBLIC_API_URL = "/api_proxy/api/v1";
 
 // ─── Instance with JWT (Private api/v1) ───────────────────────────────────────
 export const api: AxiosInstance = axios.create({
