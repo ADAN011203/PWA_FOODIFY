@@ -64,9 +64,10 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
 }
 
 /**
- * ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2+ ────────────────
- * IMPORTANT: Backend v3.2+ expects ONLY: { type, customerName, customerPhone, items }
- * NO restaurantId, NO mode, NO table — estos se deducen del contexto
+ * ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2 (Guide) ─────────
+ * IMPORTANT: El servidor v3.2-guide REQUIERE restaurantId en el body para
+ * peticiones @Public (@see orders.controller.ts:96).
+ * Se ha parcheado el CreateOrderDto para permitir este campo.
  */
 export async function createPublicOrderApi(payload: {
   restaurantId: number;
