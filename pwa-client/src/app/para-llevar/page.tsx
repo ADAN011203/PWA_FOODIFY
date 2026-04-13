@@ -61,6 +61,43 @@ function ParaLlevarContent() {
       try {
         const slugToUse = urlSlug || user?.slug || RESTAURANT_SLUG;
         const res = await fetchPublicMenu(slugToUse, "takeout");
+        
+        // If structured menus are empty or none are active, try fetching flat dishes list
+        if (res.menus.length === 0 || !res.menus.some(m => m.isActiveNow)) {
+          const { getPublicDishesApi, getAdminCategoriesApi } = await import("@/lib/menuApi");
+          const [fallbackDishes, fallbackCats] = await Promise.all([
+            getPublicDishesApi(),
+            getAdminCategoriesApi()
+          ]);
+          
+          if (fallbackDishes.length > 0) {
+             const virtualMenu: PublicMenu = {
+                id: "all",
+                name: "Menú Principal",
+                isActiveNow: true,
+                isOrderableNow: true,
+                categories: fallbackCats.map(c => ({
+                  ...c,
+                  dishes: fallbackDishes.filter(d => d.categoryId === c.id)
+                })).filter(c => c.dishes && c.dishes.length > 0)
+             };
+
+             // Any dishes with no category or category not in list
+             const categorizedIds = virtualMenu.categories.map(c => c.id);
+             const uncategorizedDishes = fallbackDishes.filter(d => !categorizedIds.includes(d.categoryId));
+             if (uncategorizedDishes.length > 0) {
+               virtualMenu.categories.push({
+                 id: "others",
+                 name: "Otros",
+                 emoji: "🍽️",
+                 dishes: uncategorizedDishes
+               });
+             }
+
+             res.menus = [virtualMenu];
+          }
+        }
+
         setData(res);
         if (res.menus.length > 0) {
           const firstActive = res.menus.find(m => m.isActiveNow) || res.menus[0];

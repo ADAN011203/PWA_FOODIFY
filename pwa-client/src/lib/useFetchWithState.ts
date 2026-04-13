@@ -1,28 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api, publicApi } from "./api";
 
 /**
  * Generic hook that fetches data.
- * Uses `publicApi` for public routes (/menu) and `api` for protected routes (which auto-appends /api/v1 and tokens).
+ * Uses `publicApi` for public routes (/menu) and `api` for protected routes.
  */
 export function useFetchWithState<T>(
   url: string,
   fetcher?: () => Promise<T>,
-  refreshInterval: number = 0 // en ms (ej. 15000)
+  refreshInterval: number = 0
 ) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
 
+  // Keep track of the latest fetcher without triggering the effect
+  const fetcherRef = useRef(fetcher);
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
+
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setError(null);
-    console.log(`[Fetch] Starting: ${url || "fetcher"}`);
     try {
       let payload: any;
-      if (fetcher) {
-        payload = await fetcher();
+      if (fetcherRef.current) {
+        payload = await fetcherRef.current();
       } else {
         const client = url.startsWith("/menu") ? publicApi : api;
         const res = await client.get(url);
@@ -43,17 +48,11 @@ export function useFetchWithState<T>(
         setEmpty(false);
       }
     } catch (e: any) {
-      // ... error handling ...
       let errMsg = "Error de conexión";
       const apiMsg = e.response?.data?.message;
-      if (typeof apiMsg === "string") {
-        errMsg = apiMsg;
-      } else if (apiMsg && typeof apiMsg === "object") {
-        errMsg = apiMsg.message || apiMsg.error || JSON.stringify(apiMsg);
-        if (Array.isArray(errMsg)) errMsg = errMsg[0];
-      } else if (e.message) {
-        errMsg = e.message;
-      }
+      if (typeof apiMsg === "string") errMsg = apiMsg;
+      else if (apiMsg && typeof apiMsg === "object") errMsg = apiMsg.message || JSON.stringify(apiMsg);
+      else if (e.message) errMsg = e.message;
       setError(String(errMsg));
     } finally {
       if (!isSilent) setLoading(false);
@@ -63,18 +62,16 @@ export function useFetchWithState<T>(
   useEffect(() => {
     fetchData();
 
-    let intervalId: NodeJS.Timeout | null = null;
+    let intervalId: any = null;
     if (refreshInterval > 0) {
-      intervalId = setInterval(() => {
-        fetchData(true);
-      }, refreshInterval);
+      intervalId = setInterval(() => fetchData(true), refreshInterval);
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, fetcher, refreshInterval]);
+  }, [url, refreshInterval]);
 
   return { data, setData, loading, error, empty, refetch: () => fetchData(false) };
 }

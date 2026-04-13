@@ -3,14 +3,34 @@ import { type Dish, type Category, type PublicMenu } from "../types/menu";
 
 export const RESTAURANT_SLUG = "demo-restaurant";
 
+function mapDish(d: any, categoryId?: string): Dish {
+  const rawImages = Array.isArray(d.images) ? d.images : (d.imageUrl ? [d.imageUrl] : []);
+  const images: string[] = rawImages.map((img: any) => 
+    typeof img === "string" ? img : (img.url ?? img.imageUrl ?? "")
+  ).filter(Boolean);
+
+  return {
+    id: String(d.id),
+    name: d.name,
+    description: d.description ?? "",
+    price: Number(d.price),
+    prepTime: Number(d.prepTimeMin ?? d.prep_time_min ?? 15),
+    imageUrl: images[0] ?? "",
+    images: images,
+    isAvailable: Boolean(d.isAvailable ?? d.is_active ?? true),
+    categoryId: String(categoryId ?? d.categoryId ?? d.category_id ?? d.category?.id ?? ""),
+    soldCount: Number(d.soldCount ?? d.sold_count ?? 0),
+    allergens: Array.isArray(d.allergens) ? d.allergens : [],
+    badge: d.badge ?? undefined,
+  };
+}
+
 export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "takeout" | "dine_in" = "takeout"): Promise<{
   menus: PublicMenu[];
   restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
 }> {
-  // El backend excluye /menu/:slug del prefijo global /api/v1
   console.log(`[Menu] Fetching public menu for slug: "${slug}", mode: "${mode}"`);
   const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
-  console.log(`[Menu] Fetch success for: ${slug}`);
   const { restaurant, menus } = data.data;
 
   const mappedMenus: PublicMenu[] = (menus ?? []).map((m: any) => ({
@@ -19,28 +39,16 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
     isActiveNow: Boolean(m.isActiveNow),
     isOrderableNow: Boolean(m.isOrderableNow),
     availabilityNote: m.availabilityNote,
-    categories: (m.categories ?? []).filter((c: any) => c.isActive).map((c: any) => ({
+    categories: (m.categories ?? []).filter((c: any) => c.isActive !== false).map((c: any) => ({
       id: String(c.id),
       name: c.name,
       emoji: c.icon ?? c.emoji ?? "tag",
       dishes: (c.dishes ?? [])
-        .filter((d: any) => !d.deletedAt && (d.isAvailable !== false))
-        .map((d: any) => ({
-          id: String(d.id),
-          name: d.name,
-          description: d.description ?? "",
-          price: Number(d.price),
-          prepTime: Number(d.prepTimeMin ?? 15),
-          imageUrl: Array.isArray(d.images) ? d.images[0] : (d.imageUrl ?? ""),
-          images: Array.isArray(d.images) ? d.images : (d.imageUrl ? [d.imageUrl] : []),
-          isAvailable: Boolean(d.isAvailable ?? true),
-          categoryId: String(c.id),
-          soldCount: Number(d.soldCount ?? 0),
-        })),
+        .filter((d: any) => !d.deletedAt && (d.is_active !== false && d.isAvailable !== false))
+        .map((d: any) => mapDish(d, String(c.id))),
     })),
   }));
 
-  // Consideramos el restaurante "abierto" si al menos un menú está activo ahora
   const isRestaurantOpen = mappedMenus.some(m => m.isActiveNow);
 
   return {
@@ -52,6 +60,14 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
       isOpen: isRestaurantOpen,
     },
   };
+}
+
+// ─── PUBLIC ACCESS TO ALL DISHES (Backup) ───────────────────────────────────
+
+export async function getPublicDishesApi(): Promise<Dish[]> {
+  const { data } = await publicApi.get("/dishes");
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map((d: any) => mapDish(d));
 }
 
 // ─── ADMIN: Platillos CRUD ──────────────────────────────────────────────────
@@ -80,26 +96,9 @@ export async function getAdminCategoriesApi(): Promise<Category[]> {
 }
 
 export async function getDishesApi(): Promise<Dish[]> {
-  try {
-    const { data } = await api.get("/dishes");
-    const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
-    return list.map((d: any) => ({
-      id:              String(d.id),
-      name:            d.name,
-      description:     d.description ?? "",
-      price:           Number(d.price),
-      prepTime:        Number(d.prepTimeMin ?? d.prep_time_min ?? 15),
-      imageUrl:        Array.isArray(d.images) ? d.images[0] : "",
-      images:          Array.isArray(d.images) ? d.images : [],
-      isAvailable:     Boolean(d.isAvailable ?? true),
-      categoryId:      String(d.categoryId ?? d.category?.id ?? ""),
-      soldCount:       Number(d.soldCount ?? d.sold_count ?? 0),
-      allergens:       Array.isArray(d.allergens) ? d.allergens : [],
-      badge:           d.badge ?? undefined,
-    }));
-  } catch (e) {
-    throw e;
-  }
+  const { data } = await api.get("/dishes");
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map((d: any) => mapDish(d));
 }
 
 export async function createDishApi(payload: Partial<Dish>): Promise<Dish> {
