@@ -20,8 +20,8 @@ export default function PublicMenuPage() {
   
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menus, setMenus] = useState<Menu[]>([]);
-  const [activeMenuId, setActiveMenuId] = useState<string | number>("");
-  const [activeCategoryId, setActiveCategoryId] = useState<string | number>("");
+  const [activeMenuId, setActiveMenuId] = useState<string>("");
+  const [activeCategoryId, setActiveCategoryId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
