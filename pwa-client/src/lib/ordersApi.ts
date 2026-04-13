@@ -65,21 +65,23 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
 /**
  * ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2 ────────────────
  * IMPORTANT: In v3.2, customerName and customerPhone are REQUIRED for takeout mode.
+ * The backend expects: { type: 'takeout', restaurantId, customerName, customerPhone, items: [...] }
  */
 export async function createPublicOrderApi(payload: {
   restaurantId: number;
   customerName: string;
-  customerPhone?: string;
+  customerPhone: string;
   notes?: string;
-  table?: string;
-  mode?: string;
   items: { dishId: number; quantity: number; specialNotes?: string }[];
 }): Promise<Order> {
   const { data } = await publicApi.post("/orders", {
     type: "takeout",
     ...payload,
   });
-  return mapToInternalOrder(data.data ?? data);
+  
+  // En v3.2 el backend devuelve el objeto de la orden directamente o dentro de un campo 'data'
+  const rawOrder = data.data ?? data;
+  return mapToInternalOrder(rawOrder);
 }
 
 // ─── Seguimiento de orden por folio (público) ─────────────────────────────────

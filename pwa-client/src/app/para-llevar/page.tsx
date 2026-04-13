@@ -145,10 +145,8 @@ function ParaLlevarContent() {
     try {
       const res = await createPublicOrderApi({
         restaurantId: data.restaurant.id,
-        customerName: customerName,
-        customerPhone: customerPhone,
-        table: urlTable || undefined,
-        mode: urlMode || "takeout",
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
         items: cart.map(i => ({ dishId: Number(i.dish.id), quantity: i.qty })),
       });
       
@@ -168,11 +166,13 @@ function ParaLlevarContent() {
       setCart([]);
       setShowCart(false);
       toast.custom((t) => (
-        <div className="bg-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
-          <CheckCircle2 className="w-6 h-6" />
+        <div className="bg-zinc-900 border border-white/10 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 shadow-foodify-orange/20">
+          <div className="bg-foodify-orange p-2 rounded-full">
+            <CheckCircle2 className="w-6 h-6 text-white" />
+          </div>
           <div className="flex flex-col">
-            <span className="font-black">¡Pedido enviado!</span>
-            <span className="text-xs opacity-90">Sigue tu orden con el folio #{res.folio}</span>
+            <span className="font-black text-lg tracking-tight">¡Pedido enviado con éxito!</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foodify-orange">Tu Folio: #{res.folio}</span>
           </div>
         </div>
       ), { duration: 5000 });
