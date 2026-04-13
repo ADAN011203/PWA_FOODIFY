@@ -62,7 +62,10 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
   };
 }
 
-// ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2 ────────────────
+/**
+ * ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2 ────────────────
+ * IMPORTANT: In v3.2, customerName and customerPhone are REQUIRED for takeout mode.
+ */
 export async function createPublicOrderApi(payload: {
   restaurantId: number;
   customerName: string;

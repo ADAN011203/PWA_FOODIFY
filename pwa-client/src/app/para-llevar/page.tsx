@@ -47,6 +47,7 @@ function ParaLlevarContent() {
     restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorType, setErrorType] = useState<"not_found" | "empty" | "error" | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -63,6 +64,7 @@ function ParaLlevarContent() {
         const slugToUse = urlSlug || (user?.slug && user.slug.trim() !== "" ? user.slug : null) || RESTAURANT_SLUG;
         const modeToUse = urlMode || "takeout";
         
+        setErrorType(null);
         // If we have a token, we prioritize sync with the Admin panel to show all configured items.
         // Otherwise, fallback to the filtered public menu.
         const res = user?.role ? await getFullAdminMenuApi() : await fetchPublicMenu(slugToUse, modeToUse);
@@ -70,10 +72,17 @@ function ParaLlevarContent() {
         setData(res);
         if (res.menus.length > 0) {
           setActiveMenuId(res.menus[0].id);
+        } else {
+          setErrorType("empty");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error loading menu:", err);
-        toast.error("No se pudo cargar el menú del servidor");
+        if (err.response?.status === 404) {
+          setErrorType("not_found");
+        } else {
+          setErrorType("error");
+          toast.error("No se pudo cargar el menú del servidor");
+        }
       } finally {
         setLoading(false);
       }
@@ -129,8 +138,8 @@ function ParaLlevarContent() {
 
   const handleCreateOrder = async () => {
     if (!data || cart.length === 0) return;
-    if (!customerName.trim()) {
-      toast.error("Por favor, ingresa tu nombre");
+    if (!customerName.trim() || !customerPhone.trim()) {
+      toast.error("Por favor, ingresa tu nombre y teléfono para el pedido");
       return;
     }
     try {
@@ -173,16 +182,28 @@ function ParaLlevarContent() {
   };
 
   if (loading) return <MenuSkeleton />;
-  if (!data || data.menus.length === 0) {
+  
+  if (errorType || !data || data.menus.length === 0) {
+    const is404 = errorType === "not_found";
     return (
       <div className={cn(
         "min-h-screen flex flex-col items-center justify-center p-12 text-center transition-colors",
         dark ? "bg-zinc-950 text-white" : "bg-gray-50 text-zinc-900"
       )}>
-        <UtensilsCrossed className="w-16 h-16 text-foodify-orange mb-4 opacity-20" />
-        <h2 className="text-2xl font-black mb-2">Restaurante Cerrado</h2>
-        <p className="text-text-secondary max-w-xs">No hay menús activos en este momento. Vuelve más tarde o revisa nuestras redes sociales.</p>
-        <Button variant="outline" className="mt-8 rounded-xl font-bold" onClick={() => window.location.reload()}>Reintentar</Button>
+        <UtensilsCrossed className={cn("w-16 h-16 mb-4 opacity-20", is404 ? "text-red-500" : "text-foodify-orange")} />
+        <h2 className="text-2xl font-black mb-2">
+          {is404 ? "Restaurante no encontrado" : "Restaurante Cerrado"}
+        </h2>
+        <p className="text-text-secondary max-w-xs">
+          {is404 
+            ? `No pudimos encontrar el restaurante con el identificador "${urlSlug || RESTAURANT_SLUG}". Verifica la URL e inténtalo de nuevo.`
+            : "No hay menús activos en este momento. Vuelve más tarde o revisa nuestras redes sociales."
+          }
+        </p>
+        <div className="flex gap-4 mt-8">
+           <Button variant="outline" className="rounded-xl font-bold" onClick={() => window.location.reload()}>Reintentar</Button>
+           {is404 && <Button className="bg-foodify-orange text-white rounded-xl font-bold" onClick={() => window.location.href = "/para-llevar"}>Ir al Inicio</Button>}
+        </div>
       </div>
     );
   }
@@ -537,8 +558,8 @@ function ParaLlevarContent() {
               </div>
               <Button 
                 onClick={() => handleCreateOrder()}
-                disabled={cart.length === 0}
-                className="w-full h-20 bg-foodify-orange hover:bg-foodify-orange/90 text-white font-black text-2xl rounded-[1.5rem] shadow-2xl shadow-foodify-orange/40 transition-all active:scale-[0.98]"
+                disabled={cart.length === 0 || !customerName.trim() || !customerPhone.trim()}
+                className="w-full h-20 bg-foodify-orange hover:bg-foodify-orange/90 text-white font-black text-2xl rounded-[1.5rem] shadow-2xl shadow-foodify-orange/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               >
                 COMPLETAR PEDIDO
               </Button>
