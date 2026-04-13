@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
             u.slug = "centro-educativo";
           } else if (u.email === "admin@demo.foodify.mx") {
-            u.slug = "demo";
+            u.slug = "demo-restaurant";
           }
         }
         setUser(u);
