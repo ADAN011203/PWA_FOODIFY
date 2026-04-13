@@ -1,10 +1,4 @@
-import type { Metadata, Viewport } from "next";
-import { ThemeProvider } from "@/context/ThemeContext";
-import { AuthProvider } from "@/context/AuthContext";
-import { GuestProvider } from "@/context/GuestContext";
-import { ToastProvider } from "@/context/ToastContext";
-import { TabBar } from "@/components/layout/TabBar";
-import { MainWrapper } from "@/components/layout/MainWrapper";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FF6B35",
+  themeColor: "#E8673A",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -41,19 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>
-        <AuthProvider>
-          <GuestProvider>
-            <ThemeProvider>
-              <ToastProvider>
-                <MainWrapper>
-                  {children}
-                </MainWrapper>
-                <TabBar pendingOrders={0} />
-              </ToastProvider>
-            </ThemeProvider>
-          </GuestProvider>
-        </AuthProvider>
+      <body className="antialiased">
+        <Toaster position="top-center" />
+        {children}
       </body>
     </html>
   );

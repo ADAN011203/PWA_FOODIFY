@@ -1,62 +1,24 @@
-import React from "react";
-import styles from "./Input.module.css";
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  helper?: string;
-}
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {}
 
-export function Input({ label, error, helper, className, id, ...props }: InputProps) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
-  const inputClass = [styles.input, error ? styles.error : "", className ?? ""]
-    .filter(Boolean)
-    .join(" ");
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Input.displayName = "Input"
 
-  return (
-    <div className={styles.wrapper}>
-      {label && (
-        <label className={styles.label} htmlFor={inputId}>
-          {label}
-        </label>
-      )}
-      <div className={styles.inputContainer}>
-        <input id={inputId} className={inputClass} {...props} />
-      </div>
-      {error && <p className={styles.errorText}>{error}</p>}
-      {helper && !error && <p className={styles.helperText}>{helper}</p>}
-    </div>
-  );
-}
-
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string;
-  error?: string;
-  children: React.ReactNode;
-}
-
-export function Select({ label, error, children, className, id, ...props }: SelectProps) {
-  const selectId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
-  const selectClass = [
-    styles.input,
-    styles.select,
-    error ? styles.error : "",
-    className ?? "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  return (
-    <div className={styles.wrapper}>
-      {label && (
-        <label className={styles.label} htmlFor={selectId}>
-          {label}
-        </label>
-      )}
-      <select id={selectId} className={selectClass} {...props}>
-        {children}
-      </select>
-      {error && <p className={styles.errorText}>{error}</p>}
-    </div>
-  );
-}
+export { Input }

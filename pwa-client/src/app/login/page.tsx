@@ -1,150 +1,48 @@
-"use client";
+import React from "react";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { Logo } from "@/components/ui/Logo";
+import Image from "next/image";
 
-import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { loginApi } from "@/lib/authApi";
-import { Button } from "@/components/ui/Button";
-import styles from "./login.module.css";
-import { IconUtensils, IconAlertCircle } from "@/components/ui/Icons";
-
-function IconEye({ open }: { open: boolean }) {
-  return open ? (
-    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
-      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
-    </svg>
-  ) : (
-    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  );
-}
-
-export default function LoginPage() {
-  const { login } = useAuth();
-
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-
-  const handleSubmit = async () => {
-    if (!email || !password) {
-      setError("Completa todos los campos");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    try {
-      const { user, accessToken, refreshToken } = await loginApi(email, password);
-      login({ user, token: accessToken, accessToken, refreshToken });
-      const roleRoutes: Record<string, string> = {
-        admin: "/dashboard",
-        restaurant_admin: "/dashboard",
-        manager: "/dashboard",
-        waiter: "/mesero",
-        chef: "/cocina",
-        cashier: "/dashboard",
-      };
-      window.location.href = roleRoutes[user.role] ?? "/dashboard";
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Credenciales incorrectas");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSubmit();
-  };
-
+export default function AdminLoginPage() {
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        {/* Logo */}
-        <div className={styles.logoWrap}>
-          <div className={styles.logoIcon}>
-            <IconUtensils size={32} color="white" />
+    <div className="flex min-h-screen">
+      {/* Columna Izquierda - Hero (Desktop) */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-foodify-orange overflow-hidden">
+        <div className="absolute inset-0 bg-black/40 z-10" />
+        <div className="relative z-20 flex flex-col justify-between p-12 text-white w-full">
+          <Logo variant="codex" className="text-white" />
+          <div className="space-y-4">
+            <h1 className="text-5xl font-black">Gestiona tu restaurante con inteligencia.</h1>
+            <p className="text-xl text-white/80">
+              Controla pedidos, inventarios y staff desde un solo lugar.
+            </p>
           </div>
+          <p className="text-sm text-white/60">
+            Powered by Foodify · © 2026
+          </p>
         </div>
+        {/* Usamos el fondo generado */}
+        <Image
+          src="/brand/hero-bg.png" // Podría usar la imagen generada, pero por ahora uso el placeholder o la muevo luego
+          alt="Restaurant Background"
+          fill
+          className="object-cover"
+          priority
+        />
+      </div>
 
-        <h1 className={styles.title}>Foodify</h1>
-        <p className={styles.subtitle}>Inicia sesión para continuar</p>
-
-        {/* Formulario */}
-        <div className={styles.form}>
-          {/* Email */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="login-email">
-              Correo electrónico
-            </label>
-            <input
-              id="login-email"
-              className={styles.input}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="nombre@foodify.mx"
-              autoComplete="email"
-            />
+      {/* Columna Derecha - Formulario */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 bg-app">
+        <div className="w-full max-w-md space-y-8">
+          <div className="lg:hidden flex justify-center mb-8">
+            <Logo />
           </div>
-
-          {/* Password */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="login-password">
-              Contraseña
-            </label>
-            <div className={styles.passwordWrap}>
-              <input
-                id="login-password"
-                className={`${styles.input} ${styles.passwordInput}`}
-                type={showPw ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                className={styles.eyeBtn}
-                onClick={() => setShowPw((v) => !v)}
-                aria-label={showPw ? "Ocultar contraseña" : "Mostrar contraseña"}
-              >
-                <IconEye open={showPw} />
-              </button>
-            </div>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className={styles.errorBox} role="alert">
-              <IconAlertCircle size={18} />
-              <p>{error}</p>
-            </div>
-          )}
-
-          {/* Submit */}
-          <Button
-            id="login-submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={loading}
-            onClick={handleSubmit}
-          >
-            {loading ? "Ingresando..." : "Iniciar sesión"}
-          </Button>
+          <LoginForm 
+            title="Panel Administrativo" 
+            role="restaurant_admin" 
+            redirectPath="/admin/dashboard" 
+          />
         </div>
-
-        {/* Footer */}
-        <p className={styles.footer}>
-          Foodify Admin Panel · v3.2
-        </p>
       </div>
     </div>
   );

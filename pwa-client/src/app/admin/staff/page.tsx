@@ -1,767 +1,118 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { StaffListSkeleton } from "@/components/ui/Skeletons";
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/context/ToastContext";
-import {
-  getStaffApi,
-  createStaffApi,
-  updateStaffApi,
-  updateStaffStatusApi,
-  deleteStaffApi,
-} from "@/lib/staffApi";
-import type { StaffMember, StaffRole, StaffStatus } from "@/types/staff";
-import { ROLE_CFG, STATUS_CFG } from "@/types/staff";
-import { AdminLayout } from "@/components/layout/AdminLayout";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
-import { Card } from "@/components/ui/Card";
-import ui from "@/components/ui/AdminUI.module.css";
-import {
-  IconUser,
-  IconPackage,
-  IconBell,
-  IconChefHat,
-  IconDollarSign,
-  IconMail,
-  IconSmartphone,
-  IconBuilding,
-  IconCalendar,
-  IconLock,
-  IconTrash,
-  IconSearch,
-  IconUsers,
-  IconClock,
-  IconCheck,
-  IconPlus,
-  IconEdit,
-} from "@/components/ui/Icons";
+import { 
+  Plus, 
+  Mail, 
+  Phone, 
+  Edit3, 
+  MoreVertical,
+  Search,
+  CheckCircle2,
+  XCircle
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 
-function RoleIcon({ icon, size = 18, color }: { icon: string; size?: number; color?: string }) {
-  switch (icon) {
-    case "user":    return <IconUser size={size} color={color} />;
-    case "package": return <IconPackage size={size} color={color} />;
-    case "bell":    return <IconBell size={size} color={color} />;
-    case "chef":    return <IconChefHat size={size} color={color} />;
-    case "dollar":  return <IconDollarSign size={size} color={color} />;
-    default:        return <IconUser size={size} color={color} />;
-  }
-}
+const MOCK_STAFF = [
+  { id: 1, name: "Carlos García", role: "restaurant_admin", email: "carlos@demo.mx", phone: "555-0001", status: "active" },
+  { id: 2, name: "María López", role: "waiter", email: "maria@demo.mx", phone: "555-0002", status: "active" },
+  { id: 3, name: "Juana de Arco", role: "chef", email: "juana@demo.mx", phone: "555-0003", status: "active" },
+  { id: 4, name: "Pedro Páramo", role: "cashier", email: "pedro@demo.mx", phone: "555-0004", status: "inactive" },
+];
 
-function StatusDot({ color }: { color: string }) {
-  return (
-    <div 
-      style={{ 
-        width: 6, 
-        height: 6, 
-        borderRadius: "50%", 
-        background: color,
-        boxShadow: `0 0 4px ${color}`
-      }} 
-    />
-  );
-}
-
-// ─── Guard ────────────────────────────────────────────────────────────────────
-function useAdminGuard() {
-  const { user, isLoading } = useAuth();
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== "admin"))
-      window.location.href = "/login";
-  }, [isLoading, user]);
-  return { user, isLoading };
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const ROLES: StaffRole[] = ["restaurant_admin", "manager", "waiter", "chef", "cashier"];
-const STATUSES: StaffStatus[] = ["active", "inactive", "suspended"];
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-function fmtRelative(iso?: string) {
-  if (!iso) return "Nunca";
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return "Hace un momento";
-  if (mins < 60) return `Hace ${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `Hace ${hrs}h`;
-  return `Hace ${Math.floor(hrs / 24)} día(s)`;
-}
-
-const EMPTY_FORM = {
-  name: "",
-  email: "",
-  phone: "",
-  password: "",
-  role: "waiter" as StaffRole,
-  status: "active" as StaffStatus,
-  branch: "",
+const roleConfig: any = {
+  restaurant_admin: { label: "Admin", color: "bg-orange-100 text-orange-600 border-orange-200" },
+  waiter: { label: "Mesero", color: "bg-blue-100 text-blue-600 border-blue-200" },
+  chef: { label: "Cocina", color: "bg-green-100 text-green-600 border-green-200" },
+  cashier: { label: "Cajero", color: "bg-purple-100 text-purple-600 border-purple-200" },
 };
-type StaffForm = typeof EMPTY_FORM;
 
-// ─── Modal Staff Form ─────────────────────────────────────────────────────────
-function StaffFormModal({
-  member,
-  isOpen,
-  onClose,
-  onSave,
-}: {
-  member: StaffMember | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (form: StaffForm, id?: string) => Promise<void>;
-}) {
-  const { user } = useAuth();
-  const [form, setForm] = useState<StaffForm>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Partial<Record<keyof StaffForm, string>>>({});
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (member) {
-      setForm({
-        name: member.name,
-        email: member.email,
-        phone: member.phone,
-        password: "", // Contraseña no se edita desde aquí, pero se requiere para el tipo
-        role: member.role,
-        status: member.status,
-        branch: member.branch,
-      });
-    } else {
-      setForm(EMPTY_FORM);
-    }
-    setErrors({});
-  }, [member, isOpen]);
-
-  const set = (key: keyof StaffForm, val: string) =>
-    setForm((f) => ({ ...f, [key]: val }));
-
-  const validate = () => {
-    const e: typeof errors = {};
-    if (!form.name.trim()) e.name = "Nombre requerido";
-    if (!form.email.trim() || !form.email.includes("@")) e.email = "Email inválido";
-    if (!form.phone.trim()) e.phone = "Teléfono requerido";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) return;
-    setSaving(true);
-    try {
-      await onSave(form, member?.id);
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const roleCfg = ROLE_CFG[form.role];
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {member ? <IconEdit size={20} color="var(--color-primary)" /> : <IconPlus size={20} color="var(--color-primary)" />}
-          {member ? "Editar Empleado" : "Nuevo Empleado"}
-        </div>
-      }
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <Input
-          label="Nombre completo *"
-          value={form.name}
-          onChange={(e) => set("name", e.target.value)}
-          placeholder="Ej. Carlos Mendoza"
-          error={errors.name}
-        />
-        <Input
-          label="Correo electrónico *"
-          type="email"
-          value={form.email}
-          onChange={(e) => set("email", e.target.value)}
-          placeholder="nombre@foodify.mx"
-          error={errors.email}
-        />
-        <Input
-          label="Teléfono *"
-          value={form.phone}
-          onChange={(e) => set("phone", e.target.value)}
-          placeholder="33 1234 5678"
-          error={errors.phone}
-        />
-
-        {!member && (
-          <Input
-            label="Contraseña inicial *"
-            type="password"
-            value={form.password}
-            onChange={(e) => set("password", e.target.value)}
-            placeholder="Mínimo 6 caracteres"
-            error={form.password && form.password.length < 6 ? "Demasiado corta" : undefined}
-          />
-        )}
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Select
-            label="Rol *"
-            value={form.role}
-            onChange={(e) => set("role", e.target.value)}
-          >
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_CFG[r].label}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Estado"
-            value={form.status}
-            onChange={(e) => set("status", e.target.value)}
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_CFG[s].label}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <Input
-          label="Restaurante"
-          value={member?.branch || user?.branch || "Principal"}
-          disabled
-        />
-
-        {/* Preview Rol */}
-        <div
-          style={{
-            background: roleCfg.bg,
-            border: `1px solid ${roleCfg.color}40`,
-            borderRadius: "var(--radius-md)",
-            padding: "12px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
-          <div style={{ color: roleCfg.color }}>
-            <RoleIcon icon={roleCfg.icon} size={28} />
-          </div>
-          <div>
-            <p style={{ fontWeight: 700, color: roleCfg.color, fontSize: "0.875rem", margin: 0 }}>
-              {roleCfg.label}
-            </p>
-            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "2px 0 0" }}>
-              {form.role === "restaurant_admin" && "Acceso total al panel administrativo"}
-              {form.role === "manager" && "Gestión de operaciones y reportes"}
-              {form.role === "waiter" && "Toma de pedidos y atención a mesas"}
-              {form.role === "chef" && "Vista de cocina y gestión de comandas"}
-              {form.role === "cashier" && "Cobro y cierre de órdenes"}
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
-          <Button variant="secondary" size="lg" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button variant="primary" size="lg" fullWidth onClick={handleSave} loading={saving}>
-            {member ? "Guardar cambios" : "Agregar empleado"}
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// ─── Staff Card ───────────────────────────────────────────────────────────────
-function StaffCard({ member, onTap }: { member: StaffMember; onTap: () => void }) {
-  const roleCfg = ROLE_CFG[member.role];
-  const statusCfg = STATUS_CFG[member.status];
-
-  return (
-    <Card
-      hoverable
-      onClick={onTap}
-      tone={member.status === "suspended" ? "danger" : "default"}
-      style={{ marginBottom: 10, opacity: member.status === "inactive" ? 0.65 : 1 }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px" }}>
-        {/* Avatar */}
-        <div
-          style={{
-            width: 46,
-            height: 46,
-            borderRadius: "50%",
-            flexShrink: 0,
-            background: roleCfg.bg,
-            border: `2px solid ${roleCfg.color}40`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "0.875rem",
-            fontWeight: 800,
-            color: roleCfg.color,
-          }}
-        >
-          {member.avatarInitials ?? member.name.slice(0, 2).toUpperCase()}
-        </div>
-
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <p
-              style={{
-                fontWeight: 700,
-                color: "var(--text-primary)",
-                fontSize: "0.9rem",
-                margin: "0 0 4px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {member.name}
-            </p>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: statusCfg.bg,
-                color: statusCfg.color,
-                fontSize: "0.6rem",
-                fontWeight: 700,
-                padding: "2px 8px",
-                borderRadius: 999,
-                flexShrink: 0,
-                marginLeft: 6,
-              }}
-            >
-              <StatusDot color={statusCfg.color} /> {statusCfg.label}
-            </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                background: roleCfg.bg,
-                color: roleCfg.color,
-                fontSize: "0.65rem",
-                fontWeight: 700,
-                padding: "2px 8px",
-                borderRadius: 999,
-              }}
-            >
-              <RoleIcon icon={roleCfg.icon} size={11} /> {roleCfg.label}
-            </span>
-            <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: 0 }}>
-              {fmtRelative(member.lastLogin)}
-            </p>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-// ─── Modal detalle empleado ───────────────────────────────────────────────────
-function StaffDetailModal({
-  member,
-  isOpen,
-  onClose,
-  onEdit,
-  onToggleStatus,
-  onDelete,
-}: {
-  member: StaffMember | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onEdit: () => void;
-  onToggleStatus: (id: string, status: StaffStatus) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-}) {
-  const [loading, setLoading] = useState(false);
-  if (!member) return null;
-  const roleCfg = ROLE_CFG[member.role];
-  const statusCfg = STATUS_CFG[member.status];
-
-  const run = async (fn: () => Promise<void>) => {
-    setLoading(true);
-    try { await fn(); onClose(); } finally { setLoading(false); }
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title=" ">
-      {/* Avatar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            background: roleCfg.bg,
-            border: `2px solid ${roleCfg.color}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "1.1rem",
-            fontWeight: 800,
-            color: roleCfg.color,
-          }}
-        >
-          {member.avatarInitials ?? member.name.slice(0, 2).toUpperCase()}
-        </div>
-        <div>
-          <p style={{ fontWeight: 800, color: "var(--text-primary)", fontSize: "1rem", margin: 0 }}>
-            {member.name}
-          </p>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: roleCfg.bg, color: roleCfg.color, fontSize: "0.7rem", fontWeight: 700, padding: "2px 10px", borderRadius: 999 }}>
-            <RoleIcon icon={roleCfg.icon} size={14} /> {roleCfg.label}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
-        {[
-          { icon: <IconMail size={14} />,         label: "Email", value: member.email },
-          { icon: <IconSmartphone size={14} />,   label: "Teléfono", value: member.phone },
-          { icon: <IconBuilding size={14} />,     label: "Sucursal", value: member.branch },
-          { icon: <IconCalendar size={14} />,     label: "Alta", value: fmtDate(member.createdAt) },
-          { icon: <IconClock size={14} />,        label: "Último acceso", value: fmtRelative(member.lastLogin) },
-          {
-            icon: <StatusDot color={statusCfg.color} />,
-            label: "Estado",
-            value: statusCfg.label,
-            color: statusCfg.color,
-          },
-        ].map(({ icon, label, value, color }) => (
-          <div
-            key={label}
-            style={{
-              background: "var(--bg-elevated)",
-              borderRadius: "var(--radius-md)",
-              padding: "12px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.7rem", color: "var(--text-muted)", margin: "0 0 3px" }}>
-              {icon} <span>{label}</span>
-            </div>
-            <p
-              style={{
-                fontSize: "0.8125rem",
-                fontWeight: 600,
-                color: color ?? "var(--text-primary)",
-                margin: 0,
-              }}
-            >
-              {value}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <Button variant="primary" size="md" fullWidth onClick={onEdit} style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-        <IconEdit size={18} /> Editar empleado
-      </Button>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-        {member.status === "active" ? (
-          <Button
-            variant="secondary"
-            size="md"
-            fullWidth
-            loading={loading}
-            onClick={() => run(() => onToggleStatus(member.id, "suspended"))}
-          >
-            ⏸ Suspender
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            size="md"
-            fullWidth
-            loading={loading}
-            onClick={() => run(() => onToggleStatus(member.id, "active"))}
-          >
-            ▶ Activar
-          </Button>
-        )}
-        <Button
-          variant="danger"
-          size="md"
-          fullWidth
-          loading={loading}
-          onClick={() => run(() => onDelete(member.id))}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-        >
-          <IconTrash size={18} /> Eliminar
-        </Button>
-      </div>
-
-      <Button variant="ghost" size="md" fullWidth onClick={onClose}>
-        Cerrar
-      </Button>
-    </Modal>
-  );
-}
-
-// ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function AdminStaffPage() {
-  const { user, isLoading } = useAdminGuard();
-  const toast = useToast();
-
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [initLoading, setInitLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filterRole, setFilterRole] = useState<StaffRole | "todos">("todos");
-  const [filterStatus, setFilterStatus] = useState<StaffStatus | "todos">("todos");
-  const [selected, setSelected] = useState<StaffMember | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [editMember, setEditMember] = useState<StaffMember | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    getStaffApi()
-      .then(setStaff)
-      .catch(() => toast.error("Error al cargar empleados"))
-      .finally(() => setInitLoading(false));
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const currentRestaurant = useMemo(() => {
-    if (staff.length > 0 && staff[0].branch) return staff[0].branch;
-    return "Principal";
-  }, [staff]);
-
-  const filtered = useMemo(() => {
-    let list = staff;
-    if (filterRole !== "todos") list = list.filter((s) => s.role === filterRole);
-    if (filterStatus !== "todos") list = list.filter((s) => s.status === filterStatus);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.email.toLowerCase().includes(q) ||
-          s.phone.includes(q)
-      );
-    }
-    return list;
-  }, [staff, filterRole, filterStatus, search]);
-
-  if (isLoading || !user || initLoading) {
-    return (
-      <div style={{ minHeight: "100dvh", background: "var(--bg-app)" }}>
-        <div
-          style={{
-            background: "var(--bg-card)",
-            borderBottom: "1px solid var(--border-light)",
-            padding: "16px 20px",
-            height: 64,
-          }}
-        />
-        <StaffListSkeleton />
-        <style>{`@keyframes sk-shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }`}</style>
-      </div>
-    );
-  }
-
-  const handleSave = async (form: typeof EMPTY_FORM, id?: string) => {
-    if (id) {
-      const updated = await updateStaffApi(id, {
-        fullName: form.name,
-        email: form.email,
-        phone: form.phone,
-        role: form.role,
-      });
-      setStaff((prev) => prev.map((s) => (s.id === id ? { ...s, ...updated } : s)));
-      toast.success("Empleado actualizado");
-    } else {
-      const payload = {
-        fullName: form.name,
-        email: form.email,
-        phone: form.phone,
-        role: form.role,
-        password: form.password || "staff123",
-      };
-      const newMember = await createStaffApi(payload);
-      setStaff((prev) => [newMember, ...prev]);
-      toast.success("Empleado agregado");
-    }
-    setShowForm(false);
-    setEditMember(null);
-    setSelected(null);
-  };
-
-  const handleToggleStatus = async (id: string, status: StaffStatus) => {
-    await updateStaffStatusApi(id, status);
-    setStaff((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
-    toast.success(`Empleado ${status === "active" ? "activado" : "suspendido"}`);
-  };
-
-  const handleDelete = async (id: string) => {
-    await deleteStaffApi(id);
-    setStaff((prev) => prev.filter((s) => s.id !== id));
-    toast.success("Empleado eliminado");
-  };
-
-  const totalActive = staff.filter((s) => s.status === "active").length;
-  const kpis = ROLES.map((r) => ({
-    role: r,
-    count: staff.filter((s) => s.role === r && s.status === "active").length,
-  }));
+  const [staff, setStaff] = useState(MOCK_STAFF);
 
   return (
-    <AdminLayout
-      title="Staff / Personal"
-      subtitle={
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <IconUsers size={14} /> {staff.length} empleados · {totalActive} activos
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black">Staff</h1>
+          <p className="text-text-secondary">Gestiona el equipo y permisos de tu restaurante.</p>
         </div>
-      }
-      actions={
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => {
-            setEditMember(null);
-            setShowForm(true);
-          }}
-          style={{ display: "flex", alignItems: "center", gap: 6 }}
-        >
-          <IconPlus size={16} /> Agregar
+        
+        <Button className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20">
+          <Plus className="w-5 h-5 mr-2" />
+          Agregar empleado
         </Button>
-      }
-    >
-      {/* KPIs por rol */}
-      <div
-        className={ui.filterRow}
-        style={{ marginBottom: 16, gap: 8 }}
-      >
-        {kpis.map(({ role, count }) => {
-          const cfg = ROLE_CFG[role];
-          return (
-            <div
-              key={role}
-              style={{
-                flexShrink: 0,
-                background: "var(--bg-card)",
-                borderRadius: "var(--radius-md)",
-                padding: "10px 16px",
-                border: `1px solid ${cfg.color}30`,
-                minWidth: 90,
-                textAlign: "center",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 4, color: cfg.color }}>
-                <RoleIcon icon={cfg.icon} size={22} />
-              </div>
-              <p style={{ fontSize: "1.1rem", fontWeight: 900, color: cfg.color, margin: "0 0 2px" }}>{count}</p>
-              <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", margin: 0 }}>{cfg.label}</p>
-            </div>
-          );
-        })}
       </div>
 
-      {/* Búsqueda */}
-      <div className={ui.searchBar}>
-        <IconSearch size={18} color="var(--text-muted)" style={{ marginLeft: 12 }} />
-        <input
-          className={ui.searchInput}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por nombre, email o teléfono..."
+      <div className="relative">
+        <Search className="absolute left-3 top-3 h-5 w-5 text-text-secondary" />
+        <input 
+          type="text" 
+          placeholder="Buscar empleado por nombre o email..." 
+          className="w-full pl-11 pr-4 py-3 bg-white dark:bg-zinc-900 border border-border rounded-xl focus:ring-1 focus:ring-foodify-orange focus:outline-none transition-all"
         />
       </div>
 
-      {/* Filtros rol */}
-      <div className={ui.filterRow}>
-        <button
-          className={`${ui.chip} ${filterRole === "todos" ? ui.active : ""}`}
-          onClick={() => setFilterRole("todos")}
-          style={{ display: "flex", alignItems: "center", gap: 6 }}
-        >
-          <IconUsers size={14} /> Todos
-        </button>
-        {ROLES.map((r) => (
-          <button
-            key={r}
-            className={`${ui.chip} ${filterRole === r ? ui.active : ""}`}
-            onClick={() => setFilterRole(r)}
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
-          >
-            <RoleIcon icon={ROLE_CFG[r].icon} size={14} /> {ROLE_CFG[r].label}
-          </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {staff.map((employee) => (
+          <Card key={employee.id} className="group hover:border-foodify-orange transition-all overflow-hidden">
+            <CardContent className="p-6">
+               <div className="flex justify-between items-start mb-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-2xl bg-foodify-orange-light text-foodify-orange font-black text-xl flex items-center justify-center border-2 border-white shadow-sm">
+                      {employee.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div className={cn(
+                      "absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center",
+                      employee.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
+                    )}>
+                       {employee.status === 'active' ? <CheckCircle2 className="w-3 h-3 text-white" /> : <XCircle className="w-3 h-3 text-white" />}
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-text-secondary">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+               </div>
+
+               <div className="space-y-1 mb-6">
+                  <h3 className="font-black text-lg leading-tight">{employee.name}</h3>
+                  <div className={cn(
+                    "inline-flex px-2 py-0.5 rounded border text-[10px] font-black uppercase tracking-wider",
+                    roleConfig[employee.role]?.color
+                  )}>
+                    {roleConfig[employee.role]?.label}
+                  </div>
+               </div>
+
+               <div className="space-y-3 pb-6 border-b border-dashed">
+                  <div className="flex items-center gap-3 text-sm text-text-secondary">
+                     <Mail className="w-4 h-4 text-foodify-orange/40" />
+                     <span className="truncate">{employee.email}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-text-secondary">
+                     <Phone className="w-4 h-4 text-foodify-orange/40" />
+                     <span>{employee.phone}</span>
+                  </div>
+               </div>
+
+               <div className="pt-4 flex items-center justify-between">
+                  <Button variant="ghost" className="text-xs font-bold gap-2 hover:bg-foodify-orange-light hover:text-foodify-orange">
+                     <Edit3 className="w-3 h-3" /> Editar
+                  </Button>
+                  <Button variant="ghost" className={cn(
+                    "text-xs font-bold",
+                    employee.status === 'active' ? 'text-text-secondary' : 'text-green-500'
+                  )}>
+                    {employee.status === 'active' ? 'Desactivar' : 'Activar'}
+                  </Button>
+               </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
-
-      {/* Filtros estado */}
-      <div className={ui.filterRow} style={{ marginBottom: 16 }}>
-        {(["todos", ...STATUSES] as const).map((s) => (
-          <button
-            key={s}
-            className={`${ui.chip} ${filterStatus === s ? ui.active : ""}`}
-            onClick={() => setFilterStatus(s)}
-          >
-            {s === "todos" ? "Todos" : STATUS_CFG[s]?.label ?? s}
-          </button>
-        ))}
-      </div>
-
-      <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 10 }}>
-        {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
-      </p>
-
-      {/* Lista */}
-      {filtered.length === 0 ? (
-        <div className={ui.emptyState}>
-          <div style={{ color: "var(--text-muted)", marginBottom: 12 }}>
-            <IconUsers size={48} />
-          </div>
-          <p className={ui.emptyText}>No se encontraron empleados</p>
-        </div>
-      ) : (
-        filtered.map((member) => (
-          <StaffCard key={member.id} member={member} onTap={() => setSelected(member)} />
-        ))
-      )}
-
-      <div style={{ height: 24 }} />
-
-      {/* Modales */}
-      <StaffDetailModal
-        member={selected}
-        isOpen={!!selected && !showForm}
-        onClose={() => setSelected(null)}
-        onEdit={() => {
-          setEditMember(selected);
-          setShowForm(true);
-          setSelected(null);
-        }}
-        onToggleStatus={handleToggleStatus}
-        onDelete={handleDelete}
-      />
-
-      <StaffFormModal
-        member={editMember}
-        isOpen={showForm}
-        onClose={() => {
-          setShowForm(false);
-          setEditMember(null);
-        }}
-        onSave={handleSave}
-      />
-    </AdminLayout>
+    </div>
   );
 }
