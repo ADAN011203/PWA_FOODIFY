@@ -36,6 +36,7 @@ function ParaLlevarContent() {
   const searchParams = useSearchParams();
   const urlSlug = searchParams.get("slug");
   const urlTable = searchParams.get("table");
+  const urlMode = searchParams.get("mode") as "takeout" | "dine_in" | null;
   const [customerName, setCustomerName] = useState(user?.name || "");
   const [customerPhone, setCustomerPhone] = useState("");
 
