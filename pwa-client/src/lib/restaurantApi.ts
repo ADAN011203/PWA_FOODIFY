@@ -63,3 +63,16 @@ export async function switchActiveRestaurantApi(userId: string, restaurantId: st
     throw e;
   }
 }
+
+/**
+ * Actualiza los datos de un restaurante específico.
+ */
+export async function updateRestaurantApi(id: string, payload: Partial<Restaurant>): Promise<Restaurant> {
+  const { data } = await api.put(`/restaurants/${id}`, payload);
+  const r = data.data ?? data;
+  return {
+    ...r,
+    id: String(r.id),
+    slug: r.slug ?? r.restaurant_slug ?? "",
+  };
+}

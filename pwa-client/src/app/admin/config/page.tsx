@@ -26,17 +26,49 @@ import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { Logo } from "@/components/ui/Logo";
 import { useAuthStore } from "@/store/authStore";
+import { getRestaurantDetailsApi, updateRestaurantApi } from "@/lib/restaurantApi";
+import { useFetchWithState } from "@/lib/useFetchWithState";
 
 export default function AdminConfigPage() {
   const { user } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
+  
+  const { data: restaurant, loading, refetch } = useFetchWithState(
+    "restaurant-config", 
+    () => user?.restaurantId ? getRestaurantDetailsApi(String(user.restaurantId)) : Promise.reject(),
+    60000
+  );
 
-  const handleSave = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    address: "",
+    slug: "",
+    // Extendable for more fields...
+  });
+
+  // Sync form with loaded data
+  React.useEffect(() => {
+    if (restaurant) {
+      setFormData({
+        name: restaurant.name || "",
+        address: restaurant.address || "",
+        slug: restaurant.slug || "",
+      });
+    }
+  }, [restaurant]);
+
+  const handleSave = async () => {
+    if (!user?.restaurantId) return;
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await updateRestaurantApi(String(user.restaurantId), formData);
       toast.success("Configuración guardada exitosamente");
-    }, 1000);
+      refetch();
+    } catch {
+      toast.error("Error al guardar cambios");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -101,7 +133,11 @@ export default function AdminConfigPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="resName">Nombre del restaurante *</Label>
-                  <Input id="resName" defaultValue="Foodify Gourmet" />
+                  <Input 
+                    id="resName" 
+                    value={formData.name} 
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="resDesc">Descripción</Label>
@@ -111,13 +147,18 @@ export default function AdminConfigPage() {
                     placeholder="Escribe una breve descripción para tus clientes..."
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="resSlug">Slug de URL</Label>
-                  <div className="flex items-center gap-1 bg-gray-50 dark:bg-zinc-800 border rounded-md px-3">
-                     <span className="text-xs text-text-secondary">foodify.mx/menu/</span>
-                     <Input id="resSlug" defaultValue="foodify-gourmet" className="border-none bg-transparent h-9 px-0 shadow-none focus-visible:ring-0" />
-                  </div>
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="resSlug">Slug de URL</Label>
+                   <div className="flex items-center gap-1 bg-gray-50 dark:bg-zinc-800 border rounded-md px-3">
+                      <span className="text-xs text-text-secondary">foodify.mx/menu/</span>
+                      <Input 
+                        id="resSlug" 
+                        value={formData.slug} 
+                        onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                        className="border-none bg-transparent h-9 px-0 shadow-none focus-visible:ring-0" 
+                      />
+                   </div>
+                 </div>
               </CardContent>
             </Card>
 
@@ -130,7 +171,12 @@ export default function AdminConfigPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="resAddr">Dirección completa</Label>
-                  <Input id="resAddr" placeholder="Calle, Número, Colonia, Ciudad..." />
+                  <Input 
+                    id="resAddr" 
+                    value={formData.address} 
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="Calle, Número, Colonia, Ciudad..." 
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

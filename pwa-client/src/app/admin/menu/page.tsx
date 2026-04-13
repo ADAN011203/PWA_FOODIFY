@@ -27,14 +27,28 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 import { useFetchWithState } from "@/lib/useFetchWithState";
-import { getAdminMenusApi, getAdminCategoriesApi, getDishesApi } from "@/lib/menuApi";
+import { getAdminMenusApi, getAdminCategoriesApi, getDishesApi, toggleDishAvailabilityApi } from "@/lib/menuApi";
+import { AddCategoryModal } from "@/components/modals/AddCategoryModal";
+import { AddDishModal } from "@/components/modals/AddDishModal";
+import toast from "react-hot-toast";
 
 export default function AdminMenuPage() {
   const [activeTab, setActiveTab] = useState("menus");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const { data: menus, loading: menusLoading } = useFetchWithState("admin-menus", getAdminMenusApi, 15000);
-  const { data: categories, loading: catsLoading } = useFetchWithState("admin-categories", getAdminCategoriesApi, 15000);
-  const { data: dishes, loading: dishesLoading } = useFetchWithState("admin-dishes", getDishesApi, 15000);
+  const { data: menus, loading: menusLoading, refetch: refetchMenus } = useFetchWithState("admin-menus", getAdminMenusApi, 15000);
+  const { data: categories, loading: catsLoading, refetch: refetchCats } = useFetchWithState("admin-categories", getAdminCategoriesApi, 15000);
+  const { data: dishes, loading: dishesLoading, refetch: refetchDishes } = useFetchWithState("admin-dishes", getDishesApi, 15000);
+
+  const toggleDish = async (id: string, current: boolean) => {
+    try {
+      await toggleDishAvailabilityApi(id, !current);
+      toast.success("Estado actualizado");
+      refetchDishes();
+    } catch {
+      toast.error("Error al actualizar estado");
+    }
+  };
 
   const loading = menusLoading || catsLoading || dishesLoading;
 
@@ -47,12 +61,29 @@ export default function AdminMenuPage() {
         </div>
         
         <div className="flex gap-2">
-           <Button className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20">
+           <Button 
+             onClick={() => setIsAddModalOpen(true)}
+             className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20"
+           >
               <Plus className="w-5 h-5 mr-2" />
               {activeTab === "menus" ? "Crear Menú" : activeTab === "categories" ? "Agregar Categoría" : "Nuevo Platillo"}
            </Button>
         </div>
       </div>
+
+      <AddCategoryModal 
+        isOpen={isAddModalOpen && activeTab === "categories"}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => refetchCats()}
+        menus={menus || []}
+      />
+
+      <AddDishModal 
+        isOpen={isAddModalOpen && activeTab === "dishes"}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => refetchDishes()}
+        categories={categories || []}
+      />
 
       <Tabs defaultValue="menus" onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-white dark:bg-zinc-900 border p-1 rounded-xl w-full sm:w-auto h-auto grid grid-cols-3">
@@ -174,9 +205,12 @@ export default function AdminMenuPage() {
                      ) : (
                         <UtensilsCrossed className="w-12 h-12 text-foodify-orange opacity-20" />
                      )}
-                     <div className="absolute top-4 left-4">
-                        <Switch defaultChecked={dish.isAvailable} />
-                     </div>
+                      <div className="absolute top-4 left-4">
+                         <Switch 
+                           checked={dish.isAvailable} 
+                           onCheckedChange={() => toggleDish(dish.id, dish.isAvailable)}
+                         />
+                      </div>
                    </div>
                   <CardContent className="p-5">
                     <div className="flex justify-between items-start mb-2">

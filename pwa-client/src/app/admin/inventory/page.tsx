@@ -21,8 +21,11 @@ import { cn } from "@/lib/utils";
 
 import { useFetchWithState } from "@/lib/useFetchWithState";
 import { getInventoryItemsApi } from "@/lib/inventoryApi";
+import { AddInventoryItemModal } from "@/components/modals/AddInventoryItemModal";
+import { AddLotModal } from "@/components/modals/AddLotModal";
 
 export default function AdminInventoryPage() {
+  const [activeModal, setActiveModal] = useState<"item" | "lot" | null>(null);
   const { 
     data: items, 
     loading, 
@@ -43,14 +46,34 @@ export default function AdminInventoryPage() {
         </div>
         
         <div className="flex gap-2">
-           <Button variant="outline" className="font-bold h-11 px-6 rounded-xl border-gray-200">
-              <History className="w-5 h-5 mr-2" /> Movimientos
+           <Button 
+             variant="outline" 
+             className="font-bold h-11 px-6 rounded-xl border-gray-200"
+             onClick={() => setActiveModal("lot")}
+           >
+              <History className="w-5 h-5 mr-2" /> Entradas
            </Button>
-           <Button className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20">
+           <Button 
+             className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20"
+             onClick={() => setActiveModal("item")}
+           >
               <Plus className="w-5 h-5 mr-2" /> Agregar Insumo
            </Button>
         </div>
       </div>
+
+      <AddInventoryItemModal 
+        isOpen={activeModal === "item"} 
+        onClose={() => setActiveModal(null)} 
+        onSuccess={() => refetch()} 
+      />
+
+      <AddLotModal 
+        isOpen={activeModal === "lot"} 
+        onClose={() => setActiveModal(null)} 
+        onSuccess={() => refetch()} 
+        items={items || []}
+      />
 
       {/* KPI METRICS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -84,15 +107,17 @@ export default function AdminInventoryPage() {
       </div>
 
       {/* ALERTAS CRÍTICAS (Section - Módulo 3 Requerimiento R2) */}
-      <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-         <div className="flex items-center gap-3">
-            <div className="bg-red-500 p-2 rounded-lg text-white animate-pulse">
-               <AlertTriangle className="w-4 h-4" />
-            </div>
-            <p className="text-sm font-bold text-red-700">Tienes 2 productos con lotes vencidos que requieren atención inmediata.</p>
-         </div>
-         <Button variant="link" className="text-red-700 font-bold text-xs uppercase tracking-wider">Ver Lotes Vencidos</Button>
-      </div>
+      {lowStockCount > 0 && (
+        <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+           <div className="flex items-center gap-3">
+              <div className="bg-red-500 p-2 rounded-lg text-white animate-pulse">
+                 <AlertTriangle className="w-4 h-4" />
+              </div>
+              <p className="text-sm font-bold text-red-700">Tienes {lowStockCount} productos con bajo stock o lotes vencidos que requieren atención.</p>
+           </div>
+           <Button variant="link" className="text-red-700 font-bold text-xs uppercase tracking-wider">Ver Alertas</Button>
+        </div>
+      )}
 
       {loading && !items && (
         <div className="flex justify-center p-12">

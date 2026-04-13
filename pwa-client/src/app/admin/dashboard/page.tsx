@@ -1,71 +1,40 @@
 "use client";
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { 
-  BarChart3, 
-  ShoppingBag, 
-  Users, 
-  Package, 
-  TrendingUp, 
-  ArrowUpRight, 
-  Calendar,
-  Layers,
-  Clock as ClockIcon
-} from "lucide-react";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  PieChart, 
-  Pie, 
-  Cell,
-  Legend
-} from "recharts";
-
-// Mock Data for the specification
-const salesData = [
-  { name: "Lun", total: 4500 },
-  { name: "Mar", total: 5200 },
-  { name: "Mié", total: 4800 },
-  { name: "Jue", total: 6100 },
-  { name: "Vie", total: 7500 },
-  { name: "Sáb", total: 9200 },
-  { name: "Dom", total: 8800 },
-];
-
-const topDishesData = [
-  { name: "Tacos al Pastor", value: 45 },
-  { name: "Enchiladas", value: 25 },
-  { name: "Guacamole", value: 15 },
-  { name: "Pozole", value: 10 },
-  { name: "Otros", value: 5 },
-];
+  getSalesReportApi, 
+  getTopDishesApi, 
+  getRestaurantDashboardApi,
+  getPeakHoursApi,
+  type ReportPeriod
+} from "@/lib/reportsApi";
+import { getInventoryItemsApi } from "@/lib/inventoryApi";
+import { useAuth } from "@/context/AuthContext";
 
 const COLORS = ["#E8673A", "#D4592E", "#F59E0B", "#10B981", "#6B7280"];
 
-const peakHoursData = [
-  { hour: "12:00", orders: 12 },
-  { hour: "13:00", orders: 18 },
-  { hour: "14:00", orders: 25 },
-  { hour: "15:00", orders: 22 },
-  { hour: "16:00", orders: 15 },
-  { hour: "17:00", orders: 10 },
-  { hour: "18:00", orders: 14 },
-  { hour: "19:00", orders: 28 },
-  { hour: "20:00", orders: 35 },
-  { hour: "21:00", orders: 30 },
-];
+function mapPeriod(p: string): ReportPeriod {
+  if (p === "Hoy") return "today";
+  if (p === "Semana") return "week";
+  if (p === "Mes") return "month";
+  return "year";
+}
 
 export default function AdminDashboard() {
-  const [period, setPeriod] = useState("Hoy");
+  const { user } = useAuth();
+  const [period, setPeriod] = useState("Mes");
+
+  const reportPeriod = mapPeriod(period);
+
+  const { data: salesData } = useFetchWithState("sales", () => getSalesReportApi({ period: reportPeriod }), 15000);
+  const { data: topDishes } = useFetchWithState("top-dishes", () => getTopDishesApi({ period: reportPeriod }), 15000);
+  const { data: peakData } = useFetchWithState("peak-hours", () => getPeakHoursApi({ period: reportPeriod }), 15000);
+  const { data: dashboard } = useFetchWithState("dash-kpis", () => user?.restaurantId ? getRestaurantDashboardApi(String(user.restaurantId)) : Promise.reject(), 15000);
+  const { data: inventory } = useFetchWithState("inventory", getInventoryItemsApi, 15000);
+
+  const sales = (salesData || []).map(s => ({ name: s.label, total: s.ventas }));
+  const top = (topDishes || []).map(d => ({ name: d.name, value: d.value }));
+  const peak = (peakData || []).map(p => ({ hour: p.hour, orders: p.orders }));
+  const lowStock = (inventory || []).filter(i => i.currentStock <= i.minStock).length;
 
   return (
     <div className="space-y-8">
@@ -99,28 +68,28 @@ export default function AdminDashboard() {
         <KPIItem 
            icon={BarChart3} 
            label="Ventas del día" 
-           value="$4,850" 
-           trend="+12% vs ayer" 
+           value={`$${(dashboard?.salesToday || 0).toLocaleString()}`} 
+           trend={`${period}`} 
            trendType="up" 
         />
         <KPIItem 
            icon={ShoppingBag} 
-           label="Pedidos hoy" 
-           value="24" 
-           trend="3 en cocina" 
+           label="Pedidos activos" 
+           value={String(dashboard?.activeOrders || 0)} 
+           trend="En cocina" 
            trendType="neutral" 
         />
         <KPIItem 
            icon={Users} 
-           label="Mesas ocupadas" 
-           value="8" 
-           trend="de 12 totales" 
+           label="Ocupación" 
+           value={`${period}`} 
+           trend="Ver mesas →" 
            trendType="neutral" 
         />
         <KPIItem 
            icon={Package} 
            label="Alertas stock" 
-           value="3" 
+           value={String(lowStock)} 
            trend="Ver inventario →" 
            trendType="down" 
         />
@@ -139,7 +108,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesData}>
+              <BarChart data={sales}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                 <XAxis 
                    dataKey="name" 
@@ -173,7 +142,7 @@ export default function AdminDashboard() {
              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={topDishesData}
+                    data={top}
                     cx="50%"
                     cy="45%"
                     innerRadius={60}
@@ -181,7 +150,7 @@ export default function AdminDashboard() {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {topDishesData.map((entry, index) => (
+                    {top.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -208,7 +177,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent className="h-[250px]">
              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={peakHoursData}>
+                <LineChart data={peak}>
                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                    <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fontSize: 10}} />
                    <YAxis hide />
@@ -249,23 +218,11 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {[
-                      { name: "Tacos al Pastor", sales: 124, pct: 45, income: 10540 },
-                      { name: "Enchiladas Suizas", sales: 68, pct: 25, income: 8160 },
-                      { name: "Guacamole Especial", sales: 42, pct: 15, income: 3360 },
-                    ].map((row, i) => (
+                    {top.slice(0, 5).map((row, i) => (
                       <tr key={i} className="hover:bg-gray-50 dark:hover:bg-zinc-900/50 transition-colors">
                         <td className="px-6 py-4 font-bold">{row.name}</td>
-                        <td className="px-6 py-4">{row.sales}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                             <div className="flex-1 h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-foodify-orange" style={{ width: `${row.pct}%` }} />
-                             </div>
-                             <span className="text-[10px] font-bold">{row.pct}%</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right font-black text-foodify-orange">${row.income.toLocaleString()}</td>
+                        <td className="px-6 py-4">{row.value} uds</td>
+                        <td className="px-6 py-4 text-right font-black text-foodify-orange">Pop: {row.value}</td>
                       </tr>
                     ))}
                   </tbody>

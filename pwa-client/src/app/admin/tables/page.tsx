@@ -19,14 +19,32 @@ import toast from "react-hot-toast";
 
 
 import { useFetchWithState } from "@/lib/useFetchWithState";
-import { getTablesApi } from "@/lib/tablesApi";
+import { getTablesApi, updateTableStatusApi } from "@/lib/tablesApi";
+import { AddTableModal } from "@/components/modals/AddTableModal";
 
 export default function AdminTablesPage() {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { 
     data: tables, 
     loading, 
     refetch 
   } = useFetchWithState("tables", getTablesApi, 15000);
+
+  const cycleStatus = async (id: string, current: string) => {
+    const nextMap: Record<string, string> = {
+      available: "occupied",
+      occupied: "cleaning",
+      cleaning: "available",
+    };
+    const next = nextMap[current] || "available";
+    try {
+      await updateTableStatusApi(id, next);
+      toast.success(`Mesa ahora ${next}`);
+      refetch();
+    } catch {
+      toast.error("Error al actualizar mesa");
+    }
+  };
 
   const statusCounts = {
     available: (tables || []).filter(t => t.status === "available").length,
@@ -42,10 +60,24 @@ export default function AdminTablesPage() {
            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foodify-orange" />
         </div>
       )}
-      <div>
-        <h1 className="text-3xl font-black">Mesas</h1>
-        <p className="text-text-secondary">Configuración y estado actual de las mesas del salón.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-black">Mesas</h1>
+          <p className="text-text-secondary">Configuración y estado actual de las mesas del salón.</p>
+        </div>
+        <Button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-foodify-orange text-white font-black h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20"
+        >
+          <Plus className="w-5 h-5 mr-2" /> Agregar Mesa
+        </Button>
       </div>
+
+      <AddTableModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={() => refetch()} 
+      />
 
 
       {/* INDICADORES DE ESTADO */}
@@ -90,13 +122,19 @@ export default function AdminTablesPage() {
               </p>
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 p-3 bg-white/10 dark:bg-black/10 backdrop-blur-sm border-t border-inherit">
+            <div 
+              className="absolute inset-x-0 bottom-0 p-3 bg-white/10 dark:bg-black/10 backdrop-blur-sm border-t border-inherit"
+              onClick={(e) => {
+                e.stopPropagation();
+                cycleStatus(table.id, table.status);
+              }}
+            >
                {table.status === 'available' ? (
-                 <p className="text-[10px] font-black uppercase text-center text-green-600">Crear orden</p>
+                 <p className="text-[10px] font-black uppercase text-center text-green-600">Ocupar Mesa</p>
                ) : table.status === 'occupied' ? (
-                 <p className="text-[10px] font-black uppercase text-center text-red-600">En uso</p>
+                 <p className="text-[10px] font-black uppercase text-center text-red-600">Liberar / Limpiar</p>
                ) : (
-                 <p className="text-[10px] font-black uppercase text-center text-text-secondary">{table.status}</p>
+                 <p className="text-[10px] font-black uppercase text-center text-text-secondary">Marcar Disponible</p>
                )}
             </div>
           </Card>

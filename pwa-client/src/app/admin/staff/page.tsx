@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 import { useFetchWithState } from "@/lib/useFetchWithState";
-import { getStaffApi } from "@/lib/staffApi";
+import { getStaffApi, updateStaffStatusApi } from "@/lib/staffApi";
+import { AddStaffModal } from "@/components/modals/AddStaffModal";
 
 const roleConfig: any = {
   restaurant_admin: { label: "Admin", color: "bg-orange-100 text-orange-600 border-orange-200" },
@@ -27,11 +28,23 @@ const roleConfig: any = {
 };
 
 export default function AdminStaffPage() {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { 
     data: staff, 
     loading, 
     refetch 
   } = useFetchWithState("staff", getStaffApi, 15000);
+
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    try {
+      await updateStaffStatusApi(id, newStatus as any);
+      toast.success("Estado actualizado");
+      refetch();
+    } catch (error) {
+      toast.error("Error al actualizar estado");
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -46,11 +59,20 @@ export default function AdminStaffPage() {
           <p className="text-text-secondary">Gestiona el equipo y permisos de tu restaurante.</p>
         </div>
         
-        <Button className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20">
+        <Button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20"
+        >
           <Plus className="w-5 h-5 mr-2" />
           Agregar empleado
         </Button>
       </div>
+
+      <AddStaffModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={() => refetch()} 
+      />
 
       <div className="relative">
         <Search className="absolute left-3 top-3 h-5 w-5 text-text-secondary" />
@@ -107,10 +129,14 @@ export default function AdminStaffPage() {
                   <Button variant="ghost" className="text-xs font-bold gap-2 hover:bg-foodify-orange-light hover:text-foodify-orange">
                      <Edit3 className="w-3 h-3" /> Editar
                   </Button>
-                  <Button variant="ghost" className={cn(
-                    "text-xs font-bold",
-                    employee.status === 'active' ? 'text-text-secondary' : 'text-green-500'
-                  )}>
+                  <Button 
+                    variant="ghost" 
+                    className={cn(
+                      "text-xs font-bold",
+                      employee.status === 'active' ? 'text-text-secondary' : 'text-green-500'
+                    )}
+                    onClick={() => toggleStatus(employee.id, employee.status)}
+                  >
                     {employee.status === 'active' ? 'Desactivar' : 'Activar'}
                   </Button>
                </div>
