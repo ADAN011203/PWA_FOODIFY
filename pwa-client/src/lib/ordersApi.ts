@@ -90,7 +90,7 @@ export async function createPublicOrderApi(payload: {
     }))
   };
 
-  const { data } = await publicApi.post("/api/v1/orders", purifiedPayload);
+  const { data } = await publicApi.post("/orders", purifiedPayload);
 
   // Backend devuelve: { data: Order, status: 201 }
   const rawOrder = data.data ?? data;
