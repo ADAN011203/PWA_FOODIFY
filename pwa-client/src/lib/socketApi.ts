@@ -17,7 +17,8 @@ class SocketManager {
     const socket = io(namespace, {
       path: "/api_proxy/socket.io/",
       auth: { token: `Bearer ${token}` },
-      transports: ["polling", "websocket"],
+      transports: ["polling"],
+      upgrade: false,
       reconnection: true,
       reconnectionAttempts: 5,
     });
