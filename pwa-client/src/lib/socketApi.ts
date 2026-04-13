@@ -19,8 +19,10 @@ class SocketManager {
       auth: { token: `Bearer ${token}` },
       transports: ["polling"],
       upgrade: false,
+      multiplex: false, // Force separate connections for kitchen/restaurant to avoid proxy conflicts
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
     });
 
     socket.on("connect", () => {
