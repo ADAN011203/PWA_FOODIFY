@@ -118,18 +118,18 @@ export default function DashboardPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
 
-  const { data: dishesData, loading: dishesLoading, error: dishesError, refetch: refetchDishes } = useFetchWithState<Dish[]>("/dishes", getDishesApi);
-  const { data: ingredientsData, error: ingError } = useFetchWithState<Ingredient[]>("/inventory/items", getInventoryItemsApi);
+  const { data: dishesData, loading: dishesLoading, error: dishesError, refetch: refetchDishes } = useFetchWithState<Dish[]>("/dishes", getDishesApi, 15000);
+  const { data: ingredientsData, error: ingError } = useFetchWithState<Ingredient[]>("/inventory/items", getInventoryItemsApi, 15000);
   
   const dishes = dishesData ?? [];
   const alertIngredients = useMemo(() => ingredientsData?.filter(i => getAlertLevel(i) !== "ok") ?? [], [ingredientsData]);
   const isPremium = !ingError;
 
+  // Polling para KPIs (ventas, dashboard)
   useEffect(() => {
     if (!user || isLoading) return;
 
     const fetchData = async () => {
-      setDataLoading(true);
       try {
         const [sales, top, dash] = await Promise.all([
           getSalesReportApi(mapPeriod(period)),
@@ -160,6 +160,8 @@ export default function DashboardPage() {
     };
 
     fetchData();
+    const id = setInterval(fetchData, 15000);
+    return () => clearInterval(id);
   }, [user, isLoading, period]);
 
   const profitData = useMemo(() => buildProfitData(salesData), [salesData]);

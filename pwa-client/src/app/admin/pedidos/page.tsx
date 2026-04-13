@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { useFetchWithState } from "@/lib/useFetchWithState";
 import { getActiveOrdersApi, updateOrderStatusApi, cancelOrderApi } from "@/lib/ordersApi";
 import type { Order, OrderStatus } from "@/types/orders";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -336,20 +337,14 @@ export default function AdminPedidosPage() {
   const { user, isLoading } = useAdminGuard();
   const toast = useToast();
 
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [initLoading, setInitLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<OrderStatus | "todos">("todos");
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Order | null>(null);
-  const [page, setPage] = useState(1);
+  const {
+    data: ordersData,
+    loading: initLoading,
+    error: ordersError,
+    refetch,
+  } = useFetchWithState<Order[]>("/orders/active", getActiveOrdersApi, 15000);
 
-  useEffect(() => {
-    if (!user) return;
-    getActiveOrdersApi()
-      .then(setOrders)
-      .catch(() => toast.error("Error al cargar pedidos"))
-      .finally(() => setInitLoading(false));
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  const orders = ordersData ?? [];
 
   const filtered = useMemo(() => {
     let list = [...orders].sort(
@@ -378,15 +373,23 @@ export default function AdminPedidosPage() {
   }
 
   const changeStatus = async (id: string, newStatus: OrderStatus) => {
-    await updateOrderStatusApi(id, newStatus);
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
-    toast.success(`Orden → ${STATUS_CFG[newStatus].label}`);
+    try {
+      await updateOrderStatusApi(id, newStatus);
+      refetch();
+      toast.success(`Orden → ${STATUS_CFG[newStatus].label}`);
+    } catch {
+      toast.error("No se pudo actualizar el estado");
+    }
   };
 
   const cancelOrder = async (id: string) => {
-    await cancelOrderApi(id);
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "cancelado" } : o)));
-    toast.success("Orden cancelada");
+    try {
+      await cancelOrderApi(id);
+      refetch();
+      toast.success("Orden cancelada");
+    } catch {
+      toast.error("No se pudo cancelar la orden");
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));

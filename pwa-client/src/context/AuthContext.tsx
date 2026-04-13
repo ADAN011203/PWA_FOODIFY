@@ -62,7 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Intento 2: Buscar en la lista de dueños (si la anterior falló por permisos)
+        // Intento 2: Mapeo manual de emergencia (para asegurar que "Centro educativo" cargue)
+        if (user.branch?.toLowerCase().includes("centro educativo")) {
+           updateUserSlug("centro-educativo");
+           return;
+        }
+
+        // Intento 3: Buscar en la lista de dueños
         const list = await getOwnedRestaurantsApi();
         const found = list.find(r => String(r.id) === String(user.restaurantId));
         if (found?.slug) {
