@@ -61,7 +61,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ children, isOpen: propIs
             <>
               <div className="space-y-4">
                 {items.map((item) => (
-                  <div key={item.id} className="flex gap-4 group border-b dark:border-border pb-4 last:border-0">
+                  <div key={item.dishId} className="flex gap-4 group border-b dark:border-border pb-4 last:border-0">
                     <div className="border relative w-20 h-20 rounded-2xl overflow-hidden bg-gray-50 dark:bg-zinc-900 shrink-0">
                       {item.image_url ? (
                         <Image src={item.image_url} alt={item.name} fill className="object-cover" />
@@ -81,14 +81,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ children, isOpen: propIs
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-2 bg-gray-50 dark:bg-zinc-900 border dark:border-border rounded-xl px-2 py-1">
                           <button 
-                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                             onClick={() => updateQuantity(item.dishId, item.quantity - 1)}
                              className="p-1 text-text-secondary hover:text-foodify-orange transition-colors"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="text-xs font-black min-w-[2ch] text-center dark:text-white">{item.quantity}</span>
                           <button 
-                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                             onClick={() => updateQuantity(item.dishId, item.quantity + 1)}
                              className="p-1 text-text-secondary hover:text-foodify-orange transition-colors"
                           >
                             <Plus className="w-3 h-3" />
@@ -96,7 +96,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ children, isOpen: propIs
                         </div>
                         
                         <button 
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeItem(item.dishId)}
                           className="text-gray-300 hover:text-red-500 transition-colors p-2"
                         >
                           <Trash2 className="w-4 h-4" />
