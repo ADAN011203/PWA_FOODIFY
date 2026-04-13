@@ -81,11 +81,11 @@ export async function createPublicOrderApi(payload: {
     restaurantId:  Number(payload.restaurantId),
     customerName:  payload.customerName.trim(),
     customerPhone: payload.customerPhone.trim(),
-    notes:         payload.notes?.trim() || null,
+    notes:         payload.notes?.trim() || undefined,
     items: payload.items.map(item => ({
       dishId:       Number(item.dishId),
       quantity:     Number(item.quantity),
-      specialNotes: item.specialNotes?.trim() || null
+      specialNotes: item.specialNotes?.trim() || undefined
     }))
   };
 
