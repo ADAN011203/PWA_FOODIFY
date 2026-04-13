@@ -63,9 +63,11 @@ function ParaLlevarContent() {
 
       try {
         let slugToUse = urlSlug || user?.slug || RESTAURANT_SLUG;
+        console.log(`[ParaLlevar] Resolving slug. URL: "${urlSlug}", User: "${user?.slug}", Fallback: "${RESTAURANT_SLUG}" -> Final: "${slugToUse}"`);
 
         // Si el usuario está logueado pero no tiene slug persistida, intentamos resolverla
         if (!urlSlug && !user?.slug && user?.restaurantId) {
+          console.log(`[ParaLlevar] Missing slug for authenticated user, attempting dynamic lookup for restaurantId: ${user.restaurantId}`);
           try {
             const rest = await getRestaurantDetailsApi(user.restaurantId);
             if (rest.slug) slugToUse = rest.slug;

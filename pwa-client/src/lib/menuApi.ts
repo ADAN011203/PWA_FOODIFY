@@ -8,7 +8,9 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
   restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
 }> {
   // El backend excluye /menu/:slug del prefijo global /api/v1
+  console.log(`[Menu] Fetching public menu for slug: "${slug}", mode: "${mode}"`);
   const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
+  console.log(`[Menu] Fetch success for: ${slug}`);
   const { restaurant, menus } = data.data;
 
   const mappedMenus: PublicMenu[] = (menus ?? []).map((m: any) => ({

@@ -19,7 +19,7 @@ class SocketManager {
       auth: { token: `Bearer ${token}` },
       transports: ["polling"],
       upgrade: false,
-      multiplex: false, // Force separate connections for kitchen/restaurant to avoid proxy conflicts
+      multiplex: true, // Shared connection for kitchen/restaurant to maintain a single session (SID) through proxy
       withCredentials: true,
       extraHeaders: {
         "x-forwarded-for": "true", // Hint for some proxies
