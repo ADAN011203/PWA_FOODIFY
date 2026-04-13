@@ -12,10 +12,9 @@ import {
   MapPin, 
   Phone, 
   Mail, 
-  Instagram, 
-  Facebook, 
-  Twitter, 
+  Globe,
   MessageCircle,
+  Share2,
   Image as ImageIcon,
   Check,
   Save,
@@ -165,17 +164,17 @@ export default function AdminConfigPage() {
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <Instagram className="w-5 h-5 text-pink-500" />
+                    <Globe className="w-5 h-5 text-gray-400" />
                     <Input placeholder="URL de Instagram" />
                   </div>
                   <div className="flex items-center gap-3">
-                    <Facebook className="w-5 h-5 text-blue-600" />
+                    <MessageCircle className="w-5 h-5 text-gray-400" />
                     <Input placeholder="URL de Facebook" />
                   </div>
                </div>
                <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <Twitter className="w-5 h-5 text-blue-400" />
+                    <Share2 className="w-5 h-5 text-gray-400" />
                     <Input placeholder="URL de Twitter / X" />
                   </div>
                   <div className="flex items-center gap-3">

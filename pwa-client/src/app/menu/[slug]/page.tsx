@@ -18,8 +18,8 @@ import {
   Plus,
   Minus,
   Phone,
-  Instagram,
-  Facebook,
+  Globe,
+  Share2,
   MessageCircle
 } from "lucide-react";
 import Image from "next/image";
@@ -352,10 +352,10 @@ export default function PublicMenuPage() {
             <h3 className="font-bold text-lg">Síguenos en redes</h3>
             <div className="flex flex-wrap gap-3">
               <Button variant="outline" className="rounded-full gap-2 border-gray-200">
-                <Instagram className="w-4 h-4 text-pink-500" /> Instagram
+                <Globe className="w-4 h-4 text-gray-400" /> Instagram
               </Button>
               <Button variant="outline" className="rounded-full gap-2 border-gray-200">
-                <Facebook className="w-4 h-4 text-blue-600" /> Facebook
+                <Share2 className="w-4 h-4 text-gray-400" /> Facebook
               </Button>
               <Button variant="outline" className="rounded-full gap-2 border-gray-200">
                 <MessageCircle className="w-4 h-4 text-green-500" /> WhatsApp
