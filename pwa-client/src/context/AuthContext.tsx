@@ -37,12 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           u.name   = u.name   || "Usuario";
           u.branch = u.branch || u.restaurant?.name || "Sucursal";
           u.slug   = u.slug   || u.restaurant?.slug || "";
-          // Refuerzo manual para asegurar carga de datos reales
-          if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
-            u.slug = "centro-educativo";
-          } else if (u.email === "admin@demo.foodify.mx") {
-            u.slug = "comedor-verapaz";
-          }
+          u.slug   = u.slug   || u.restaurant?.slug || "";
         }
         setUser(u);
         // Soportar tanto "token" (legacy mock) como "accessToken" (backend real)
@@ -61,14 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user || user.slug || !user.restaurantId) return;
 
       try {
-        // Intento 2: Mapeo manual de emergencia (para asegurar que "Centro educativo" cargue)
-        if (user.branch?.toLowerCase().includes("centro educativo") || user.name?.toLowerCase().includes("centro educativo")) {
-           updateUserSlug("centro-educativo");
-           return;
-        } else if (user.email === "admin@demo.foodify.mx") {
-           updateUserSlug("demo");
-           return;
-        }
+        // El slug se resolverá via API o vendrá en la sesión
 
         // Intento 3: Consulta directa
         const rest = await getRestaurantDetailsApi(String(user.restaurantId));
@@ -116,12 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       u.name   = u.name   || "Usuario";
       u.branch = u.branch || u.restaurant?.name || "Sucursal";
       u.slug   = u.slug   || u.restaurant?.slug || "";
-      // Refuerzo manual para asegurar carga de datos reales
-      if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
-        u.slug = "centro-educativo";
-      } else if (u.email === "admin@demo.foodify.mx") {
-        u.slug = "demo";
-      }
+      u.slug   = u.slug   || u.restaurant?.slug || "";
     }
     
     // Guardar en localStorage
