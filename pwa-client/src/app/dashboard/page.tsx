@@ -132,8 +132,8 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         const [sales, top, dash] = await Promise.all([
-          getSalesReportApi(mapPeriod(period)),
-          getTopDishesApi(5),
+          getSalesReportApi({ period: mapPeriod(period) }),
+          getTopDishesApi({ limit: 5, period: mapPeriod(period) }),
           getRestaurantDashboardApi(String(user.restaurantId ?? ""))
         ]);
 
