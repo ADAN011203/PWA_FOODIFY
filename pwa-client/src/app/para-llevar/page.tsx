@@ -145,10 +145,13 @@ function ParaLlevarContent() {
     }
     try {
       const res = await createPublicOrderApi({
-        restaurantId: data.restaurant.id,
-        customerName: customerName.trim(),
+        restaurantId:  Number(data.restaurant.id),
+        customerName:  customerName.trim(),
         customerPhone: customerPhone.trim(),
-        items: cart.map(i => ({ dishId: Number(i.dish.id), quantity: i.qty })),
+        items: cart.map(i => ({ 
+          dishId:   Number(i.dish.id), 
+          quantity: Number(i.qty) 
+        })),
       });
       
       addOrder({

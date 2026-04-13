@@ -75,10 +75,21 @@ export async function createPublicOrderApi(payload: {
   notes?: string;
   items: { dishId: number; quantity: number; specialNotes?: string }[];
 }): Promise<Order> {
-  const { data } = await publicApi.post("/orders", {
+  // Purificación extrema del payload para evitar errores de actualización vacía en TypeORM (v3.2)
+  const purifiedPayload = {
     type: "takeout",
-    ...payload,
-  });
+    restaurantId:  Number(payload.restaurantId),
+    customerName:  payload.customerName.trim(),
+    customerPhone: payload.customerPhone.trim(),
+    notes:         payload.notes?.trim() || null,
+    items: payload.items.map(item => ({
+      dishId:       Number(item.dishId),
+      quantity:     Number(item.quantity),
+      specialNotes: item.specialNotes?.trim() || null
+    }))
+  };
+
+  const { data } = await publicApi.post("/orders", purifiedPayload);
   
   // En v3.2 el backend devuelve el objeto de la orden directamente o dentro de un campo 'data'
   const rawOrder = data.data ?? data;
