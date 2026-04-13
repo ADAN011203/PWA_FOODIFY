@@ -292,7 +292,3 @@ export default function OrderTrackingPage() {
     </div>
   );
 }
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
-}
