@@ -20,6 +20,10 @@ class SocketManager {
       transports: ["polling"],
       upgrade: false,
       multiplex: false, // Force separate connections for kitchen/restaurant to avoid proxy conflicts
+      withCredentials: true,
+      extraHeaders: {
+        "x-forwarded-for": "true", // Hint for some proxies
+      },
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
