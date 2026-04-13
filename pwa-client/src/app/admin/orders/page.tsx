@@ -153,7 +153,7 @@ export default function AdminOrdersPage() {
                      </div>
                      <div className="flex flex-col">
                         <span className="text-[10px] font-black text-text-secondary uppercase">Atendido por</span>
-                        <span className="text-xs font-bold leading-tight">{order.attendedBy || order.waiterName || '—'}</span>
+                        <span className="text-xs font-bold leading-tight">{order.attendedBy || '—'}</span>
                      </div>
                   </div>
                   <div className="text-right">
