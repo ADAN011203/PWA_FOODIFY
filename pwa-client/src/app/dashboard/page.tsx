@@ -131,12 +131,26 @@ export default function DashboardPage() {
 
     const fetchData = async () => {
       try {
+        console.log("[Dashboard] Initializing KPI fetch...");
+        const rid = user?.restaurantId ? String(user.restaurantId) : "";
+        
+        // Parallel fetch with individual error handling to prevent blocking
         const [sales, top, dash] = await Promise.all([
-          getSalesReportApi({ period: mapPeriod(period) }),
-          getTopDishesApi({ limit: 5, period: mapPeriod(period) }),
-          getRestaurantDashboardApi(String(user.restaurantId ?? ""))
+          getSalesReportApi({ period: mapPeriod(period) }).catch(err => {
+            console.warn("Sales report failed:", err);
+            return [];
+          }),
+          getTopDishesApi({ limit: 5, period: mapPeriod(period) }).catch(err => {
+            console.warn("Top dishes failed:", err);
+            return [];
+          }),
+          rid ? getRestaurantDashboardApi(rid).catch(err => {
+            console.warn("Dashboard KPIs failed:", err);
+            return { salesToday: 0, activeOrders: 0, topDishes: [], stockAlerts: 0 };
+          }) : Promise.resolve({ salesToday: 0, activeOrders: 0, topDishes: [], stockAlerts: 0 })
         ]);
 
+        console.log("[Dashboard] KPIs loaded successfully");
         setSalesData(sales);
         setTopDishes(top.map(d => ({
           name: d.name.length > 16 ? d.name.slice(0, 16) + "…" : d.name,
@@ -153,8 +167,9 @@ export default function DashboardPage() {
           enCocina: dash.activeOrders
         });
       } catch (err) {
-        console.error("Dashboard data load error:", err);
+        console.error("Dashboard critical fetch error:", err);
       } finally {
+        console.log("[Dashboard] Setting dataLoading to false");
         setDataLoading(false);
       }
     };
@@ -178,10 +193,15 @@ export default function DashboardPage() {
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.headerLogo}>
-            <IconUtensils size={28} color="#FF6B35" />
+            <Logo 
+              variant={user.role === "saas_admin" || user.role === "admin" ? "codex" : "foodify"} 
+              className="text-white"
+            />
           </div>
           <div>
-            <p className={styles.headerTitle}>Foodify Admin</p>
+            <p className={styles.headerTitle}>
+              {user.role === "saas_admin" || user.role === "admin" ? "Codex Master" : "Foodify Admin"}
+            </p>
             <div className={styles.branchSelector} onClick={() => setShowSwitchModal(true)}>
               <p className={styles.headerSub}>{user.name} · {user.branch}</p>
               <span className={styles.switchBadge}>Cambiar sucursal</span>

@@ -18,6 +18,7 @@ export function useFetchWithState<T>(
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setError(null);
+    console.log(`[Fetch] Starting: ${url || "fetcher"}`);
     try {
       let payload: any;
       if (fetcher) {
