@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "restaurant_admin" | "manager" | "waiter" | "chef" | "cashier" | "mesero" | "cocinero" | "cocina" | "guest";
+export type UserRole = "saas_admin" | "admin" | "restaurant_admin" | "manager" | "waiter" | "chef" | "cashier" | "mesero" | "cocinero" | "cocina" | "guest";
 
 export interface AuthUser {
   id: string;

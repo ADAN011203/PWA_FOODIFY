@@ -14,6 +14,7 @@ interface LoginResponse {
 
 function mapRole(r: string): AuthUser["role"] {
   switch (r) {
+    case "saas_admin":       return "saas_admin";
     case "restaurant_admin": return "admin";
     case "manager":          return "admin";
     case "waiter":           return "mesero";
