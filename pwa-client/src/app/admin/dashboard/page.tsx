@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
   const sales = (salesData || []).map(s => ({ name: s.label, total: s.ventas }));
   const top = (topDishes || []).map(d => ({ name: d.name, value: d.value }));
-  const peak = (peakData || []).map(p => ({ hour: p.hour, orders: p.orders }));
+  const peak = (peakData || []).map(p => ({ hour: p.hour, orders: p.ordenes }));
   const lowStock = (inventory || []).filter(i => i.currentStock <= i.minStock).length;
 
   return (
