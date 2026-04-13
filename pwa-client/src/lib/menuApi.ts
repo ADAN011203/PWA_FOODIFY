@@ -215,7 +215,6 @@ export async function getFullAdminMenuApi(): Promise<{
   const adminMenu: PublicMenu = {
     id: "admin-sync",
     name: "Administrador (Full Sync)",
-    isActive: true,
     isActiveNow: true,
     isOrderableNow: true,
     categories: Object.values(allCategories).filter(c => c.dishes.length > 0)
