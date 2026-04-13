@@ -21,7 +21,7 @@ export interface Ingredient {
 export type StockAlertLevel = "critical" | "low" | "expiring" | "ok";
 
 export function getAlertLevel(ingredient: Ingredient): StockAlertLevel {
-  const hasExpiring = (ingredient.batches ?? []).some((b) => {
+  const hasExpiring = ingredient.batches.some((b) => {
     if (!b.expiryDate || b.status !== "active") return false;
     const daysLeft = (new Date(b.expiryDate).getTime() - Date.now()) / 86400000;
     return daysLeft <= 3;

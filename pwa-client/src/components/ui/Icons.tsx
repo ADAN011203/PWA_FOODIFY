@@ -155,3 +155,52 @@ export function IconBox({ size = 48, color = "#d1d5db" }: IconProps) {
     </svg>
   );
 }
+
+export function IconStar({ size = 24, color = "currentColor", fill = "none" }: IconProps & { fill?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+    </svg>
+  );
+}
+
+export function IconCheckCircle({ size = 24, color = "currentColor" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+  );
+}
+
+export function IconMessageSquare({ size = 24, color = "currentColor" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+  );
+}
+
+export function IconTrendingUp({ size = 24, color = "currentColor" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+      <polyline points="17 6 23 6 23 12"></polyline>
+    </svg>
+  );
+}
+
+export function IconLoader({ size = 24, color = "currentColor" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+      <line x1="12" y1="2" x2="12" y2="6"></line>
+      <line x1="12" y1="18" x2="12" y2="22"></line>
+      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+      <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+      <line x1="2" y1="12" x2="6" y2="12"></line>
+      <line x1="18" y1="12" x2="22" y2="12"></line>
+      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+      <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+    </svg>
+  );
+}

@@ -74,7 +74,6 @@ function StaffFormModal({
   onClose: () => void;
   onSave: (form: StaffForm, id?: string) => Promise<void>;
 }) {
-  const { user } = useAuth();
   const [form, setForm] = useState<StaffForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof StaffForm, string>>>({});
   const [saving, setSaving] = useState(false);
@@ -85,7 +84,6 @@ function StaffFormModal({
         name: member.name,
         email: member.email,
         phone: member.phone,
-        password: "", // Contraseña no se edita desde aquí, pero se requiere para el tipo
         role: member.role,
         status: member.status,
         branch: member.branch,

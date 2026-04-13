@@ -1,93 +1,79 @@
-/* Foodify PWA — Global Styles */
+@import "tailwindcss";
 
-:root {
-  /* Brand Colors */
-  --color-primary: #FF6B35;
-  --color-primary-hover: #ff8558;
-  --color-primary-active: #e55c2b;
+@theme {
+  /* Foodify Design Tokens */
+  --color-foodify-orange: #E8673A;
+  --color-foodify-orange-dark: #D4592E;
+  --color-foodify-orange-light: #FFF3ED;
   
-  /* Backgrounds */
-  --bg-app: #111214;
-  --bg-card: #1a1d21;
-  --bg-elevated: #22262c;
-  --bg-input: #2e3238;
+  --color-bg-app: #F8F9FA;
+  --color-bg-surface: #FFFFFF;
   
-  /* Text */
-  --text-primary: #f0ede8;
-  --text-secondary: #8a8f98;
-  --text-muted: #6b7280;
+  --color-text-primary: #1C1C1E;
+  --color-text-secondary: #6B7280;
   
-  /* Status Colors */
-  --status-success: #22c55e;
-  --status-error: #ef4444;
-  --status-warning: #f59e0b;
-  --status-info: #3b82f6;
+  --color-border: #E5E7EB;
+  
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
 
-  /* Borders */
-  --border-light: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(255, 107, 53, 0.5);
-  
-  /* Shadows */
-  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 12px 0 rgba(255, 107, 53, 0.2);
-  
-  /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-round: 9999px;
-
-  /* Fonts */
-  --font-family: 'Outfit', sans-serif;
+  /* Custom Radii */
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  :root {
+    --bg-app: #F8F9FA;
+    --bg-surface: #FFFFFF;
+    --text-primary: #1C1C1E;
+    --text-secondary: #6B7280;
+  }
+
+  .dark {
+    --bg-app: #111214;
+    --bg-surface: #1a1d21;
+    --text-primary: #f0ede8;
+    --text-secondary: #8a8f98;
+  }
+
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
-body {
-  font-family: var(--font-family);
-  background-color: var(--bg-app);
-  color: var(--text-primary);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@layer utilities {
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 
-/* Scrollbar Hide Utility */
-.scrollbar-hide {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+  /* Status Badge Utilities */
+  .badge-pending { @apply bg-blue-50 text-blue-500; }
+  .badge-preparing { @apply bg-orange-50 text-foodify-orange; }
+  .badge-ready { @apply bg-emerald-50 text-emerald-500; }
+  .badge-delivered { @apply bg-green-50 text-green-600; }
+  .badge-cancelled { @apply bg-red-50 text-red-500; }
+  .badge-available { @apply bg-emerald-50 text-emerald-500; }
+  .badge-occupied { @apply bg-red-50 text-red-500; }
+  .badge-reserved { @apply bg-amber-50 text-amber-500; }
+  .badge-cleaning { @apply bg-gray-100 text-gray-500; }
 }
 
 /* Animations */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0);    }
-}
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0);    }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes spin { 
-  to { transform: rotate(360deg); } 
+@keyframes pulse-custom {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-/* Animation Utilities */
-.anim-fade-up { animation: fadeUp 0.28s ease both; }
-.anim-slide-up { animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1) both; }
-.anim-fade-in { animation: fadeIn 0.2s ease both; }
-.anim-scale-in { animation: scaleIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+.animate-pulse-custom {
+  animation: pulse-custom 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

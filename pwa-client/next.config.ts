@@ -32,19 +32,19 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    const backendUrl = process.env.BACKEND_URL || "http://3.142.73.52:3000";
     return [
       {
         source: "/api_proxy/:path*",
-        destination: `${backendUrl}/:path*`,
+        destination: "http://3.142.73.52:3000/:path*",
       },
     ];
   },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
-  // Fix for Next.js 16 Turbopack with next-pwa
-  turbopack: {},
+  experimental: {
+    turbo: {},
+  },
 };
 
 export default withPWA(nextConfig);

@@ -1,14 +1,11 @@
-export type UserRole = "admin" | "restaurant_admin" | "manager" | "waiter" | "chef" | "cashier" | "mesero" | "cocinero" | "cocina" | "guest";
+export type UserRole = "admin" | "mesero" | "cocina";
 
 export interface AuthUser {
   id: string;
-  name?: string;     // PWA name
-  fullName?: string; // Backend name
+  name: string;
   email: string;
   role: UserRole;
-  branch?: string;   // PWA branch name
-  restaurant?: { id: string; name: string }; // Backend shape
-  restaurantId?: string;
+  branch: string;
 }
 
 export interface LoginPayload {

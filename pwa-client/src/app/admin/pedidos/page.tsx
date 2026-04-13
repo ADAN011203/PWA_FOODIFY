@@ -332,7 +332,7 @@ export default function AdminPedidosPage() {
       list = list.filter(
         (o) =>
           o.folio.includes(q) ||
-          (o.items ?? []).some((i) => (i.dishName || "").toLowerCase().includes(q)) ||
+          o.items.some((i) => i.dishName.toLowerCase().includes(q)) ||
           (o.attendedBy ?? "").toLowerCase().includes(q)
       );
     }
