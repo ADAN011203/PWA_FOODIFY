@@ -344,6 +344,11 @@ export default function AdminPedidosPage() {
     refetch,
   } = useFetchWithState<Order[]>("/orders/active", getActiveOrdersApi, 15000);
 
+  const [filterStatus, setFilterStatus] = useState<OrderStatus | "todos">("todos");
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Order | null>(null);
+  const [page, setPage] = useState(1);
+
   const orders = ordersData ?? [];
 
   const filtered = useMemo(() => {
