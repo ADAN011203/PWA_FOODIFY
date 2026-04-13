@@ -125,7 +125,6 @@ function ParaLlevarContent() {
         restaurantId: data.restaurant.id,
         items: cart.map(i => ({ dishId: Number(i.dish.id), quantity: i.qty })),
         customerName: name,
-        mode: "takeout"
       });
       
       addOrder({
