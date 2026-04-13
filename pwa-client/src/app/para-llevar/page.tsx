@@ -55,6 +55,7 @@ function ParaLlevarContent() {
   const [showCart, setShowCart] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [modalQty, setModalQty] = useState(1);
+  const [lastOrder, setLastOrder] = useState<any>(null); // Guardamos la última orden para el modal de éxito
 
   // Load Data
   useEffect(() => {
@@ -160,9 +161,11 @@ function ParaLlevarContent() {
           dishName: i.dish.name,
           qty: i.qty,
           unitPrice: i.dish.price
-        }))
+        })),
+        qrCode: res.qrCode, // Guardamos el QR
       });
 
+      setLastOrder(res); // Activamos la visualización del éxito
       setCart([]);
       setShowCart(false);
       toast.custom((t) => (
@@ -568,6 +571,48 @@ function ParaLlevarContent() {
               <p className="text-center text-[10px] font-bold text-text-secondary uppercase tracking-widest opacity-60">
                  Al dar click aceptas nuestras políticas de servicio
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* SUCCESS ORDER MODAL */}
+      {lastOrder && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-xl animate-in fade-in duration-500" />
+          <div className={cn(
+            "relative w-full max-w-sm rounded-[3rem] overflow-hidden animate-in zoom-in-95 duration-500 shadow-2xl",
+            dark ? "bg-zinc-900 border border-white/10" : "bg-white"
+          )}>
+            <div className="p-10 text-center space-y-6">
+              <div className="flex justify-center">
+                <div className="bg-green-500 p-4 rounded-full shadow-lg shadow-green-500/20">
+                  <CheckCircle2 className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                <h3 className="text-3xl font-black italic tracking-tighter uppercase">¡Pedido Enviado!</h3>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foodify-orange">Tu Folio es #{lastOrder.folio}</p>
+              </div>
+
+              {lastOrder.qrCode ? (
+                <div className="bg-white p-6 rounded-3xl shadow-inner inline-block mx-auto border-4 border-zinc-100 dark:border-white/5">
+                   <img src={lastOrder.qrCode} alt="QR Seguimiento" className="w-48 h-48" />
+                   <p className="mt-4 text-[9px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Muestra este código al recoger</p>
+                </div>
+              ) : (
+                <div className="py-12 opacity-50 space-y-2">
+                  <Clock className="w-12 h-12 mx-auto mb-2 text-foodify-orange" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Generando seguimiento...</p>
+                </div>
+              )}
+
+              <Button 
+                onClick={() => setLastOrder(null)}
+                className="w-full h-16 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-lg rounded-2xl transition-all active:scale-95 shadow-xl"
+              >
+                Volver al Menú
+              </Button>
             </div>
           </div>
         </div>

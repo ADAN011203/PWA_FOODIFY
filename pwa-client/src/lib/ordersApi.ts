@@ -59,6 +59,7 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
     attendedBy: String((o.waiter as Record<string, unknown>)?.fullName ?? o.attendedBy ?? "—"),
     branch:     "Restaurante",
     items,
+    qrCode:     String(o.qr_code ?? o.qrCode ?? ""),
   };
 }
 
