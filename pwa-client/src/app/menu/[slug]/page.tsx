@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { api, publicApi } from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
+import { CartDrawer } from "@/components/menu/CartDrawer";
 import { 
   UtensilsCrossed, 
   MapPin, 
@@ -66,6 +67,7 @@ interface Menu {
 
 export default function PublicMenuPage() {
   const { slug } = useParams();
+  const router = useRouter();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [activeMenu, setActiveMenu] = useState<Menu | null>(null);
