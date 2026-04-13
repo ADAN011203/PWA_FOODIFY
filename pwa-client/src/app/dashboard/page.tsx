@@ -126,7 +126,7 @@ export default function DashboardPage() {
         const [sales, top, dash] = await Promise.all([
           getSalesReportApi({ period: mapPeriod(period) }).catch(() => []),
           getTopDishesApi({ limit: 5, period: mapPeriod(period) }).catch(() => []),
-          rid ? getRestaurantDashboardApi(rid).catch(() => ({ salesToday: 0, activeOrders: 0, topDishes: [], stockAlerts: 0 })) : Promise.resolve({ salesToday: 0, activeOrders: 0, topDishes: [], stockAlerts: 0 })
+          getRestaurantDashboardApi().catch(() => ({ salesToday: 0, activeOrders: 0, topDishes: [], stockAlerts: 0 }))
         ]);
 
         setSalesData(sales);
