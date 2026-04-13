@@ -34,9 +34,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Normalizar nombres de campos
         const u = session.user;
         if (u) {
-          u.name   = u.name   || u.fullName || "Usuario";
+          u.name   = u.name   || "Usuario";
           u.branch = u.branch || u.restaurant?.name || "Sucursal";
-          u.slug   = u.slug   || u.restaurant?.slug || u.restaurant?.restaurant_slug || "";
+          u.slug   = u.slug   || u.restaurant?.slug || "";
           // Refuerzo manual para asegurar carga de datos reales
           if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
             u.slug = "centro-educativo";
