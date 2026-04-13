@@ -35,10 +35,23 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
     unitPrice: Number(it.unitPrice ?? it.unit_price ?? 0),
   }));
 
+  // Priorizamos kitchen_status si status es básico (pending/confirmed)
+  const rawStatus = String(o.status ?? "pending");
+  const rawKitchen = String(o.kitchen_status ?? o.kitchenStatus ?? "");
+  
+  let finalStatus = mapStatus(rawStatus);
+  
+  // Si el estado de cocina es 'ready', forzamos a 'listo'
+  if (rawKitchen === "ready" || rawKitchen === "prepared") {
+    finalStatus = "listo";
+  } else if (rawStatus === "pending" && (rawKitchen === "preparing" || rawKitchen === "preparing")) {
+    finalStatus = "en_preparacion";
+  }
+
   return {
     id:         String(o.id),
     folio:      String(o.orderNumber ?? o.order_number ?? o.folio ?? o.id),
-    status:     mapStatus(String(o.status ?? "pending")),
+    status:     finalStatus,
     createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
     attendedBy: String((o.waiter as Record<string, unknown>)?.fullName ?? o.attendedBy ?? "—"),
     branch:     "Restaurante",
