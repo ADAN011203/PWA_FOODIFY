@@ -105,7 +105,7 @@ export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
         )}
 
         <div className={styles.actions}>
-          <Button variant="secondary" onClick={onClose} fullWidth>
+          <Button variant="secondary" onClick={onClose} className="w-full">
             Cerrar
           </Button>
         </div>
