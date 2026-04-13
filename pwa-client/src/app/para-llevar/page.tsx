@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import { fetchPublicMenu, RESTAURANT_SLUG } from "@/lib/menuApi";
+import { fetchPublicMenu, getFullAdminMenuApi, RESTAURANT_SLUG } from "@/lib/menuApi";
 import { createPublicOrderApi } from "@/lib/ordersApi";
 import { useGuestOrders } from "@/lib/useGuestOrders";
 import { MenuSkeleton } from "@/components/ui/Skeletons";
@@ -62,11 +62,11 @@ function ParaLlevarContent() {
       try {
         const slugToUse = urlSlug || (user?.slug && user.slug.trim() !== "" ? user.slug : null) || RESTAURANT_SLUG;
         const modeToUse = urlMode || "takeout";
-        // Strict fetch from API - No fallbacks
-        const res = await fetchPublicMenu(slugToUse, modeToUse);
         
-        // "Show all" - Public API usually only returns manually enabled menus.
-        // We show them regardless of their current schedule (isActiveNow).
+        // If we have a token, we prioritize sync with the Admin panel to show all configured items.
+        // Otherwise, fallback to the filtered public menu.
+        const res = user?.role ? await getFullAdminMenuApi() : await fetchPublicMenu(slugToUse, modeToUse);
+        
         setData(res);
         if (res.menus.length > 0) {
           setActiveMenuId(res.menus[0].id);
