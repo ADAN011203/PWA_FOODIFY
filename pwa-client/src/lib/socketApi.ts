@@ -21,9 +21,6 @@ class SocketManager {
       upgrade: false,
       multiplex: true, // Shared connection for kitchen/restaurant to maintain a single session (SID) through proxy
       withCredentials: true,
-      extraHeaders: {
-        "x-forwarded-for": "true", // Hint for some proxies
-      },
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,

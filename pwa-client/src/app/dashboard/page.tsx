@@ -194,13 +194,13 @@ export default function DashboardPage() {
         <div className={styles.headerLeft}>
           <div className={styles.headerLogo}>
             <Logo 
-              variant={user.role === "saas_admin" || user.role === "admin" ? "codex" : "foodify"} 
+              variant={user.role === "saas_admin" ? "codex" : "foodify"} 
               className="text-white"
             />
           </div>
           <div>
             <p className={styles.headerTitle}>
-              {user.role === "saas_admin" || user.role === "admin" ? "Codex Master" : "Foodify Admin"}
+              {user.role === "saas_admin" ? "Codex Master" : "Foodify Admin"}
             </p>
             <div className={styles.branchSelector} onClick={() => setShowSwitchModal(true)}>
               <p className={styles.headerSub}>{user.name} · {user.branch}</p>
