@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
@@ -66,9 +67,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
-              <button
+              <Link
                 key={item.href}
-                onClick={() => router.push(item.href)}
+                href={item.href}
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all",
                   isActive 
@@ -78,7 +79,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <item.icon className="w-5 h-5" />
                 {item.label}
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -116,10 +117,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <nav className="flex-1 px-4 space-y-1 mt-4">
           {navItems.map((item) => (
-             <button
+             <Link
                 key={item.href}
+                href={item.href}
                 onClick={() => {
-                  router.push(item.href);
                   setIsMobileMenuOpen(false);
                 }}
                 className={cn(
@@ -129,7 +130,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
              >
                <item.icon className="w-5 h-5" />
                {item.label}
-             </button>
+             </Link>
           ))}
         </nav>
       </aside>

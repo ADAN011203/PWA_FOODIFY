@@ -37,6 +37,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           u.name   = u.name   || u.fullName || "Usuario";
           u.branch = u.branch || u.restaurant?.name || "Sucursal";
           u.slug   = u.slug   || u.restaurant?.slug || u.restaurant?.restaurant_slug || "";
+          // Refuerzo manual para asegurar carga de datos reales
+          if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
+            u.slug = "centro-educativo";
+          }
         }
         setUser(u);
         // Soportar tanto "token" (legacy mock) como "accessToken" (backend real)
@@ -55,7 +59,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user || user.slug || !user.restaurantId) return;
 
       try {
-        // Intento 1: Consulta directa
+        // Intento 2: Mapeo manual de emergencia (para asegurar que "Centro educativo" cargue)
+        if (user.branch?.toLowerCase().includes("centro educativo") || user.name?.toLowerCase().includes("centro educativo")) {
+           updateUserSlug("centro-educativo");
+           return;
+        }
+
+        // Intento 3: Consulta directa
         const rest = await getRestaurantDetailsApi(user.restaurantId);
         if (rest.slug) {
           updateUserSlug(rest.slug);
@@ -101,6 +111,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       u.name   = u.name   || u.fullName || "Usuario";
       u.branch = u.branch || u.restaurant?.name || "Sucursal";
       u.slug   = u.slug   || u.restaurant?.slug || u.restaurant?.restaurant_slug || "";
+      // Refuerzo manual para asegurar carga de datos reales
+      if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
+        u.slug = "centro-educativo";
+      }
     }
     
     // Guardar en localStorage
