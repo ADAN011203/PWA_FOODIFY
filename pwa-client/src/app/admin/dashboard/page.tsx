@@ -8,7 +8,9 @@ import {
   type ReportPeriod
 } from "@/lib/reportsApi";
 import { getInventoryItemsApi } from "@/lib/inventoryApi";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useFetchWithState } from "@/lib/useFetchWithState";
 
 const COLORS = ["#E8673A", "#D4592E", "#F59E0B", "#10B981", "#6B7280"];
 
