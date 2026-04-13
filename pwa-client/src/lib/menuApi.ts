@@ -55,7 +55,7 @@ export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "tak
   return {
     menus: mappedMenus,
     restaurant: {
-      id: Number(restaurant?.id ?? 1),
+      id: Number(restaurant?.id ?? 2),
       name: restaurant?.name ?? "Foodify",
       logoUrl: restaurant?.logoUrl,
       isOpen: isRestaurantOpen,
