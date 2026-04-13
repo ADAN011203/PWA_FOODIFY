@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-'use client';
-
-import LoginPage from '@/components/ui/LoginPage';
-
-export default function AdminLoginPage() {
-  return <LoginPage type="admin" />;
-}
-=======
 import React from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Logo } from "@/components/ui/Logo";
@@ -32,7 +23,7 @@ export default function AdminLoginPage() {
         </div>
         {/* Usamos el fondo generado */}
         <Image
-          src="/brand/hero-bg.png" // Podría usar la imagen generada, pero por ahora uso el placeholder o la muevo luego
+          src="/brand/hero-bg.png"
           alt="Restaurant Background"
           fill
           className="object-cover"
@@ -56,4 +47,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
->>>>>>> origin/main

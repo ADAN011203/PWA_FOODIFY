@@ -29,6 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem("foodify_session");
+      if (raw) {
+        const session = JSON.parse(raw) as AuthSession;
         // Normalizar nombres de campos
         const u = session.user;
         if (u) {
