@@ -1,7 +1,8 @@
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/authStore";
 
-const SOCKET_URL = "http://3.142.73.52:3000";
+// Use relative path to hit the Next.js rewrite /api_proxy in production to avoid Mixed Content
+const SOCKET_URL = "/api_proxy";
 
 class SocketManager {
   private sockets: Map<string, Socket> = new Map();

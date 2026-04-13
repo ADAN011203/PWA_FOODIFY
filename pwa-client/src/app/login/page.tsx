@@ -10,7 +10,7 @@ export default function AdminLoginPage() {
       <div className="hidden lg:flex lg:w-1/2 relative bg-foodify-orange overflow-hidden">
         <div className="absolute inset-0 bg-black/40 z-10" />
         <div className="relative z-20 flex flex-col justify-between p-12 text-white w-full">
-          <Logo variant="codex" className="text-white" />
+          <Logo variant="foodify" className="text-white" />
           <div className="space-y-4">
             <h1 className="text-5xl font-black">Gestiona tu restaurante con inteligencia.</h1>
             <p className="text-xl text-white/80">

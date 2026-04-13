@@ -1,8 +1,10 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/store/authStore";
 
-const API_URL = "http://3.142.73.52:3000/api/v1";
-const BASE_URL_PROXY = "http://3.142.73.52:3000";
+// Use relative path for production (to trigger Vercel proxy and avoid Mixed Content)
+// During local development, Next.js proxy rewrite still works if configured in next.config.ts
+const API_URL = "/api_proxy/api/v1";
+const BASE_URL_PROXY = "/api_proxy";
 
 // ─── Instance with JWT ────────────────────────────────────────────────────────
 export const api: AxiosInstance = axios.create({
