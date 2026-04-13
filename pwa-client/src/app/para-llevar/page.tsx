@@ -62,6 +62,12 @@ function ParaLlevarContent() {
       if (authLoading && !urlSlug) return;
 
       try {
+        // Si hay una sesión cargada pero aún no tiene slug, esperamos un momento a que AuthContext la resuelva
+        if (user && !user.slug && !urlSlug) {
+          console.log("[ParaLlevar] Auth exists but no slug yet. Waiting for resolution...");
+          return; 
+        }
+
         let slugToUse = urlSlug || user?.slug || RESTAURANT_SLUG;
         console.log(`[ParaLlevar] Resolving slug. URL: "${urlSlug}", User: "${user?.slug}", Fallback: "${RESTAURANT_SLUG}" -> Final: "${slugToUse}"`);
 

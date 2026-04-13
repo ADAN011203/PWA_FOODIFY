@@ -21,6 +21,8 @@ class SocketManager {
       upgrade: false,
       multiplex: true, // Shared connection for kitchen/restaurant to maintain a single session (SID) through proxy
       withCredentials: true,
+      forceNew: true, // Crucial for Vercel proxy to force new session attempts on failure
+      timestampRequests: true, // Avoid caching of polling segments
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,

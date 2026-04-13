@@ -80,10 +80,10 @@ import {
 
 const MODULES = [
   { icon: <IconUtensils size={24} />,   label: "Menú",       sub: "Gestiona platillos",  href: "/admin/menu",       color: "#FF6B35" },
-  { icon: <IconClipboard size={24} />,  label: "Pedidos",    sub: "Órdenes activas",      href: "/admin/pedidos",    color: "#6366f1" },
-  { icon: <IconPackage size={24} />,    label: "Inventario", sub: "Stock y lotes",        href: "/admin/inventario", color: "#22c55e" },
+  { icon: <IconClipboard size={24} />,  label: "Pedidos",    sub: "Órdenes activas",      href: "/admin/orders",     color: "#6366f1" },
+  { icon: <IconPackage size={24} />,    label: "Inventario", sub: "Stock y lotes",        href: "/admin/inventory",  color: "#22c55e" },
   { icon: <IconUsers size={24} />,      label: "Staff",      sub: "Personal",             href: "/admin/staff",      color: "#f59e0b" },
-  { icon: <IconBarChart size={24} />,   label: "Reportes",   sub: "KPIs y estadísticas",  href: "/admin/reportes",   color: "#a78bfa" },
+  { icon: <IconBarChart size={24} />,   label: "Reportes",   sub: "KPIs y estadísticas",  href: "/admin/dashboard",  color: "#a78bfa" },
 ];
 
 import {
