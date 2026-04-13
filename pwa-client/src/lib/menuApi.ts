@@ -1,7 +1,7 @@
 import { publicApi, api } from "./api/axios";
 import { type Dish, type Category, type PublicMenu } from "../types/menu";
 
-export const RESTAURANT_SLUG = "demo";
+export const RESTAURANT_SLUG = "comedor-verapaz";
 
 function mapDish(d: any, categoryId?: string): Dish {
   const rawImages = Array.isArray(d.images) ? d.images : (d.imageUrl ? [d.imageUrl] : []);
@@ -166,3 +166,66 @@ export async function createCategoryApi(menuId: string, name: string): Promise<C
   };
 }
 
+
+// ─── ADMIN: Full Sync for PWA (Stabilization) ───────────────────────────────
+
+export async function getFullAdminMenuApi(): Promise<{
+  menus: PublicMenu[];
+  restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
+}> {
+  // 1. Fetch Admin Categories & Dishes
+  const { data: dishesRes } = await api.get("/dishes");
+  const rawDishes = Array.isArray(dishesRes.data) ? dishesRes.data : (dishesRes.data?.items ?? []);
+  
+  const { data: catRes } = await api.get("/menus"); // Using default menu or first available
+  const rawMenus = Array.isArray(catRes.data) ? catRes.data : (catRes.data?.items ?? []);
+  
+  // 2. Fetch all categories across all menus
+  const allCategories: Record<string, any> = {};
+  for (const m of rawMenus) {
+    try {
+      const { data: cRes } = await api.get(`/menus/${m.id}/categories`);
+      const cats = Array.isArray(cRes.data) ? cRes.data : (cRes.data?.items ?? []);
+      cats.forEach((c: any) => {
+        allCategories[String(c.id)] = {
+          id: String(c.id),
+          name: c.name,
+          emoji: c.icon || "tag",
+          dishes: []
+        };
+      });
+    } catch (e) { console.error(`Failed to fetch categories for menu ${m.id}`, e); }
+  }
+
+  // 3. Populate categories with dishes
+  rawDishes.forEach((d: any) => {
+    const dish = mapDish(d);
+    if (allCategories[dish.categoryId]) {
+      allCategories[dish.categoryId].dishes.push(dish);
+    } else {
+      // Fallback: Create a "General" category if not found
+      if (!allCategories["general"]) {
+        allCategories["general"] = { id: "general", name: "General", emoji: "package", dishes: [] };
+      }
+      allCategories["general"].dishes.push(dish);
+    }
+  });
+
+  // 4. Wrap into a pseudo PublicMenu
+  const adminMenu: PublicMenu = {
+    id: "admin-sync",
+    name: "Administrador (Full Sync)",
+    isActiveNow: true,
+    isOrderableNow: true,
+    categories: Object.values(allCategories).filter(c => c.dishes.length > 0)
+  };
+
+  return {
+    menus: [adminMenu],
+    restaurant: {
+      id: 1,
+      name: "Foodify Admin",
+      isOpen: true
+    }
+  };
+}

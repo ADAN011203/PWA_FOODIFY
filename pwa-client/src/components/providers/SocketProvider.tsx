@@ -25,6 +25,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     kitchenSocketRef.current = kSocket;
     restaurantSocketRef.current = rSocket;
 
+    if (!kSocket || !rSocket) return;
+
     // ─── KITCHEN EVENTS ─────────────────────────────────────────────────────────
     kSocket.on("order:ready", (data: any) => {
       toast.success(`Pedido #${data.folio || data.id} listo para entrega! 🔔`, { duration: 5000 });
@@ -33,7 +35,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     // ─── RESTAURANT EVENTS ──────────────────────────────────────────────────────
     rSocket.on("order:new_notification", (data: any) => {
       toast(`Nuevo pedido recibido! 🥘`, { icon: '🔥', duration: 5000 });
-      // Aquí podríamos disparar un sonido si fuera necesario
     });
 
     rSocket.on("inventory:alert", (data: any) => {

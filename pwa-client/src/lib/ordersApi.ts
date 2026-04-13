@@ -59,24 +59,41 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
     attendedBy: String((o.waiter as Record<string, unknown>)?.fullName ?? o.attendedBy ?? "—"),
     branch:     "Restaurante",
     items,
+    qrCode:     String(o.qr_code ?? o.qrCode ?? ""),
   };
 }
 
-// ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2 ────────────────
+/**
+ * ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2 ────────────────
+ * IMPORTANT: In v3.2, customerName and customerPhone are REQUIRED for takeout mode.
+ * The backend expects: { type: 'takeout', restaurantId, customerName, customerPhone, items: [...] }
+ */
 export async function createPublicOrderApi(payload: {
   restaurantId: number;
   customerName: string;
-  customerPhone?: string;
+  customerPhone: string;
   notes?: string;
-  table?: string;
-  mode?: string;
   items: { dishId: number; quantity: number; specialNotes?: string }[];
 }): Promise<Order> {
-  const { data } = await publicApi.post("/orders", {
+  // Purificación extrema del payload para evitar errores de actualización vacía en TypeORM (v3.2)
+  const purifiedPayload = {
     type: "takeout",
-    ...payload,
-  });
-  return mapToInternalOrder(data.data ?? data);
+    restaurantId:  Number(payload.restaurantId),
+    customerName:  payload.customerName.trim(),
+    customerPhone: payload.customerPhone.trim(),
+    notes:         payload.notes?.trim() || undefined,
+    items: payload.items.map(item => ({
+      dishId:       Number(item.dishId),
+      quantity:     Number(item.quantity),
+      specialNotes: item.specialNotes?.trim() || undefined
+    }))
+  };
+
+  const { data } = await publicApi.post("/orders", purifiedPayload);
+  
+  // En v3.2 el backend devuelve el objeto de la orden directamente o dentro de un campo 'data'
+  const rawOrder = data.data ?? data;
+  return mapToInternalOrder(rawOrder);
 }
 
 // ─── Seguimiento de orden por folio (público) ─────────────────────────────────

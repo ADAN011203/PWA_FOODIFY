@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import { fetchPublicMenu, RESTAURANT_SLUG } from "@/lib/menuApi";
+import { fetchPublicMenu, getFullAdminMenuApi, RESTAURANT_SLUG } from "@/lib/menuApi";
 import { createPublicOrderApi } from "@/lib/ordersApi";
 import { useGuestOrders } from "@/lib/useGuestOrders";
 import { MenuSkeleton } from "@/components/ui/Skeletons";
@@ -47,6 +47,7 @@ function ParaLlevarContent() {
     restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorType, setErrorType] = useState<"not_found" | "empty" | "error" | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -54,6 +55,7 @@ function ParaLlevarContent() {
   const [showCart, setShowCart] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [modalQty, setModalQty] = useState(1);
+  const [lastOrder, setLastOrder] = useState<any>(null); // Guardamos la última orden para el modal de éxito
 
   // Load Data
   useEffect(() => {
@@ -62,18 +64,26 @@ function ParaLlevarContent() {
       try {
         const slugToUse = urlSlug || (user?.slug && user.slug.trim() !== "" ? user.slug : null) || RESTAURANT_SLUG;
         const modeToUse = urlMode || "takeout";
-        // Strict fetch from API - No fallbacks
-        const res = await fetchPublicMenu(slugToUse, modeToUse);
         
-        // "Show all" - Public API usually only returns manually enabled menus.
-        // We show them regardless of their current schedule (isActiveNow).
+        setErrorType(null);
+        // If we have a token, we prioritize sync with the Admin panel to show all configured items.
+        // Otherwise, fallback to the filtered public menu.
+        const res = user?.role ? await getFullAdminMenuApi() : await fetchPublicMenu(slugToUse, modeToUse);
+        
         setData(res);
         if (res.menus.length > 0) {
           setActiveMenuId(res.menus[0].id);
+        } else {
+          setErrorType("empty");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error loading menu:", err);
-        toast.error("No se pudo cargar el menú del servidor");
+        if (err.response?.status === 404) {
+          setErrorType("not_found");
+        } else {
+          setErrorType("error");
+          toast.error("No se pudo cargar el menú del servidor");
+        }
       } finally {
         setLoading(false);
       }
@@ -129,18 +139,19 @@ function ParaLlevarContent() {
 
   const handleCreateOrder = async () => {
     if (!data || cart.length === 0) return;
-    if (!customerName.trim()) {
-      toast.error("Por favor, ingresa tu nombre");
+    if (!customerName.trim() || !customerPhone.trim()) {
+      toast.error("Por favor, ingresa tu nombre y teléfono para el pedido");
       return;
     }
     try {
       const res = await createPublicOrderApi({
-        restaurantId: data.restaurant.id,
-        customerName: customerName,
-        customerPhone: customerPhone,
-        table: urlTable || undefined,
-        mode: urlMode || "takeout",
-        items: cart.map(i => ({ dishId: Number(i.dish.id), quantity: i.qty })),
+        restaurantId:  Number(data.restaurant.id),
+        customerName:  customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        items: cart.map(i => ({ 
+          dishId:   Number(i.dish.id), 
+          quantity: Number(i.qty) 
+        })),
       });
       
       addOrder({
@@ -153,36 +164,54 @@ function ParaLlevarContent() {
           dishName: i.dish.name,
           qty: i.qty,
           unitPrice: i.dish.price
-        }))
+        })),
+        qrCode: res.qrCode, // Guardamos el QR
       });
 
+      setLastOrder(res); // Activamos la visualización del éxito
       setCart([]);
       setShowCart(false);
       toast.custom((t) => (
-        <div className="bg-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
-          <CheckCircle2 className="w-6 h-6" />
+        <div className="bg-zinc-900 border border-white/10 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 shadow-foodify-orange/20">
+          <div className="bg-foodify-orange p-2 rounded-full">
+            <CheckCircle2 className="w-6 h-6 text-white" />
+          </div>
           <div className="flex flex-col">
-            <span className="font-black">¡Pedido enviado!</span>
-            <span className="text-xs opacity-90">Sigue tu orden con el folio #{res.folio}</span>
+            <span className="font-black text-lg tracking-tight">¡Pedido enviado con éxito!</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foodify-orange">Tu Folio: #{res.folio}</span>
           </div>
         </div>
       ), { duration: 5000 });
-    } catch {
-      toast.error("Error al crear el pedido");
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || "Error al crear el pedido";
+      console.error("Order creation failed:", errorMsg, err.response?.data);
+      toast.error(`Error: ${errorMsg}`);
     }
   };
 
   if (loading) return <MenuSkeleton />;
-  if (!data || data.menus.length === 0) {
+  
+  if (errorType || !data || data.menus.length === 0) {
+    const is404 = errorType === "not_found";
     return (
       <div className={cn(
         "min-h-screen flex flex-col items-center justify-center p-12 text-center transition-colors",
         dark ? "bg-zinc-950 text-white" : "bg-gray-50 text-zinc-900"
       )}>
-        <UtensilsCrossed className="w-16 h-16 text-foodify-orange mb-4 opacity-20" />
-        <h2 className="text-2xl font-black mb-2">Restaurante Cerrado</h2>
-        <p className="text-text-secondary max-w-xs">No hay menús activos en este momento. Vuelve más tarde o revisa nuestras redes sociales.</p>
-        <Button variant="outline" className="mt-8 rounded-xl font-bold" onClick={() => window.location.reload()}>Reintentar</Button>
+        <UtensilsCrossed className={cn("w-16 h-16 mb-4 opacity-20", is404 ? "text-red-500" : "text-foodify-orange")} />
+        <h2 className="text-2xl font-black mb-2">
+          {is404 ? "Restaurante no encontrado" : "Restaurante Cerrado"}
+        </h2>
+        <p className="text-text-secondary max-w-xs">
+          {is404 
+            ? `No pudimos encontrar el restaurante con el identificador "${urlSlug || RESTAURANT_SLUG}". Verifica la URL e inténtalo de nuevo.`
+            : "No hay menús activos en este momento. Vuelve más tarde o revisa nuestras redes sociales."
+          }
+        </p>
+        <div className="flex gap-4 mt-8">
+           <Button variant="outline" className="rounded-xl font-bold" onClick={() => window.location.reload()}>Reintentar</Button>
+           {is404 && <Button className="bg-foodify-orange text-white rounded-xl font-bold" onClick={() => window.location.href = "/para-llevar"}>Ir al Inicio</Button>}
+        </div>
       </div>
     );
   }
@@ -537,14 +566,56 @@ function ParaLlevarContent() {
               </div>
               <Button 
                 onClick={() => handleCreateOrder()}
-                disabled={cart.length === 0}
-                className="w-full h-20 bg-foodify-orange hover:bg-foodify-orange/90 text-white font-black text-2xl rounded-[1.5rem] shadow-2xl shadow-foodify-orange/40 transition-all active:scale-[0.98]"
+                disabled={cart.length === 0 || !customerName.trim() || !customerPhone.trim()}
+                className="w-full h-20 bg-foodify-orange hover:bg-foodify-orange/90 text-white font-black text-2xl rounded-[1.5rem] shadow-2xl shadow-foodify-orange/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               >
                 COMPLETAR PEDIDO
               </Button>
               <p className="text-center text-[10px] font-bold text-text-secondary uppercase tracking-widest opacity-60">
                  Al dar click aceptas nuestras políticas de servicio
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* SUCCESS ORDER MODAL */}
+      {lastOrder && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-xl animate-in fade-in duration-500" />
+          <div className={cn(
+            "relative w-full max-w-sm rounded-[3rem] overflow-hidden animate-in zoom-in-95 duration-500 shadow-2xl",
+            dark ? "bg-zinc-900 border border-white/10" : "bg-white"
+          )}>
+            <div className="p-10 text-center space-y-6">
+              <div className="flex justify-center">
+                <div className="bg-green-500 p-4 rounded-full shadow-lg shadow-green-500/20">
+                  <CheckCircle2 className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                <h3 className="text-3xl font-black italic tracking-tighter uppercase">¡Pedido Enviado!</h3>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foodify-orange">Tu Folio es #{lastOrder.folio}</p>
+              </div>
+
+              {lastOrder.qrCode ? (
+                <div className="bg-white p-6 rounded-3xl shadow-inner inline-block mx-auto border-4 border-zinc-100 dark:border-white/5">
+                   <img src={lastOrder.qrCode} alt="QR Seguimiento" className="w-48 h-48" />
+                   <p className="mt-4 text-[9px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Muestra este código al recoger</p>
+                </div>
+              ) : (
+                <div className="py-12 opacity-50 space-y-2">
+                  <Clock className="w-12 h-12 mx-auto mb-2 text-foodify-orange" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Generando seguimiento...</p>
+                </div>
+              )}
+
+              <Button 
+                onClick={() => setLastOrder(null)}
+                className="w-full h-16 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-lg rounded-2xl transition-all active:scale-95 shadow-xl"
+              >
+                Volver al Menú
+              </Button>
             </div>
           </div>
         </div>

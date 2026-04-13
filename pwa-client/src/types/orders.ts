@@ -24,6 +24,7 @@ export interface Order {
   status: OrderStatus;
   items: OrderItem[];
   notes?: string;
+  qrCode?: string;     // ← Imagen del QR en Base64
   createdAt: string;    // ISO string
   attendedBy?: string;
   branch?: string;
