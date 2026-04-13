@@ -16,11 +16,19 @@ export interface Restaurant {
 export async function getOwnedRestaurantsApi(): Promise<Restaurant[]> {
   try {
     const { data } = await api.get("/restaurants");
-    // El backend retorna un array directamente o dentro de data.data
-    const list = Array.isArray(data) ? data : (data.data ?? []);
+    // Soporta tanto Array directo, data.data, como data.data.items (v3.1/3.2)
+    let list: any[] = [];
+    if (Array.isArray(data)) {
+      list = data;
+    } else if (data.data) {
+      if (Array.isArray(data.data)) list = data.data;
+      else if (Array.isArray(data.data.items)) list = data.data.items;
+    }
+
     return list.map((r: any) => ({
       ...r,
       id: String(r.id),
+      slug: r.slug ?? r.restaurant_slug ?? "",
     }));
   } catch (e) {
     console.error("Error fetching owned restaurants:", e);

@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { AuthUser, AuthSession } from "@/types/auth";
 import { logoutApi } from "@/lib/authApi";
-import { getRestaurantDetailsApi } from "@/lib/restaurantApi";
+import { getRestaurantDetailsApi, getOwnedRestaurantsApi } from "@/lib/restaurantApi";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -51,21 +51,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   // Auto-resolución de slug para sesiones antiguas
   useEffect(() => {
-    if (user && !user.slug && user.restaurantId) {
-      getRestaurantDetailsApi(user.restaurantId).then(rest => {
+    async function resolveSlug() {
+      if (!user || user.slug || !user.restaurantId) return;
+
+      try {
+        // Intento 1: Consulta directa
+        const rest = await getRestaurantDetailsApi(user.restaurantId);
         if (rest.slug) {
-          const updated = { ...user, slug: rest.slug };
-          setUser(updated);
-          // Actualizar localStorage
-          const raw = localStorage.getItem("foodify_session");
-          if (raw) {
-            const session = JSON.parse(raw);
-            session.user = updated;
-            localStorage.setItem("foodify_session", JSON.stringify(session));
-          }
+          updateUserSlug(rest.slug);
+          return;
         }
-      }).catch(() => {});
+
+        // Intento 2: Buscar en la lista de dueños (si la anterior falló por permisos)
+        const list = await getOwnedRestaurantsApi();
+        const found = list.find(r => String(r.id) === String(user.restaurantId));
+        if (found?.slug) {
+          updateUserSlug(found.slug);
+        }
+      } catch (e) {
+        console.warn("Failed to auto-resolve restaurant slug:", e);
+      }
     }
+
+    function updateUserSlug(slug: string) {
+      if (!user) return;
+      const updated = { ...user, slug };
+      setUser(updated);
+      const raw = localStorage.getItem("foodify_session");
+      if (raw) {
+        const session = JSON.parse(raw);
+        session.user = updated;
+        localStorage.setItem("foodify_session", JSON.stringify(session));
+      }
+    }
+
+    resolveSlug();
   }, [user?.id, user?.restaurantId, user?.slug]);
 
   const login = (session: AuthSession & { accessToken?: string; refreshToken?: string }) => {
