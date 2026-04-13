@@ -161,8 +161,9 @@ function ParaLlevarContent() {
      }
 
      try {
-       // Llamada correcta sin restaurantId
+       // Llamada con restaurantId dinámico desde el estado data
        const res = await createPublicOrderApi({
+         restaurantId:  Number(data?.restaurant.id),
          customerName:  customerName.trim(),
          customerPhone: customerPhone.trim(),
          items: cart.map(i => ({

@@ -69,14 +69,16 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
  * NO restaurantId, NO mode, NO table — estos se deducen del contexto
  */
 export async function createPublicOrderApi(payload: {
+  restaurantId: number;
   customerName: string;
   customerPhone: string;
   notes?: string;
   items: { dishId: number; quantity: number; specialNotes?: string }[];
 }): Promise<Order> {
-  // Payload exacto que espera el backend
+  // Payload exacto que espera el backend v3.2
   const purifiedPayload = {
-    type: "takeout",
+    restaurantId:  Number(payload.restaurantId),
+    type:          "takeout",
     customerName:  payload.customerName.trim(),
     customerPhone: payload.customerPhone.trim(),
     notes:         payload.notes?.trim() || undefined,

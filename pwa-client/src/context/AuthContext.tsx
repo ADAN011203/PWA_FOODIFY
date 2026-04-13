@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Intento 3: Consulta directa
-        const rest = await getRestaurantDetailsApi(user.restaurantId);
+        const rest = await getRestaurantDetailsApi(String(user.restaurantId));
         if (rest.slug) {
           updateUserSlug(rest.slug);
           return;
