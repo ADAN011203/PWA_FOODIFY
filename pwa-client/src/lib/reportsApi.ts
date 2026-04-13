@@ -3,10 +3,14 @@ import { api } from "./api";
 export type ReportPeriod = "today" | "week" | "month" | "quarter" | "year";
 
 // ─── Ventas por día ───────────────────────────────────────────────────────────
-export async function getSalesReportApi(period: ReportPeriod = "month"): Promise<{
+export async function getSalesReportApi(params?: {
+  period?: ReportPeriod;
+  start?: string;
+  end?: string;
+}): Promise<{
   label: string; ventas: number; ordenes: number;
 }[]> {
-  const { data } = await api.get("/reports/sales", { params: { period } });
+  const { data } = await api.get("/reports/sales", { params });
   const list = Array.isArray(data.data?.byDay) ? data.data.byDay : [];
   return list.map((d: Record<string, unknown>) => ({
     label:   String(d.date ?? d.label ?? ""),
@@ -16,10 +20,15 @@ export async function getSalesReportApi(period: ReportPeriod = "month"): Promise
 }
 
 // ─── Top platillos ────────────────────────────────────────────────────────────
-export async function getTopDishesApi(limit = 5): Promise<{
+export async function getTopDishesApi(params?: {
+  limit?: number;
+  period?: ReportPeriod;
+  start?: string;
+  end?: string;
+}): Promise<{
   name: string; value: number; income: number;
 }[]> {
-  const { data } = await api.get("/reports/dishes/top", { params: { limit } });
+  const { data } = await api.get("/reports/dishes/top", { params: { limit: 10, ...params } });
   const list = Array.isArray(data.data) ? data.data : [];
   return list.map((d: Record<string, unknown>) => ({
     name:   String(d.name ?? d.dishName ?? ""),
@@ -41,14 +50,57 @@ export async function getPeakHoursApi(): Promise<{
 }
 
 // ─── Ingresos por categoría ───────────────────────────────────────────────────
-export async function getCategoryIncomeApi(): Promise<{
+export async function getCategoryIncomeApi(params?: {
+  period?: ReportPeriod;
+  start?: string;
+  end?: string;
+}): Promise<{
   name: string; value: number;
 }[]> {
-  const { data } = await api.get("/reports/category-income");
+  const { data } = await api.get("/reports/category-income", { params });
   const list = Array.isArray(data.data) ? data.data : [];
   return list.map((d: Record<string, unknown>) => ({
     name:  String(d.categoryName ?? d.name ?? ""),
     value: Number(d.income ?? d.total ?? 0),
+  }));
+}
+
+// ─── Desempeño del personal ──────────────────────────────────────────────────
+export async function getStaffPerformanceApi(params?: {
+  period?: ReportPeriod;
+  userId?: number;
+  start?: string;
+  end?: string;
+}): Promise<{
+  worker: string;
+  orders: number;
+  revenue: number;
+}[]> {
+  const { data } = await api.get("/reports/staff", { params });
+  const list = Array.isArray(data.data) ? data.data : [];
+  return list.map((d: any) => ({
+    worker:  String(d.userName ?? d.name ?? d.worker ?? ""),
+    orders:  Number(d.orderCount ?? d.orders ?? 0),
+    revenue: Number(d.totalRevenue ?? d.revenue ?? 0),
+  }));
+}
+
+// ─── Desempeño de cocina ──────────────────────────────────────────────────────
+export async function getKitchenPerformanceApi(params?: {
+  period?: ReportPeriod;
+  start?: string;
+  end?: string;
+}): Promise<{
+  label: string;
+  avgTimeMin: number;
+  orderCount: number;
+}[]> {
+  const { data } = await api.get("/reports/kitchen/performance", { params });
+  const list = Array.isArray(data.data) ? data.data : [];
+  return list.map((d: any) => ({
+    label:      String(d.label ?? d.date ?? ""),
+    avgTimeMin: Number(d.avgTimeMin ?? d.avg_time ?? 0),
+    orderCount: Number(d.orderCount ?? d.count ?? 0),
   }));
 }
 

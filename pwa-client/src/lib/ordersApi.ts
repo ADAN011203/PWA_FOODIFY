@@ -8,8 +8,8 @@ function mapStatus(s: string): OrderStatus {
     case "pending":    return "nuevo";
     case "confirmed":  return "nuevo";
     case "preparing":  return "en_preparacion";
-    case "ready":      return "listo";
     case "prepared":   return "listo";
+    case "ready":      return "listo";
     case "delivered":  return "entregado";
     case "completed":  return "entregado";
     case "cancelled":  return "cancelado";
@@ -115,9 +115,13 @@ export async function cancelOrderApi(id: string, reason = "Cancelado por el clie
 // ─── Comandas de cocina (Premium) ─────────────────────────────────────────────
 export async function getKitchenOrdersApi(): Promise<Order[]> {
   const { data } = await api.get("/kitchen/orders");
-  return (Array.isArray(data.data) ? data.data : []).map(mapToInternalOrder);
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map(mapToInternalOrder);
 }
 
 export async function updateKitchenStatusApi(orderId: string, status: OrderStatus): Promise<void> {
-  await api.patch(`/kitchen/orders/${orderId}/status`, { status: mapStatusToBackend(status) });
-}
+  // En v3.2, hay un endpoint específico para kitchen-status
+  await api.patch(`/orders/${orderId}/kitchen-status`, { 
+    kitchenStatus: mapStatusToBackend(status) 
+  });
+}

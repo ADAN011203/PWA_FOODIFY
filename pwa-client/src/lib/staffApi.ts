@@ -54,12 +54,12 @@ export async function createStaffApi(payload: {
 export async function updateStaffApi(id: string, payload: Partial<{
   fullName: string; email: string; phone: string; role: StaffRole;
 }>): Promise<StaffMember> {
-  const { data } = await api.patch(`/users/${id}`, payload);  // v3.2: PATCH en lugar de PUT
+  const { data } = await api.put(`/users/${id}`, payload);
   return mapMember(data.data);
 }
 
 export async function updateStaffStatusApi(id: string, status: StaffStatus): Promise<void> {
-  await api.patch(`/users/${id}`, { isActive: status === "active" });
+  await api.put(`/users/${id}`, { isActive: status === "active" });
 }
 
 export async function deleteStaffApi(id: string): Promise<void> {

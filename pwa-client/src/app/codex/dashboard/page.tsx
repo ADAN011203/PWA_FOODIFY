@@ -19,16 +19,54 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
-
-const MOCK_RESTAURANTS = [
-  { id: 1, name: "Foodify Gourmet", slug: "foodify-gourmet", plan: "Premium", status: "active", created_at: "2026-01-15" },
-  { id: 2, name: "Tacos El Guero", slug: "tacos-el-guero", plan: "Basic", status: "active", created_at: "2026-02-10" },
-  { id: 3, name: "Sushi House", slug: "sushi-house", plan: "Pro", status: "suspended", created_at: "2026-03-01" },
-  { id: 4, name: "La Pizzeria", slug: "la-pizzeria", plan: "Premium", status: "active", created_at: "2026-03-20" },
-];
+import { 
+  getSaasKpisApi, 
+  getSaasRestaurantsApi, 
+  updateSaasSubscriptionStatusApi 
+} from "@/lib/saasApi";
+import { SaasKpi, SaasRestaurant } from "@/types/saas";
+import { FoodSpinner } from "@/components/ui/FoodSpinner";
 
 export default function CodexDashboard() {
-  const [restaurants, setRestaurants] = useState(MOCK_RESTAURANTS);
+  const [restaurants, setRestaurants] = useState<SaasRestaurant[]>([]);
+  const [kpis, setKpis] = useState<SaasKpi | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [kpiData, resData] = await Promise.all([
+        getSaasKpisApi(),
+        getSaasRestaurantsApi({ search: searchTerm })
+      ]);
+      setKpis(kpiData);
+      setRestaurants(resData.items);
+    } catch (error) {
+      toast.error("Error al cargar datos de la plataforma");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, [searchTerm]);
+
+  const toggleStatus = async (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    try {
+      await updateSaasSubscriptionStatusApi(id, newStatus);
+      toast.success("Estado actualizado");
+      fetchData();
+    } catch (error) {
+      toast.error("No se pudo cambiar el estado");
+    }
+  };
+
+  if (loading && !kpis) {
+    return <div className="h-[60vh] flex items-center justify-center"><FoodSpinner /></div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -50,30 +88,30 @@ export default function CodexDashboard() {
         <KPIItemCodex 
            icon={Store} 
            label="Total Restaurantes" 
-           value="124" 
-           trend="+8 este mes" 
+           value={kpis?.totalRestaurants ?? "0"} 
+           trend={`${kpis?.growthPercentage ?? 0}% crec.`} 
            trendColor="text-foodify-orange" 
         />
         <KPIItemCodex 
            icon={TrendingUp} 
-           label="MRR Acumulado" 
-           value="$45,850" 
-           trend="+12% YoY" 
+           label="MRR Estimado" 
+           value={`$${(kpis?.monthlyRevenue ?? 0).toLocaleString()}`} 
+           trend="Ingresos mensuales" 
            trendColor="text-green-400" 
         />
         <KPIItemCodex 
-           icon={Users} 
-           label="Usuarios Totales" 
-           value="1,850" 
-           trend="Menu public" 
+           icon={CreditCard} 
+           label="Suscrip. Activas" 
+           value={kpis?.activeSubscriptions ?? "0"} 
+           trend="Planes vigentes" 
            trendColor="text-blue-400" 
         />
         <KPIItemCodex 
-           icon={AlertTriangle} 
-           label="Tickets Soporte" 
-           value="5" 
-           trend="Pendientes" 
-           trendColor="text-red-400" 
+           icon={TrendingUp} 
+           label="Pedidos Totales" 
+           value={kpis?.totalOrders ?? "0"} 
+           trend="En la red" 
+           trendColor="text-purple-400" 
         />
       </div>
 
@@ -85,6 +123,8 @@ export default function CodexDashboard() {
              <input 
                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-foodify-orange transition-all" 
                placeholder="Buscar por nombre o slug..."
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
              />
           </div>
           <div className="flex gap-2">
@@ -121,11 +161,11 @@ export default function CodexDashboard() {
                         <td className="px-6 py-4">
                            <div className={cn(
                              "inline-flex px-2 py-0.5 rounded text-[10px] font-black uppercase",
-                             res.plan === 'Premium' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' :
-                             res.plan === 'Pro' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' :
+                             res.planName === 'Premium' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' :
+                             res.planName === 'Pro' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' :
                              'bg-blue-500/10 text-blue-500 border border-blue-500/20'
                            )}>
-                             {res.plan}
+                             {res.planName}
                            </div>
                         </td>
                         <td className="px-6 py-4">
@@ -133,14 +173,18 @@ export default function CodexDashboard() {
                               <span className={cn(
                                 "text-[10px] font-black uppercase",
                                 res.status === 'active' ? 'text-green-400' : 'text-red-400'
-                              )}>
-                                {res.status === 'active' ? 'ACTIVO' : 'SUSPENDIDO'}
+                               )}>
+                                {res.status === 'active' ? 'ACTIVO' : 'INACTIVO'}
                               </span>
-                              <Switch defaultChecked={res.status === 'active'} className="scale-75" />
+                              <Switch 
+                                checked={res.status === 'active'} 
+                                className="scale-75"
+                                onCheckedChange={() => toggleStatus(res.id, res.status)}
+                               />
                            </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-white/60">
-                           {res.created_at}
+                           {new Date(res.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-right">
                            <div className="flex items-center justify-end gap-2">

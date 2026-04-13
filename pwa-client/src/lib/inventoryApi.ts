@@ -55,13 +55,23 @@ export async function updateInventoryItemApi(id: string, payload: Partial<{
 // ─── Registrar lote (entrada de mercancía) ────────────────────────────────────
 export async function createLotApi(
   itemId: string,
-  payload: Omit<IngredientBatch, "id" | "ingredientId" | "status">
+  payload: {
+    quantity: number;
+    unitCost: number;
+    expiryDate?: string;
+    entryDate?: string;
+    lotNumber?: string;
+    supplier?: string;
+  }
 ): Promise<IngredientBatch> {
   const apiPayload = {
-    itemId,
+    itemId: Number(itemId),
     quantity: payload.quantity,
-    unitCost: payload.costPerUnit,
+    unitCost: payload.unitCost,
+    entryDate: payload.entryDate || new Date().toISOString(),
     expiryDate: payload.expiryDate,
+    lotNumber: payload.lotNumber,
+    supplier: payload.supplier,
   };
   const { data } = await api.post("/inventory/lots", apiPayload);
   const l = data.data || {};
@@ -69,11 +79,48 @@ export async function createLotApi(
     id:           String(l.id || Date.now()),
     ingredientId: String(itemId),
     quantity:     Number(l.quantity ?? payload.quantity),
-    costPerUnit:  Number(l.costPerUnit ?? l.unit_cost ?? l.unitCost ?? payload.costPerUnit),
-    entryDate:    String(l.entryDate ?? l.entry_date ?? new Date().toISOString()),
-    expiryDate:   l.expiryDate ? String(l.expiryDate) : (l.expiry_date ? String(l.expiry_date) : payload.expiryDate),
+    costPerUnit:  Number(l.unitCost ?? payload.unitCost),
+    entryDate:    String(l.entryDate ?? payload.entryDate ?? new Date().toISOString()),
+    expiryDate:   l.expiryDate ? String(l.expiryDate) : payload.expiryDate,
     status:       (l.status as "active" | "exhausted" | "expired") ?? "active",
   };
+}
+
+// ─── Ajustes de inventario ───────────────────────────────────────────────────
+export async function createAdjustmentApi(payload: {
+  itemId: number;
+  lotId: number;
+  quantity: number;
+  type: 'sale' | 'waste' | 'adjustment' | 'entry';
+  notes?: string;
+}): Promise<void> {
+  await api.post("/inventory/adjustments", payload);
+}
+
+// ─── Ver movimientos ─────────────────────────────────────────────────────────
+export async function getInventoryMovementsApi(params?: {
+  page?: number;
+  limit?: number;
+  lotId?: number;
+  type?: string;
+}): Promise<{
+  id: string;
+  lotId: string;
+  type: string;
+  quantity: number;
+  notes: string;
+  createdAt: string;
+}[]> {
+  const { data } = await api.get("/inventory/movements", { params });
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map((m: any) => ({
+    id: String(m.id),
+    lotId: String(m.lotId),
+    type: m.type,
+    quantity: Number(m.quantity),
+    notes: m.notes ?? "",
+    createdAt: m.createdAt,
+  }));
 }
 
 // ─── Obtener alertas activas ──────────────────────────────────────────────────
