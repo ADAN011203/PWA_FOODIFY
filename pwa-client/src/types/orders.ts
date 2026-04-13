@@ -1,6 +1,7 @@
 // ─── Estado del pedido ────────────────────────────────────────────────────────
 export type OrderStatus =
   | "nuevo"
+  | "confirmado"
   | "en_preparacion"
   | "listo"
   | "entregado"

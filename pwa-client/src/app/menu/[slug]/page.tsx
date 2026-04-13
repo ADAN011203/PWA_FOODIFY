@@ -1,129 +1,116 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
-import { HeroSection } from '@/components/menu/HeroSection';
-import { MenuTabs } from '@/components/menu/MenuTabs';
-import { CategoryNav } from '@/components/menu/CategoryNav';
-import { DishCard } from '@/components/menu/DishCard';
-import { CartFloatingButton } from '@/components/menu/CartFloatingButton';
-import { CartDrawer } from '@/components/menu/CartDrawer';
-import { Restaurant, Menu, Category, Dish } from '@/lib/types';
-import { UtensilsCrossed, Phone, Mail, Instagram, Facebook, MessageCircle } from 'lucide-react';
-
-// --- Static Mock Data ---
-const MOCK_RESTAURANT: Restaurant = {
-  id: '1',
-  name: 'Burger & Co',
-  slug: 'burger-co',
-  description: 'Las mejores hamburguesas artesanales de la ciudad.',
-  address: 'Av. Corrientes 1234, Ciudad de México',
-  phone: '55 1234 5678',
-  email: 'hola@burgerco.mx',
-  schedule: 'Lun - Dom: 12:00 - 23:00',
-  logo_url: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&q=80&w=150&h=150',
-  hero_url: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=1000',
-};
-
-const MOCK_MENUS: Menu[] = [
-  {
-    id: 'm1',
-    name: 'Menú del Día',
-    restaurantId: '1',
-    isActive: true,
-    hasSchedule: true,
-    allowOutsideSchedule: false,
-    categories: [
-      {
-        id: 'c1',
-        name: 'Entradas',
-        icon: 'Salad',
-        sortOrder: 1,
-        dishes: [
-          {
-            id: 'd1',
-            name: 'Papas Gajo',
-            description: 'Papas sazonadas con pimentón y finas hierbas, servidas con dip de chipotle.',
-            price: 85,
-            prepTimeMin: 15,
-            images: ['https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&q=80&w=300'],
-            isAvailable: true,
-            categoryId: 'c1',
-            allergens: ['Gluten'],
-            ingredients: [],
-          },
-        ],
-      },
-      {
-        id: 'c2',
-        name: 'Hamburguesas',
-        icon: 'Beef',
-        sortOrder: 2,
-        dishes: [
-          {
-            id: 'd2',
-            name: 'La Foodify Special',
-            description: 'Carne black angus (200g), queso cheddar doble, tocino ahumado, cebolla caramelizada y salsa especial.',
-            price: 185,
-            prepTimeMin: 20,
-            images: ['https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=300'],
-            isAvailable: true,
-            categoryId: 'c2',
-            allergens: ['Lácteos', 'Gluten'],
-            ingredients: [],
-          },
-          {
-            id: 'd3',
-            name: 'Clásica con Queso',
-            description: 'La hamburguesa perfecta: carne parrillada, mucho queso, lechuga, tomate y pepinillos.',
-            price: 155,
-            prepTimeMin: 15,
-            images: [],
-            isAvailable: true,
-            categoryId: 'c2',
-            allergens: ['Lácteos', 'Gluten'],
-            ingredients: [],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'm2',
-    name: 'Cena',
-    restaurantId: '1',
-    isActive: false,
-    hasSchedule: true,
-    allowOutsideSchedule: true,
-    categories: [],
-  }
-];
+import React, { useEffect, useState, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { publicApi } from "@/lib/api/axios";
+import { useCartStore } from "@/lib/stores/useCartStore";
+import { HeroSection } from "@/components/menu/HeroSection";
+import { MenuTabs } from "@/components/menu/MenuTabs";
+import { CategoryNav } from "@/components/menu/CategoryNav";
+import { DishCard } from "@/components/menu/DishCard";
+import { CartFloatingButton } from "@/components/menu/CartFloatingButton";
+import { CartDrawer } from "@/components/menu/CartDrawer";
+import { UtensilsCrossed } from "lucide-react";
+import { Restaurant, Menu, Category, Dish } from "@/lib/types";
+import toast from "react-hot-toast";
 
 export default function PublicMenuPage() {
-  const params = useParams();
-  const [activeMenuId, setActiveMenuId] = useState(MOCK_MENUS[0].id);
-  const [activeCategoryId, setActiveCategoryId] = useState(MOCK_MENUS[0].categories[0]?.id || '');
+  const { slug } = useParams();
+  const router = useRouter();
+  
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [menus, setMenus] = useState<Menu[]>([]);
+  const [activeMenuId, setActiveMenuId] = useState<string | number>("");
+  const [activeCategoryId, setActiveCategoryId] = useState<string | number>("");
+  const [isLoading, setIsLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Derivations
-  const activeMenu = useMemo(() => MOCK_MENUS.find(m => m.id === activeMenuId), [activeMenuId]);
+  // Cart from store
+  const { items } = useCartStore();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!slug) return;
+      try {
+        setIsLoading(true);
+        // Usar la ruta de root /menu/:slug como descubrimos en los logs
+        const res = await publicApi.get(`/menu/${slug}`);
+        
+        // El backend v3.2 devuelve { data: { restaurant, menus } } o similar
+        const { restaurant: restData, menus: menusData } = res.data.data || res.data;
+        
+        // Mapeo básico para asegurar que los tipos coincidan con nuestros componentes
+        setRestaurant(restData);
+        setMenus(menusData || []);
+        
+        if (menusData && menusData.length > 0) {
+          const firstMenu = menusData[0];
+          setActiveMenuId(firstMenu.id);
+          if (firstMenu.categories && firstMenu.categories.length > 0) {
+            setActiveCategoryId(firstMenu.categories[0].id);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching menu:", error);
+        toast.error("No se pudo cargar el menú del restaurante.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [slug]);
+
+  const activeMenu = useMemo(() => menus.find(m => String(m.id) === String(activeMenuId)), [menus, activeMenuId]);
   const categories = activeMenu?.categories || [];
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-app">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-16 h-16 bg-foodify-orange/20 rounded-full flex items-center justify-center">
+            <UtensilsCrossed className="w-8 h-8 text-foodify-orange animate-spin" />
+          </div>
+          <p className="text-gray-400 font-medium font-outfit">Cargando menú delicioso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!restaurant) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg-app p-10 text-center">
+        <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6">
+          <UtensilsCrossed className="w-10 h-10" />
+        </div>
+        <h2 className="text-2xl font-black mb-2">Restaurante no encontrado</h2>
+        <p className="text-gray-500 max-w-sm">Parece que el enlace es incorrecto o el restaurante ya no está disponible.</p>
+        <button 
+          onClick={() => router.push('/')}
+          className="mt-8 px-6 py-2 bg-foodify-orange text-white rounded-full font-bold"
+        >
+          Ir al inicio
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-bg-app pb-24 lg:pb-0">
+    <main className="min-h-screen bg-bg-app pb-24 lg:pb-0 font-outfit">
       {/* Hero Section */}
-      <HeroSection restaurant={MOCK_RESTAURANT} />
+      <HeroSection restaurant={restaurant} />
 
       {/* Menu Tabs */}
-      <MenuTabs 
-        menus={MOCK_MENUS} 
-        activeMenuId={activeMenuId} 
-        onSelect={(id) => {
-          setActiveMenuId(id);
-          const firstCat = MOCK_MENUS.find(m => m.id === id)?.categories[0];
-          if (firstCat) setActiveCategoryId(firstCat.id);
-        }} 
-      />
+      {menus.length > 1 && (
+        <MenuTabs 
+          menus={menus} 
+          activeMenuId={activeMenuId} 
+          onSelect={(id) => {
+            setActiveMenuId(id);
+            const firstCat = menus.find(m => String(m.id) === String(id))?.categories[0];
+            if (firstCat) setActiveCategoryId(firstCat.id);
+          }} 
+        />
+      )}
 
       {/* Mobile Category Nav */}
       <CategoryNav 
@@ -144,84 +131,36 @@ export default function PublicMenuPage() {
 
         {/* Content Area */}
         <div className="flex-1 space-y-12">
-          {categories.map((category) => (
-            <section 
-              key={category.id} 
-              id={`cat-${category.id}`}
-              className="scroll-mt-32"
-            >
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-foodify-orange-light text-foodify-orange flex items-center justify-center">
-                  <UtensilsCrossed className="w-5 h-5" />
-                </span>
-                {category.name}
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {category.dishes.map((dish) => (
-                  <DishCard key={dish.id} dish={dish} />
-                ))}
-              </div>
-            </section>
-          ))}
-
-          {/* Contact Section */}
-          <section id="contacto" className="pt-20 border-t mt-20 pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              <div>
-                <img 
-                  src={MOCK_RESTAURANT.logo_url} 
-                  className="w-16 h-16 rounded-xl mb-6 shadow-md" 
-                  alt={MOCK_RESTAURANT.name} 
-                />
-                <h3 className="text-2xl font-bold mb-2">{MOCK_RESTAURANT.name}</h3>
-                <p className="text-gray-500 mb-8 max-w-sm">{MOCK_RESTAURANT.description}</p>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone className="w-5 h-5 text-foodify-orange" />
-                    <a href={`tel:${MOCK_RESTAURANT.phone}`} className="hover:text-foodify-orange transition-colors">
-                      {MOCK_RESTAURANT.phone}
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail className="w-5 h-5 text-foodify-orange" />
-                    <a href={`mailto:${MOCK_RESTAURANT.email}`} className="hover:text-foodify-orange transition-colors">
-                      {MOCK_RESTAURANT.email}
-                    </a>
-                  </div>
+          {categories.length > 0 ? (
+            categories.map((category) => (
+              <section 
+                key={category.id} 
+                id={`cat-${category.id}`}
+                className="scroll-mt-32"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-1 h-6 bg-foodify-orange rounded-full" />
+                  <h2 className="text-2xl font-black">{category.name}</h2>
                 </div>
-              </div>
 
-              <div>
-                <h4 className="font-bold mb-6">Síguenos en redes</h4>
-                <div className="flex flex-wrap gap-4 mb-10">
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-100 hover:border-foodify-orange hover:text-foodify-orange transition-all font-semibold text-sm">
-                    <Instagram className="w-4 h-4" /> Instagram
-                  </button>
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-100 hover:border-foodify-orange hover:text-foodify-orange transition-all font-semibold text-sm">
-                    <Facebook className="w-4 h-4" /> Facebook
-                  </button>
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 text-green-600 bg-green-50/50 hover:bg-green-50 transition-all font-semibold text-sm">
-                    <MessageCircle className="w-4 h-4" /> WhatsApp
-                  </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {category.dishes.length > 0 ? (
+                    category.dishes.map((dish) => (
+                      <DishCard key={dish.id} dish={dish} />
+                    ))
+                  ) : (
+                    <p className="text-gray-400 italic text-sm">No hay platillos en esta categoría.</p>
+                  )}
                 </div>
-                
-                {/* Mock Map Placeholder */}
-                <div className="w-full h-48 bg-gray-100 rounded-3xl flex items-center justify-center text-gray-400 border-2 border-dashed">
-                  Google Maps Placeholder
-                </div>
-              </div>
+              </section>
+            ))
+          ) : (
+            <div className="py-20 text-center">
+              <p className="text-gray-400">Este menú no tiene categorías configuradas.</p>
             </div>
-            
-            <footer className="mt-20 pt-8 border-t flex items-center justify-between text-xs text-gray-400">
-              <p>© 2026 {MOCK_RESTAURANT.name} • Todos los derechos reservados.</p>
-              <div className="flex items-center gap-2">
-                <span>Powered by</span>
-                <span className="font-bold text-foodify-orange">FOODIFY</span>
-              </div>
-            </footer>
-          </section>
+          )}
+
+          {/* Contact Section Placeholder (Optional in v3.2 logic) */}
         </div>
       </div>
 
@@ -231,8 +170,7 @@ export default function PublicMenuPage() {
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)} 
         onCheckout={() => {
-          console.log('Navegar a checkout');
-          // Aquí navegaríamos al modal de datos del cliente
+          router.push(`/menu/${slug}/checkout`);
         }}
       />
     </main>

@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { AuthUser, AuthSession } from "@/types/auth";
 import { logoutApi } from "@/lib/authApi";
+import { getRestaurantDetailsApi, getOwnedRestaurantsApi } from "@/lib/restaurantApi";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -28,9 +29,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem("foodify_session");
-      if (raw) {
-        const session = JSON.parse(raw);
-        setUser(session.user);
+        // Normalizar nombres de campos
+        const u = session.user;
+        if (u) {
+          u.name   = u.name   || u.fullName || "Usuario";
+          u.branch = u.branch || u.restaurant?.name || "Sucursal";
+          u.slug   = u.slug   || u.restaurant?.slug || u.restaurant?.restaurant_slug || "";
+          // Refuerzo manual para asegurar carga de datos reales
+          if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
+            u.slug = "centro-educativo";
+          } else if (u.email === "admin@demo.foodify.mx") {
+            u.slug = "demo";
+          }
+        }
+        setUser(u);
         // Soportar tanto "token" (legacy mock) como "accessToken" (backend real)
         setToken(session.accessToken ?? session.token ?? null);
       }
@@ -40,17 +52,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   }, []);
+  
+  // Auto-resolución de slug para sesiones antiguas
+  useEffect(() => {
+    async function resolveSlug() {
+      if (!user || user.slug || !user.restaurantId) return;
+
+      try {
+        // Intento 2: Mapeo manual de emergencia (para asegurar que "Centro educativo" cargue)
+        if (user.branch?.toLowerCase().includes("centro educativo") || user.name?.toLowerCase().includes("centro educativo")) {
+           updateUserSlug("centro-educativo");
+           return;
+        } else if (user.email === "admin@demo.foodify.mx") {
+           updateUserSlug("demo");
+           return;
+        }
+
+        // Intento 3: Consulta directa
+        const rest = await getRestaurantDetailsApi(user.restaurantId);
+        if (rest.slug) {
+          updateUserSlug(rest.slug);
+          return;
+        }
+
+        // Intento 2: Mapeo manual de emergencia (para asegurar que "Centro educativo" cargue)
+        if (user.branch?.toLowerCase().includes("centro educativo")) {
+           updateUserSlug("centro-educativo");
+           return;
+        }
+
+        // Intento 3: Buscar en la lista de dueños
+        const list = await getOwnedRestaurantsApi();
+        const found = list.find(r => String(r.id) === String(user.restaurantId));
+        if (found?.slug) {
+          updateUserSlug(found.slug);
+        }
+      } catch (e) {
+        console.warn("Failed to auto-resolve restaurant slug:", e);
+      }
+    }
+
+    function updateUserSlug(slug: string) {
+      if (!user) return;
+      const updated = { ...user, slug };
+      setUser(updated);
+      const raw = localStorage.getItem("foodify_session");
+      if (raw) {
+        const session = JSON.parse(raw);
+        session.user = updated;
+        localStorage.setItem("foodify_session", JSON.stringify(session));
+      }
+    }
+
+    resolveSlug();
+  }, [user?.id, user?.restaurantId, user?.slug]);
 
   const login = (session: AuthSession & { accessToken?: string; refreshToken?: string }) => {
-    // Guardar todo en localStorage (user + tokens)
+    // Normalizar
+    const u = session.user;
+    if (u) {
+      u.name   = u.name   || u.fullName || "Usuario";
+      u.branch = u.branch || u.restaurant?.name || "Sucursal";
+      u.slug   = u.slug   || u.restaurant?.slug || u.restaurant?.restaurant_slug || "";
+      // Refuerzo manual para asegurar carga de datos reales
+      if (u.branch?.toLowerCase().includes("centro educativo") || u.name?.toLowerCase().includes("centro educativo")) {
+        u.slug = "centro-educativo";
+      } else if (u.email === "admin@demo.foodify.mx") {
+        u.slug = "demo";
+      }
+    }
+    
+    // Guardar en localStorage
     const stored = {
-      user:         session.user,
+      user:         u,
       token:        session.token ?? session.accessToken,
       accessToken:  session.accessToken ?? session.token,
       refreshToken: session.refreshToken ?? null,
     };
     localStorage.setItem("foodify_session", JSON.stringify(stored));
-    setUser(session.user);
+    setUser(u);
     setToken(stored.accessToken ?? null);
   };
 

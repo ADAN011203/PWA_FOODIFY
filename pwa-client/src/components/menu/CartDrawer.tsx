@@ -1,126 +1,151 @@
-import React from 'react';
-import { ShoppingBag, X, Plus, Minus, Trash2 } from 'lucide-react';
-import { useCartStore } from '@/lib/stores/useCartStore';
-import { cn, formatCurrency } from '@/lib/utils';
+"use client";
+
+import React, { useState } from "react";
+import { useCartStore } from "@/lib/stores/useCartStore";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/Sheet";
+import { Button } from "@/components/ui/Button";
+import { Trash2, Plus, Minus, ShoppingBag, X } from "lucide-react";
+import Image from "next/image";
+import { formatCurrency } from "@/lib/utils";
 
 interface CartDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onCheckout: () => void;
+  children?: React.ReactNode;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onCheckout: (notes: string) => void;
 }
 
-export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, onCheckout }) => {
+export const CartDrawer: React.FC<CartDrawerProps> = ({ children, isOpen: propIsOpen, onClose: propOnClose, onCheckout }) => {
   const { items, updateQuantity, removeItem, getTotal } = useCartStore();
+  const [notes, setNotes] = useState("");
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // Handle both controlled and uncontrolled states
+  const isOpen = propIsOpen !== undefined ? propIsOpen : internalIsOpen;
+  const setIsOpen = (val: boolean) => {
+    if (propOnClose && !val) propOnClose();
+    setInternalIsOpen(val);
+  };
+
   const subtotal = getTotal();
   const iva = subtotal * 0.16;
   const total = subtotal + iva;
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/40 z-[100] animate-fade-in"
-        onClick={onClose}
-      />
-
-      {/* Drawer Content */}
-      <div className={cn(
-        "fixed inset-y-0 right-0 w-full max-w-md bg-white z-[101] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out",
-        isOpen ? "translate-x-0" : "translate-x-full"
-      )}>
-        {/* Header */}
-        <div className="p-6 border-b flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      {children && (
+        <SheetTrigger asChild>
+          {children}
+        </SheetTrigger>
+      )}
+      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0 gap-0 font-outfit border-l dark:border-border dark:bg-zinc-950">
+        <SheetHeader className="p-6 border-b dark:border-border">
+          <SheetTitle className="flex items-center gap-2 text-xl font-black">
             <ShoppingBag className="w-5 h-5 text-foodify-orange" />
-            <h2 className="text-xl font-bold">Tu Orden Para Llevar</h2>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+            Tu Orden Para Llevar
+          </SheetTitle>
+        </SheetHeader>
 
-        {/* Items List */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-500 gap-4">
-              <ShoppingBag className="w-16 h-16 opacity-20" />
-              <p className="text-lg">Tu carrito está vacío</p>
-              <button 
-                onClick={onClose}
-                className="text-foodify-orange font-bold hover:underline"
-              >
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+              <div className="bg-gray-50 dark:bg-zinc-900 p-8 rounded-full border border-dashed dark:border-border">
+                <ShoppingBag className="w-12 h-12 opacity-20" />
+              </div>
+              <p className="font-bold text-lg">Tu carrito está vacío</p>
+              <Button variant="ghost" className="text-foodify-orange hover:text-foodify-orange-dark font-black" onClick={() => setIsOpen(false)}>
                 Volver al menú
-              </button>
+              </Button>
             </div>
           ) : (
-            items.map((item) => (
-              <div key={item.dishId} className="flex gap-4 border-b border-gray-50 pb-4">
-                <div className="w-16 h-16 rounded-lg bg-foodify-orange-light flex-shrink-0 overflow-hidden">
-                  {item.image_url && <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <h4 className="font-bold text-sm">{item.name}</h4>
-                    <span className="font-bold text-sm">{formatCurrency(item.price * item.quantity)}</span>
-                  </div>
-                  {item.specialNotes && (
-                    <p className="text-xs text-gray-400 mb-2">Nota: {item.specialNotes}</p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center bg-gray-50 rounded-full px-2 py-1 gap-3">
-                      <button onClick={() => updateQuantity(item.dishId, item.quantity - 1)} className="p-1">
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.dishId, item.quantity + 1)} className="p-1">
-                        <Plus className="w-3 h-3" />
-                      </button>
+            <>
+              <div className="space-y-4">
+                {items.map((item) => (
+                  <div key={item.id} className="flex gap-4 group border-b dark:border-border pb-4 last:border-0">
+                    <div className="border relative w-20 h-20 rounded-2xl overflow-hidden bg-gray-50 dark:bg-zinc-900 shrink-0">
+                      {item.image_url ? (
+                        <Image src={item.image_url} alt={item.name} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-foodify-orange-light dark:bg-zinc-800">
+                           <ShoppingBag className="w-6 h-6 text-foodify-orange/20" />
+                        </div>
+                      )}
                     </div>
-                    <button 
-                      onClick={() => removeItem(item.dishId)}
-                      className="text-red-400 p-1 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    
+                    <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-black text-sm truncate text-text-primary dark:text-white">{item.name}</h4>
+                        <span className="font-black text-sm text-foodify-orange">{formatCurrency(item.price * item.quantity)}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-zinc-900 border dark:border-border rounded-xl px-2 py-1">
+                          <button 
+                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                             className="p-1 text-text-secondary hover:text-foodify-orange transition-colors"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-black min-w-[2ch] text-center dark:text-white">{item.quantity}</span>
+                          <button 
+                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                             className="p-1 text-text-secondary hover:text-foodify-orange transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                        
+                        <button 
+                          onClick={() => removeItem(item.id)}
+                          className="text-gray-300 hover:text-red-500 transition-colors p-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))
+
+              <div className="space-y-2 pt-4 border-t dark:border-border">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400">Nota especial para el restaurante</label>
+                <textarea 
+                  className="w-full h-24 p-4 text-sm rounded-2xl border dark:border-border bg-gray-50 dark:bg-zinc-900 focus:ring-2 focus:ring-foodify-orange/20 focus:outline-none transition-all resize-none shadow-inner"
+                  placeholder="Ej. Sin cebolla, extra salsa..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            </>
           )}
         </div>
 
-        {/* Footer / Summary */}
         {items.length > 0 && (
-          <div className="p-6 bg-gray-50 border-t">
-            <div className="space-y-2 mb-6">
-              <div className="flex justify-between text-sm text-gray-600">
+          <SheetFooter className="p-6 bg-white dark:bg-zinc-950 border-t dark:border-border flex flex-col gap-6 sm:flex-col sm:space-x-0">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-gray-500">
                 <span>Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-gray-500">
                 <span>IVA (16%)</span>
                 <span>{formatCurrency(iva)}</span>
               </div>
-              <div className="flex justify-between text-lg font-bold text-text-primary pt-2 border-t">
+              <div className="flex justify-between font-black text-xl pt-4 border-t dark:border-border text-text-primary dark:text-white">
                 <span>Total</span>
                 <span>{formatCurrency(total)}</span>
               </div>
             </div>
-
-            <button 
-              onClick={onCheckout}
-              className="w-full bg-foodify-orange hover:bg-foodify-orange-dark text-white py-4 rounded-xl font-bold shadow-lg shadow-foodify-orange/20 transition-all active:scale-[0.98]"
+            
+            <Button 
+              className="w-full h-14 bg-foodify-orange hover:bg-foodify-orange-dark text-white font-black rounded-2xl shadow-lg shadow-foodify-orange/20 transition-all active:scale-95"
+              onClick={() => onCheckout(notes)}
             >
-              Realizar Pedido Para Llevar
-            </button>
-          </div>
+              Confirmar pedido ({items.length})
+            </Button>
+          </SheetFooter>
         )}
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 };

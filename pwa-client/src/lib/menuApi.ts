@@ -1,58 +1,74 @@
-import { publicApi, api } from "./api";
-import { type Dish, type Category } from "../types/menu";
+import { publicApi, api } from "./api/axios";
+import { type Dish, type Category, type PublicMenu } from "../types/menu";
 
-export const RESTAURANT_SLUG = "demo-restaurant";
+export const RESTAURANT_SLUG = "demo";
 
-export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "takeout" | "dine_in" = "takeout"): Promise<{
-  dishes: Dish[];
-  categories: Category[];
-  restaurantName: string;
-  restaurantId: number;
-}> {
-  // IMPORTANTE: El backend excluye /menu/:slug del prefijo global /api/v1
-  const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
-  const { restaurant, menus, isActiveNow: globalIsActive } = data.data;
-  const isRestaurantOpen = globalIsActive ?? true;
-
-  const allDishes: Dish[] = [];
-  const categoryMap = new Map<string, Category>();
-
-  for (const menu of (menus ?? [])) {
-    const isMenuVisible = (menu.isActiveNow ?? isRestaurantOpen) || mode === "takeout";
-    if (!isMenuVisible) continue;
-    for (const cat of (menu.categories ?? [])) {
-      if (!categoryMap.has(String(cat.id))) {
-        categoryMap.set(String(cat.id), {
-          id:    String(cat.id),
-          name:  cat.name,
-          emoji: cat.icon ?? cat.emoji ?? "",
-        });
-      }
-      for (const d of (cat.dishes ?? [])) {
-        allDishes.push({
-          id:              String(d.id),
-          name:            d.name,
-          description:     d.description ?? "",
-          price:           Number(d.price),
-          prepTime:        Number(d.prepTimeMin ?? d.prep_time_min ?? 15),
-          images:          Array.isArray(d.images) ? d.images : [],
-          isAvailable:     Boolean(d.isAvailable ?? true),
-          available:       Boolean(d.isAvailable ?? true),
-          categoryId:      String(cat.id),
-          soldCount:       Number(d.soldCount ?? d.sold_count ?? 0),
-          allergens:       Array.isArray(d.allergens) ? d.allergens : [],
-          availabilityNote: d.availabilityNote,
-        });
-      }
-    }
-  }
+function mapDish(d: any, categoryId?: string): Dish {
+  const rawImages = Array.isArray(d.images) ? d.images : (d.imageUrl ? [d.imageUrl] : []);
+  const images: string[] = rawImages.map((img: any) => 
+    typeof img === "string" ? img : (img.url ?? img.imageUrl ?? "")
+  ).filter(Boolean);
 
   return {
-    dishes:         allDishes,
-    categories:     Array.from(categoryMap.values()),
-    restaurantName: restaurant?.name ?? "Foodify",
-    restaurantId:   Number(restaurant?.id ?? 1),
+    id: String(d.id),
+    name: d.name,
+    description: d.description ?? "",
+    price: Number(d.price),
+    prepTime: Number(d.prepTimeMin ?? d.prep_time_min ?? 15),
+    imageUrl: images[0] ?? "",
+    images: images,
+    isAvailable: Boolean(d.isAvailable ?? d.is_active ?? true),
+    categoryId: String(categoryId ?? d.categoryId ?? d.category_id ?? d.category?.id ?? ""),
+    soldCount: Number(d.soldCount ?? d.sold_count ?? 0),
+    allergens: Array.isArray(d.allergens) ? d.allergens : [],
+    badge: d.badge ?? undefined,
   };
+}
+
+export async function fetchPublicMenu(slug: string = RESTAURANT_SLUG, mode: "takeout" | "dine_in" = "takeout"): Promise<{
+  menus: PublicMenu[];
+  restaurant: { id: number; name: string; logoUrl?: string; isOpen: boolean };
+}> {
+  console.log(`[Menu] Fetching public menu for slug: "${slug}", mode: "${mode}"`);
+  const { data } = await publicApi.get(`/menu/${slug}`, { params: { mode } });
+  const { restaurant, menus } = data.data;
+
+  const mappedMenus: PublicMenu[] = (menus ?? []).map((m: any) => ({
+    id: String(m.id),
+    name: m.name,
+    isActiveNow: Boolean(m.isActiveNow),
+    isActive: Boolean(m.isActive ?? true),
+    isOrderableNow: Boolean(m.isOrderableNow),
+    availabilityNote: m.availabilityNote,
+    categories: (m.categories ?? []).filter((c: any) => c.isActive !== false).map((c: any) => ({
+      id: String(c.id),
+      name: c.name,
+      emoji: c.icon ?? c.emoji ?? "tag",
+      dishes: (c.dishes ?? [])
+        .filter((d: any) => !d.deletedAt && (d.is_active !== false && d.isAvailable !== false))
+        .map((d: any) => mapDish(d, String(c.id))),
+    })),
+  }));
+
+  const isRestaurantOpen = mappedMenus.some(m => m.isActiveNow);
+
+  return {
+    menus: mappedMenus,
+    restaurant: {
+      id: Number(restaurant?.id ?? 1),
+      name: restaurant?.name ?? "Foodify",
+      logoUrl: restaurant?.logoUrl,
+      isOpen: isRestaurantOpen,
+    },
+  };
+}
+
+// ─── PUBLIC ACCESS TO ALL DISHES (Backup) ───────────────────────────────────
+
+export async function getPublicDishesApi(): Promise<Dish[]> {
+  const { data } = await publicApi.get("/dishes");
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map((d: any) => mapDish(d));
 }
 
 // ─── ADMIN: Platillos CRUD ──────────────────────────────────────────────────
@@ -70,7 +86,7 @@ export async function getAdminCategoriesApi(): Promise<Category[]> {
         categories.push({
           id: String(c.id),
           name: c.name,
-          emoji: c.icon ?? c.emoji ?? "🏷️"
+          emoji: c.icon ?? c.emoji ?? "tag"
         });
       }
     } catch {
@@ -81,26 +97,9 @@ export async function getAdminCategoriesApi(): Promise<Category[]> {
 }
 
 export async function getDishesApi(): Promise<Dish[]> {
-  try {
-    const { data } = await api.get("/dishes");
-    const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
-    return list.map((d: any) => ({
-      id:              String(d.id),
-      name:            d.name,
-      description:     d.description ?? "",
-      price:           Number(d.price),
-      prepTime:        Number(d.prepTimeMin ?? d.prep_time_min ?? 15),
-      imageUrl:        Array.isArray(d.images) ? d.images[0] : "",
-      images:          Array.isArray(d.images) ? d.images : [],
-      isAvailable:     Boolean(d.isAvailable ?? true),
-      categoryId:      String(d.categoryId ?? d.category?.id ?? ""),
-      soldCount:       Number(d.soldCount ?? d.sold_count ?? 0),
-      allergens:       Array.isArray(d.allergens) ? d.allergens : [],
-      badge:           d.badge ?? undefined,
-    }));
-  } catch (e) {
-    throw e;
-  }
+  const { data } = await api.get("/dishes");
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map((d: any) => mapDish(d));
 }
 
 export async function createDishApi(payload: Partial<Dish>): Promise<Dish> {
@@ -139,13 +138,18 @@ export async function toggleDishAvailabilityApi(id: string, status: boolean): Pr
   await api.patch(`/dishes/${id}/availability`, { isAvailable: status });
 }
 
-export async function getAdminMenusApi(): Promise<{ id: string; name: string }[]> {
+export async function getAdminMenusApi(): Promise<{ id: string; name: string; isActive: boolean }[]> {
   const { data } = await api.get("/menus");
   const items = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
   return items.map((m: any) => ({
     id: String(m.id),
     name: m.name,
+    isActive: Boolean(m.isActive ?? true),
   }));
+}
+
+export async function toggleMenuAvailabilityApi(id: string, status: boolean): Promise<void> {
+  await api.patch(`/menus/${id}/availability`, { isActive: status });
 }
 
 export async function createCategoryApi(menuId: string, name: string): Promise<Category> {
@@ -158,7 +162,7 @@ export async function createCategoryApi(menuId: string, name: string): Promise<C
   return {
     id: String(c.id),
     name: c.name,
-    emoji: c.icon || "🏷️",
+    emoji: c.icon || "tag",
   };
 }
 

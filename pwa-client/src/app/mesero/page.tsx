@@ -4,6 +4,15 @@ import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { useFetchWithState } from "@/lib/useFetchWithState";
 import { FoodSpinner } from "@/components/ui/FoodSpinner";
+import {
+  IconPlus,
+  IconChefHat,
+  IconBell,
+  IconCheck,
+  IconX,
+  IconUtensils,
+  IconClock,
+} from "@/components/ui/Icons";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { EmptyState } from "@/components/EmptyState";
 import type { OrderStatus, Order } from "@/types/orders";
@@ -21,12 +30,13 @@ function useRoleGuard(allowed: string[]) {
 
 
 
-const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string; icon: string }> = {
-  nuevo:          { label: "Nuevo",     color: "#3b82f6", bg: "#1e3a5f", icon: "🆕" },
-  en_preparacion: { label: "En cocina", color: "#f59e0b", bg: "#3d2e0a", icon: "👨‍🍳" },
-  listo:          { label: "¡Listo!",   color: "#22c55e", bg: "#0d3320", icon: "🔔" },
-  entregado:      { label: "Entregado", color: "#6b7280", bg: "#1f2937", icon: "✅" },
-  cancelado:      { label: "Cancelado", color: "#ef4444", bg: "#3d1010", icon: "❌" },
+const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string; icon: any }> = {
+  nuevo:          { label: "Nuevo",     color: "#3b82f6", bg: "#1e3a5f", icon: IconPlus },
+  confirmado:      { label: "Confirmado", color: "#3b82f6", bg: "#1e3a5f", icon: IconCheck },
+  en_preparacion: { label: "En cocina", color: "#f59e0b", bg: "#3d2e0a", icon: IconChefHat },
+  listo:          { label: "¡Listo!",   color: "#22c55e", bg: "#0d3320", icon: IconBell },
+  entregado:      { label: "Entregado", color: "#6b7280", bg: "#1f2937", icon: IconCheck },
+  cancelado:      { label: "Cancelado", color: "#ef4444", bg: "#3d1010", icon: IconX },
 };
 
 export default function MeseroPage() {
@@ -57,10 +67,14 @@ export default function MeseroPage() {
       {/* Header */}
       <div style={{ background: "#1a1d21", borderBottom: "1px solid #2e3238", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "#FF6B35", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem" }}>🛎️</div>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "#FF6B35", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+            <IconBell size={22} />
+          </div>
           <div>
             <p style={{ fontWeight: 800, fontSize: "0.9375rem", margin: 0 }}>Vista Mesero</p>
-            <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0 }}>🛎️ {user?.name} · {user?.branch}</p>
+            <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+              <IconBell size={12} /> {user?.name} · {user?.branch}
+            </p>
           </div>
         </div>
         <button onClick={logout} style={{ background: "#2e3238", color: "#f0ede8", border: "none", padding: "7px 14px", borderRadius: 8, fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
@@ -90,7 +104,9 @@ export default function MeseroPage() {
         {/* Lista de órdenes */}
         {displayed.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#6b7280" }}>
-            <p style={{ fontSize: "2.5rem", marginBottom: 12 }}>🍽️</p>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+              <IconUtensils size={48} />
+            </div>
             <p>Sin órdenes en esta sección</p>
           </div>
         ) : displayed.map((order) => {
@@ -108,10 +124,16 @@ export default function MeseroPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
                   <p style={{ fontWeight: 800, margin: "0 0 4px" }}>#{order.folio.slice(-6)}</p>
-                  <p style={{ fontSize: "0.75rem", color: "#6b7280", margin: 0 }}>🕐 {fmtTime(order.createdAt)}</p>
+                  <p style={{ fontSize: "0.75rem", color: "#6b7280", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                    <IconClock size={12} /> {fmtTime(order.createdAt)}
+                  </p>
                 </div>
-                <span style={{ background: cfg.bg, color: cfg.color, fontSize: "0.75rem", fontWeight: 700, padding: "4px 10px", borderRadius: 999 }}>
-                  {cfg.icon} {cfg.label}
+                <span style={{ 
+                  background: cfg.bg, color: cfg.color, fontSize: "0.75rem", fontWeight: 700, 
+                  padding: "4px 10px", borderRadius: 999,
+                  display: "flex", alignItems: "center", gap: 6
+                }}>
+                  <cfg.icon size={14} /> {cfg.label}
                 </span>
               </div>
 
@@ -137,8 +159,9 @@ export default function MeseroPage() {
                   width: "100%", background: "#22c55e", color: "white",
                   border: "none", padding: "12px", borderRadius: 12,
                   fontWeight: 700, fontSize: "0.9375rem", cursor: "pointer", fontFamily: "inherit",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}>
-                  ✅ Marcar como entregado
+                  <IconCheck size={18} /> Marcar como entregado
                 </button>
               )}
             </div>

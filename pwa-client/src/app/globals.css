@@ -1,7 +1,11 @@
 @import "tailwindcss";
 
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
 @theme {
-  /* Foodify Design Tokens */
+  /* Foodify Design Palette */
   --color-foodify-orange: #E8673A;
   --color-foodify-orange-dark: #D4592E;
   --color-foodify-orange-light: #FFF3ED;
@@ -12,16 +16,47 @@
   --color-text-primary: #1C1C1E;
   --color-text-secondary: #6B7280;
   
-  --color-border: #E5E7EB;
+  --color-border-foodify: #E5E7EB;
   
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
+  --color-success-foodify: #10B981;
+  --color-warning-foodify: #F59E0B;
+  --color-error-foodify: #EF4444;
+  --color-info-foodify: #3B82F6;
 
-  /* Custom Radii */
+  /* Shadcn standard variables mapping for better library compatibility */
+  --color-background: var(--color-bg-app);
+  --color-foreground: var(--color-text-primary);
+  
+  --color-card: var(--color-bg-surface);
+  --color-card-foreground: var(--color-text-primary);
+  
+  --color-popover: var(--color-bg-surface);
+  --color-popover-foreground: var(--color-text-primary);
+  
+  --color-primary: var(--color-foodify-orange);
+  --color-primary-foreground: white;
+  
+  --color-secondary: #F3F4F6;
+  --color-secondary-foreground: #1F2937;
+  
+  --color-muted: #F3F4F6;
+  --color-muted-foreground: #6B7280;
+  
+  --color-accent: var(--color-foodify-orange-light);
+  --color-accent-foreground: var(--color-foodify-orange);
+  
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #f8fafc;
+  
+  --color-border: var(--color-border-foodify);
+  --color-input: var(--color-border-foodify);
+  --color-ring: var(--color-foodify-orange);
+
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
 }
 
 @layer base {
@@ -30,24 +65,41 @@
     --bg-surface: #FFFFFF;
     --text-primary: #1C1C1E;
     --text-secondary: #6B7280;
+    --border-foodify: #E5E7EB;
   }
 
   .dark {
-    --bg-app: #111214;
-    --bg-surface: #1a1d21;
-    --text-primary: #f0ede8;
-    --text-secondary: #8a8f98;
+    --bg-app: #09090b;
+    --bg-surface: #18181b;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --border-foodify: #27272a;
+  }
+
+  * {
+    @apply border-border;
   }
 
   body {
-    background-color: var(--bg-app);
-    color: var(--text-primary);
+    @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-@layer utilities {
+@layer components {
+  /* Status Badges */
+  .badge-pending { @apply bg-[#EFF6FF] text-[#3B82F6] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+  .badge-preparing { @apply bg-[#FFF3ED] text-[#E8673A] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+  .badge-ready { @apply bg-[#ECFDF5] text-[#10B981] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+  .badge-delivered { @apply bg-[#F0FDF4] text-[#16A34A] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+  .badge-cancelled { @apply bg-[#FFF1F2] text-[#EF4444] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+  .badge-available { @apply bg-[#ECFDF5] text-[#10B981] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+  .badge-occupied { @apply bg-[#FFF1F2] text-[#EF4444] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+  .badge-reserved { @apply bg-[#FFFBEB] text-[#F59E0B] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+  .badge-cleaning { @apply bg-[#F5F5F5] text-[#6B7280] px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider; }
+
   .scrollbar-hide {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -55,17 +107,6 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-
-  /* Status Badge Utilities */
-  .badge-pending { @apply bg-blue-50 text-blue-500; }
-  .badge-preparing { @apply bg-orange-50 text-foodify-orange; }
-  .badge-ready { @apply bg-emerald-50 text-emerald-500; }
-  .badge-delivered { @apply bg-green-50 text-green-600; }
-  .badge-cancelled { @apply bg-red-50 text-red-500; }
-  .badge-available { @apply bg-emerald-50 text-emerald-500; }
-  .badge-occupied { @apply bg-red-50 text-red-500; }
-  .badge-reserved { @apply bg-amber-50 text-amber-500; }
-  .badge-cleaning { @apply bg-gray-100 text-gray-500; }
 }
 
 /* Animations */

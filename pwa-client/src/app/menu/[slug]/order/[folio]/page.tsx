@@ -1,187 +1,273 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { api } from "@/lib/api/axios";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
 import { 
   CheckCircle2, 
   Clock, 
-  ChefHat, 
-  PackageCheck, 
+  MapPin, 
+  Phone, 
+  QrCode, 
+  RefreshCw, 
+  ChevronLeft,
   ShoppingBag,
-  ArrowLeft,
-  QrCode,
-  RefreshCw
-} from 'lucide-react';
-import { cn, formatCurrency } from '@/lib/utils';
-import { Order } from '@/lib/types';
-import { Badge } from '@/components/ui/Badge';
+  ArrowRight
+} from "lucide-react";
+import toast from "react-hot-toast";
+import Image from "next/image";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
-// Mock Order Data
-const MOCK_ORDER: Order = {
-  id: 'o1',
-  folio: '0023',
-  type: 'takeout',
-  status: 'preparing',
-  customerName: 'Juan Pérez',
-  total: 205,
-  createdAt: new Date().toISOString(),
-  items: [
-    { id: 'i1', dishId: 'd2', name: 'La Foodify Special', price: 185, quantity: 1 },
-    { id: 'i2', dishId: 'd1', name: 'Papas Gajo', price: 85, quantity: 1 }
-  ]
-};
+interface Order {
+  id: number;
+  folio: string;
+  status: "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
+  customerName: string;
+  customerPhone: string;
+  notes: string;
+  total: number;
+  qrCode?: string;
+  createdAt: string;
+  items: Array<{
+    id: number;
+    dishName: string;
+    quantity: number;
+    price: number;
+  }>;
+}
 
-const STEPS = [
-  { id: 'pending', label: 'Recibido', icon: Clock },
-  { id: 'preparing', label: 'En cocina', icon: ChefHat },
-  { id: 'ready', label: 'Listo', icon: PackageCheck },
-  { id: 'delivered', label: 'Entregado', icon: CheckCircle2 },
+const statusSteps = [
+  { id: "pending", label: "Recibido", customerLabel: "Recibido" },
+  { id: "preparing", label: "En Cocina", customerLabel: "En cocina" },
+  { id: "ready", label: "Listo", customerLabel: "Listo" },
+  { id: "delivered", label: "Entregado", customerLabel: "Entregado" },
 ];
 
 export default function OrderTrackingPage() {
   const { slug, folio } = useParams();
   const router = useRouter();
-  const [order, setOrder] = useState<Order>(MOCK_ORDER);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const activeIndex = STEPS.findIndex(s => s.id === order.status);
-
-  const refreshStatus = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
+  const fetchOrder = useCallback(async (quiet = false) => {
+    if (!quiet) setIsLoading(true);
+    else setIsRefreshing(true);
+    
+    try {
+      const res = await api.get(`/public/order/${folio}`);
+      setOrder(res.data.data);
+    } catch (error: any) {
+      console.error("Error fetching order:", error);
+      if (!quiet) toast.error("No se pudo cargar la información del pedido");
+    } finally {
+      setIsLoading(false);
       setIsRefreshing(false);
-      // Simulating status change for demo
-      if (order.status === 'pending') setOrder({...order, status: 'preparing'});
-      else if (order.status === 'preparing') setOrder({...order, status: 'ready'});
-    }, 1000);
-  };
+    }
+  }, [folio]);
 
   useEffect(() => {
-    const interval = setInterval(refreshStatus, 30000); // 30s auto-refresh
+    fetchOrder();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchOrder(true);
+    }, 30000);
+    
     return () => clearInterval(interval);
-  }, [order]);
+  }, [fetchOrder]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-app flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="w-10 h-10 text-foodify-orange animate-spin" />
+          <p className="text-text-secondary font-medium">Buscando tu pedido...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-app flex flex-col items-center justify-center p-6 text-center gap-4">
+        <h1 className="text-xl font-bold">Pedido no encontrado</h1>
+        <Button onClick={() => router.push(`/menu/${slug}`)}>Volver al menú</Button>
+      </div>
+    );
+  }
+
+  const currentStepIndex = statusSteps.findIndex(s => s.id === order.status);
+  // Si el estado es 'confirmed', mapearlo a 'pending' para el tracking del usuario
+  const activeIndex = order.status === "confirmed" ? 0 : currentStepIndex === -1 ? 0 : currentStepIndex;
 
   return (
-    <div className="min-h-screen bg-bg-app">
-      {/* Header */}
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <button 
-          onClick={() => router.push(`/menu/${slug}`)}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <div className="text-center">
-          <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Seguimiento de Orden</p>
-          <h1 className="font-extrabold text-lg">Folio #{folio}</h1>
+    <div className="min-h-screen bg-app pb-20">
+      <header className="bg-white border-b sticky top-0 z-10 px-4 h-16 flex items-center justify-between">
+        <Button variant="ghost" size="icon" onClick={() => router.push(`/menu/${slug}`)}>
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] uppercase tracking-widest text-text-secondary font-black">Seguimiento</span>
+          <span className="font-bold"># {order.folio}</span>
         </div>
-        <button 
-          onClick={refreshStatus}
-          className={cn("p-2 hover:bg-gray-100 rounded-full transition-all", isRefreshing && "animate-spin")}
-        >
-          <RefreshCw className="w-5 h-5 text-foodify-orange" />
-        </button>
+        <Button variant="ghost" size="icon" onClick={() => fetchOrder(true)} disabled={isRefreshing}>
+          <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
+        </Button>
       </header>
 
-      <main className="container mx-auto max-w-lg p-6 space-y-8 animate-fade-in">
-        {/* Status Card */}
-        <div className="bg-white p-8 rounded-3xl shadow-xl shadow-foodify-orange/5 border border-gray-50 text-center">
-          <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 text-foodify-orange relative">
-            <div className="absolute inset-0 bg-foodify-orange rounded-full animate-ping opacity-20" />
-            <ChefHat className="w-10 h-10 relative z-10" />
+      <main className="max-w-xl mx-auto p-6 space-y-8">
+        {/* CONFIRMATION HEADER */}
+        {order.status === "pending" || order.status === "confirmed" ? (
+          <div className="text-center space-y-4 py-4">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full text-green-600 animate-bounce">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black">¡Pedido recibido!</h2>
+              <p className="text-text-secondary">Estamos preparando todo con mucho gusto.</p>
+            </div>
           </div>
-          
-          <h2 className="text-2xl font-black mb-2">¡Tu orden está en cocina!</h2>
-          <p className="text-gray-500 text-sm mb-6">Estamos preparando tus platillos con amor.</p>
-          
-          <div className="flex items-center justify-center gap-2">
-            <Clock className="w-4 h-4 text-foodify-orange" />
-            <span className="font-bold text-foodify-orange">Tiempo estimado: ~20 minutos</span>
-          </div>
-        </div>
+        ) : null}
 
-        {/* Timeline */}
-        <div className="bg-white p-8 rounded-3xl border border-gray-100">
-          <div className="relative flex justify-between">
-            {/* Timeline Line */}
-            <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-100">
+        {/* TIMELINE */}
+        <Card className="border-none shadow-sm overflow-hidden">
+          <CardHeader className="bg-white pb-2 flex flex-row items-center justify-between">
+             <CardTitle className="text-sm font-black uppercase tracking-wider text-text-secondary">Estado actual</CardTitle>
+             <div className="badge-preparing flex items-center gap-1.5 animate-pulse">
+                <div className="w-2 h-2 bg-current rounded-full" />
+                {statusSteps[activeIndex]?.customerLabel || "Procesando"}
+             </div>
+          </CardHeader>
+          <CardContent className="pt-6 pb-8">
+            <div className="relative flex justify-between">
+              {/* Line background */}
+              <div className="absolute top-4 left-0 w-full h-1 bg-gray-100 -z-10" />
+              {/* Progress line */}
               <div 
-                className="h-full bg-emerald-500 transition-all duration-1000" 
-                style={{ width: `${(activeIndex / (STEPS.length - 1)) * 100}%` }}
+                className="absolute top-4 left-0 h-1 bg-foodify-orange -z-10 transition-all duration-1000" 
+                style={{ width: `${(activeIndex / (statusSteps.length - 1)) * 100}%` }}
               />
-            </div>
+              
+              {statusSteps.map((step, idx) => {
+                const isCompleted = idx < activeIndex;
+                const isActive = idx === activeIndex;
+                const isPending = idx > activeIndex;
 
-            {STEPS.map((step, idx) => {
-              const Icon = step.icon;
-              const isCompleted = idx < activeIndex;
-              const isActive = idx === activeIndex;
-
-              return (
-                <div key={step.id} className="relative z-10 flex flex-col items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500",
-                    isCompleted ? "bg-emerald-500 text-white" : 
-                    isActive ? "bg-foodify-orange text-white ring-4 ring-orange-50" : 
-                    "bg-white border-2 border-gray-100 text-gray-300"
-                  )}>
-                    {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Icon className="w-5 h-5" />}
+                return (
+                  <div key={step.id} className="flex flex-col items-center gap-3">
+                    <div className={cn(
+                      "w-9 h-9 rounded-full flex items-center justify-center border-4 transition-all duration-500",
+                      isCompleted && "bg-foodify-orange border-foodify-orange text-white",
+                      isActive && "bg-white border-foodify-orange text-foodify-orange scale-110 shadow-lg shadow-foodify-orange/20",
+                      isPending && "bg-white border-gray-100 text-gray-300"
+                    )}>
+                      {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : (idx + 1)}
+                    </div>
+                    <span className={cn(
+                      "text-[10px] sm:text-xs font-bold uppercase tracking-tighter sm:tracking-normal",
+                      isActive ? "text-foodify-orange" : "text-text-secondary"
+                    )}>
+                      {step.customerLabel}
+                    </span>
                   </div>
-                  <span className={cn(
-                    "text-[10px] font-bold uppercase tracking-tight",
-                    isActive ? "text-foodify-orange" : isCompleted ? "text-emerald-500" : "text-gray-300"
-                  )}>
-                    {step.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* QR Code Section */}
-        <div className="bg-[#1C1C1E] text-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6">
-          <div className="bg-white p-4 rounded-2xl">
-            <QrCode className="w-32 h-32 text-black" />
-          </div>
-          <div className="text-center">
-            <p className="font-bold mb-1">Código de Retiro</p>
-            <p className="text-xs text-gray-400">Muestra este código al llegar al restaurante</p>
-          </div>
-        </div>
-
-        {/* Order Details */}
-        <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b bg-gray-50/50">
-            <h3 className="font-black flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-foodify-orange" />
-              Resumen de tu pedido
-            </h3>
-          </div>
-          <div className="p-6 space-y-4">
-            {order.items.map((item) => (
-              <div key={item.id} className="flex justify-between items-center text-sm">
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-xs">{item.quantity}x</span>
-                  <span className="font-semibold text-gray-700">{item.name}</span>
-                </div>
-                <span className="font-bold">{formatCurrency(item.price * item.quantity)}</span>
-              </div>
-            ))}
-            
-            <div className="pt-4 border-t flex justify-between items-center">
-              <span className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Total Pagado</span>
-              <span className="text-2xl font-black text-foodify-orange">{formatCurrency(order.total)}</span>
+                );
+              })}
             </div>
+          </CardContent>
+          <CardFooter className="bg-orange-50/50 p-4 flex justify-between items-center">
+            <div className="flex items-center gap-2 text-foodify-orange font-bold text-sm">
+              <Clock className="w-4 h-4" />
+              Tiempo estimado: ~30 minutos
+            </div>
+          </CardFooter>
+        </Card>
+
+        {/* QR CODE SECTION */}
+        <Card className="text-center p-8 space-y-4">
+          <div className="mx-auto w-48 h-48 bg-white border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center p-4">
+            {order.qrCode ? (
+              <Image src={order.qrCode} alt="Order QR" width={160} height={160} />
+            ) : (
+              <QrCode className="w-32 h-32 text-gray-100" />
+            )}
           </div>
+          <div className="space-y-1">
+            <h3 className="font-bold">Tu código de retiro</h3>
+            <p className="text-xs text-text-secondary">Muestra este código al personal del restaurante cuando llegues por tu pedido.</p>
+          </div>
+        </Card>
+
+        {/* ORDER DETAILS */}
+        <div className="space-y-4">
+          <h3 className="font-black text-lg">Resumen de tu pedido</h3>
+          <Card>
+             <CardContent className="p-0 divide-y">
+               {order.items.map((item) => (
+                 <div key={item.id} className="p-4 flex justify-between items-center">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm">{item.dishName}</span>
+                      <span className="text-text-secondary text-xs">{item.quantity} x ${item.price.toFixed(2)}</span>
+                    </div>
+                    <span className="font-black text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                 </div>
+               ))}
+             </CardContent>
+             <CardFooter className="flex-col gap-3 pt-4">
+                <div className="w-full flex justify-between items-center text-sm">
+                  <span className="text-text-secondary">Subtotal</span>
+                  <span className="font-medium">${(order.total / 1.16).toFixed(2)}</span>
+                </div>
+                <div className="w-full h-px bg-gray-100" />
+                <div className="w-full flex justify-between items-center font-black text-lg">
+                  <span className="text-text-primary">Total</span>
+                  <span className="text-foodify-orange">${order.total.toFixed(2)}</span>
+                </div>
+             </CardFooter>
+          </Card>
         </div>
 
-        <button 
-          onClick={() => router.push(`/menu/${slug}`)}
-          className="w-full py-4 text-gray-400 font-bold text-sm hover:text-foodify-orange transition-colors"
-        >
-          Volver al menú principal
-        </button>
+        {/* CUSTOMER INFO */}
+        <div className="space-y-4">
+          <h3 className="font-black text-lg">Información de entrega</h3>
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-text-secondary shrink-0">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-text-secondary font-bold uppercase tracking-wider">Cliente</p>
+                  <p className="font-bold">{order.customerName}</p>
+                  <p className="text-sm text-text-secondary">{order.customerPhone}</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                 <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-text-secondary shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-text-secondary font-bold uppercase tracking-wider">Fecha del pedido</p>
+                  <p className="font-bold">{format(new Date(order.createdAt), "PPP p", { locale: es })}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="pt-4 text-center">
+          <Button variant="outline" className="rounded-full gap-2 border-gray-200" onClick={() => router.push(`/menu/${slug}`)}>
+            Ir al inicio <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
       </main>
     </div>
   );
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
 }

@@ -12,8 +12,8 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ width = "100%", height = 16, borderRadius = 8, style, dark = false }: SkeletonProps) {
-  const base  = dark ? "#22262c" : "#f0e4d0";
-  const shine = dark ? "#2e3238" : "#ffe8c8";
+  const base  = dark ? "#18181b" : "#e4e4e7";
+  const shine = dark ? "#27272a" : "#f4f4f5";
   return (
     <>
       <div style={{
@@ -30,9 +30,9 @@ export function Skeleton({ width = "100%", height = 16, borderRadius = 8, style,
 
 // ─── Card de platillo (menú) ──────────────────────────────────────────────────
 export function DishCardSkeleton({ dark = false }: { dark?: boolean }) {
-  const card = dark ? "#1a1d21" : "#ffffff";
+  const card = dark ? "#09090b" : "#ffffff";
   return (
-    <div style={{ background: card, borderRadius: 20, overflow: "hidden", boxShadow: dark ? "none" : "0 2px 12px rgba(44,24,16,0.07)" }}>
+    <div style={{ background: card, borderRadius: 24, overflow: "hidden", border: dark ? "1px solid #ffffff0d" : "1px solid #f4f4f5" }}>
       <Skeleton height={140} borderRadius="0" dark={dark} />
       <div style={{ padding: "14px 16px 16px" }}>
         <Skeleton height={16} width="75%" borderRadius={6} dark={dark} style={{ marginBottom: 8 }} />
@@ -48,9 +48,9 @@ export function DishCardSkeleton({ dark = false }: { dark?: boolean }) {
 
 // ─── Grid de menú completo ────────────────────────────────────────────────────
 export function MenuSkeleton({ dark = false }: { dark?: boolean }) {
-  const bg = dark ? "#111214" : "#FFF0DC";
+  const bg = dark ? "#09090b" : "#f9fafb";
   return (
-    <div style={{ minHeight: "100dvh", background: bg, padding: "0 16px 100px" }}>
+    <div style={{ minHeight: "100dvh", background: bg, padding: "0 24px 100px" }}>
       {/* Search bar */}
       <div style={{ padding: "16px 0 12px" }}>
         <Skeleton height={44} borderRadius={12} dark={dark} />

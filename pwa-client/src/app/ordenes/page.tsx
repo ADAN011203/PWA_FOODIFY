@@ -7,16 +7,27 @@ import { useTheme } from "@/context/ThemeContext";
 import { PageHeader } from "@/components/layout/TabBar";
 import { useGuestOrders } from "@/lib/useGuestOrders";
 import { QRCode } from "@/components/ui/QRCode";
-import { IconBox, IconX } from "@/components/ui/Icons";
+import {
+  IconBox,
+  IconX,
+  IconPackage,
+  IconCheck,
+  IconClock,
+  IconAlertCircle,
+  IconUser,
+  IconBuilding,
+  IconCalendar,
+} from "@/components/ui/Icons";
 import type { Order, OrderStatus } from "@/types/orders";
 
 // ─── Badge de estado ──────────────────────────────────────────────────────────
 const STATUS_MAP: Record<OrderStatus, { label: string; bg: string; color: string; icon: string }> = {
   nuevo:          { label: "En Orden",  bg: "#dbeafe", color: "#3b82f6", icon: "" },
+  confirmado:      { label: "Confirmado", bg: "#dbeafe", color: "#3b82f6", icon: "" },
   en_preparacion: { label: "En Cocina", bg: "#fef3c7", color: "#d97706", icon: "" },
   listo:          { label: "Listo",     bg: "#dcfce7", color: "#16a34a", icon: "" },
   entregado:      { label: "Entregado", bg: "#f3f4f6", color: "#6b7280", icon: "" },
-  cancelado:      { label: "Cancelado", bg: "#fee2e2", color: "#ef4444", icon: "⊗" },
+  cancelado:      { label: "Cancelado", bg: "#fee2e2", color: "#ef4444", icon: " " },
 };
 
 function StatusBadge({ status }: { status: OrderStatus }) {
@@ -149,13 +160,15 @@ function OrderDetailModal({ order, onClose, onCancel, dark }: {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 {[
-                  { icon: "", label: "Fecha y Hora",  value: fmtDate(order.createdAt) },
-                  { icon: "", label: "Atendido por",  value: order.attendedBy ?? "—" },
-                  { icon: "", label: "Sucursal",      value: order.branch ?? "—" },
-                  { icon: "", label: "Estado Actual", value: STATUS_MAP[order.status].label },
+                  { icon: <IconCalendar size={12} />, label: "Fecha y Hora",  value: fmtDate(order.createdAt) },
+                  { icon: <IconUser size={12} />,     label: "Atendido por",  value: order.attendedBy ?? "—" },
+                  { icon: <IconBuilding size={12} />, label: "Sucursal",      value: order.branch ?? "—" },
+                  { icon: <IconClock size={12} />,    label: "Estado Actual", value: STATUS_MAP[order.status].label },
                 ].map(({ icon, label, value }) => (
                   <div key={label}>
-                    <p style={{ fontSize: "0.72rem", color: "#FF6B35", fontWeight: 600, marginBottom: 2 }}>{icon} {label}</p>
+                    <p style={{ fontSize: "0.72rem", color: "#FF6B35", fontWeight: 600, marginBottom: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                      {icon} {label}
+                    </p>
                     <p style={{ fontSize: "0.875rem", color: text, fontWeight: 500, lineHeight: 1.4 }}>{value}</p>
                   </div>
                 ))}
@@ -203,8 +216,8 @@ function OrderDetailModal({ order, onClose, onCancel, dark }: {
                 border: "1px solid #fbbf24", borderRadius: 14,
                 padding: "14px 16px", marginBottom: 12,
               }}>
-                <p style={{ color: dark ? "#fbbf24" : "#92400e", fontSize: "0.875rem", marginBottom: 12 }}>
-                  ⏱ Tiempo restante para cancelar: <strong>{mm}:{ss}</strong>
+                <p style={{ color: dark ? "#fbbf24" : "#92400e", fontSize: "0.875rem", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <IconClock size={14} /> Tiempo restante para cancelar: <strong>{mm}:{ss}</strong>
                 </p>
                 <button onClick={() => setShowConfirm(true)} style={{
                   width: "100%", background: "#ef4444", color: "white",
@@ -334,8 +347,8 @@ export default function OrdenesPage() {
         {/* Tabs */}
         <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
           {([
-            { key: "proceso",    label: `En Proceso (${proceso.length})`,    icon: "📦" },
-            { key: "entregadas", label: `Entregadas (${entregadas.length})`, icon: "✅" },
+            { key: "proceso",    label: `En Proceso (${proceso.length})`,    icon: <IconPackage size={16} /> },
+            { key: "entregadas", label: `Entregadas (${entregadas.length})`, icon: <IconCheck size={16} /> },
           ] as const).map(({ key, label, icon }) => (
             <button key={key} onClick={() => setTab(key)} style={{
               flex: 1, padding: "14px", borderRadius: 999, border: "none", cursor: "pointer",
@@ -361,7 +374,7 @@ export default function OrdenesPage() {
               {myOrders.length === 0 ? "Aún no has hecho ningún pedido" : "Sin órdenes en esta sección"}
             </p>
             <p style={{ fontSize: "0.8rem" }}>
-              {myOrders.length === 0 ? "Ve al menú y haz tu primer pedido 🍽️" : ""}
+              {myOrders.length === 0 ? "Ve al menú y haz tu primer pedido" : ""}
             </p>
           </div>
         ) : (
@@ -375,8 +388,8 @@ export default function OrdenesPage() {
         {/* Tip */}
         {tab === "proceso" && proceso.length > 0 && (
           <div style={{ background: tipBg, borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
-            <p style={{ color: dark ? "#86efac" : "#166534", fontSize: "0.875rem" }}>
-              💡 <strong>Tip:</strong> Escanea el código QR al recoger tu orden para marcarla como entregada.
+            <p style={{ color: dark ? "#86efac" : "#166534", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: 6 }}>
+              <IconAlertCircle size={14} /> <strong>Tip:</strong> Escanea el código QR al recoger tu orden para marcarla como entregada.
             </p>
           </div>
         )}

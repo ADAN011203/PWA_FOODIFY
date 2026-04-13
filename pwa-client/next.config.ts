@@ -34,6 +34,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: "/api_proxy/socket.io/:path*",
+        destination: `${backendUrl}/socket.io/:path*`,
+      },
+      {
         source: "/api_proxy/:path*",
         destination: "http://3.142.73.52:3000/:path*",
       },

@@ -1,15 +1,17 @@
-import { api, publicApi } from "./api";
+import { api, publicApi } from "./api/axios";
 import type { Order, OrderStatus } from "../types/orders";
 
 export const USE_MOCK_ORDERS = false;
 
 function mapStatus(s: string): OrderStatus {
-  switch (s) {
+  switch (s.toLowerCase()) {
     case "pending":    return "nuevo";
     case "confirmed":  return "nuevo";
     case "preparing":  return "en_preparacion";
+    case "prepared":   return "listo";
     case "ready":      return "listo";
     case "delivered":  return "entregado";
+    case "completed":  return "entregado";
     case "cancelled":  return "cancelado";
     default:           return "nuevo";
   }
@@ -18,6 +20,7 @@ function mapStatus(s: string): OrderStatus {
 export function mapStatusToBackend(status: OrderStatus): string {
   switch (status) {
     case "nuevo":          return "pending";
+    case "confirmado":     return "confirmed";
     case "en_preparacion": return "preparing";
     case "listo":          return "ready";
     case "entregado":      return "delivered";
@@ -35,10 +38,23 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
     unitPrice: Number(it.unitPrice ?? it.unit_price ?? 0),
   }));
 
+  // Priorizamos kitchen_status si status es básico (pending/confirmed)
+  const rawStatus = String(o.status ?? "pending");
+  const rawKitchen = String(o.kitchen_status ?? o.kitchenStatus ?? "");
+  
+  let finalStatus = mapStatus(rawStatus);
+  
+  // Si el estado de cocina es 'ready', forzamos a 'listo'
+  if (rawKitchen === "ready" || rawKitchen === "prepared") {
+    finalStatus = "listo";
+  } else if (rawStatus === "pending" && (rawKitchen === "preparing")) {
+    finalStatus = "en_preparacion";
+  }
+
   return {
     id:         String(o.id),
     folio:      String(o.orderNumber ?? o.order_number ?? o.folio ?? o.id),
-    status:     mapStatus(String(o.status ?? "pending")),
+    status:     finalStatus,
     createdAt:  String(o.createdAt ?? o.created_at ?? new Date().toISOString()),
     attendedBy: String((o.waiter as Record<string, unknown>)?.fullName ?? o.attendedBy ?? "—"),
     branch:     "Restaurante",
@@ -52,9 +68,11 @@ export async function createPublicOrderApi(payload: {
   customerName: string;
   customerPhone?: string;
   notes?: string;
+  table?: string;
+  mode?: string;
   items: { dishId: number; quantity: number; specialNotes?: string }[];
 }): Promise<Order> {
-  const { data } = await publicApi.post("/api/v1/orders", {
+  const { data } = await publicApi.post("/orders", {
     type: "takeout",
     ...payload,
   });
@@ -99,9 +117,13 @@ export async function cancelOrderApi(id: string, reason = "Cancelado por el clie
 // ─── Comandas de cocina (Premium) ─────────────────────────────────────────────
 export async function getKitchenOrdersApi(): Promise<Order[]> {
   const { data } = await api.get("/kitchen/orders");
-  return (Array.isArray(data.data) ? data.data : []).map(mapToInternalOrder);
+  const list = Array.isArray(data.data) ? data.data : data.data?.items ?? [];
+  return list.map(mapToInternalOrder);
 }
 
 export async function updateKitchenStatusApi(orderId: string, status: OrderStatus): Promise<void> {
-  await api.patch(`/kitchen/orders/${orderId}/status`, { status: mapStatusToBackend(status) });
+  // En v3.2, hay un endpoint específico para kitchen-status
+  await api.patch(`/orders/${orderId}/kitchen-status`, { 
+    kitchenStatus: mapStatusToBackend(status) 
+  });
 }

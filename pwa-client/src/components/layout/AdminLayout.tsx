@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 
 interface AdminLayoutProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   backHref?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;

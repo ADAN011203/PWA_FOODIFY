@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
-import { getOwnedRestaurantsApi, switchActiveRestaurantApi, Restaurant } from "@/lib/restaurantApi";
+import { getOwnedRestaurantsApi, switchActiveRestaurantApi, getRestaurantDetailsApi, Restaurant } from "@/lib/restaurantApi";
 import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/context/ToastContext";
+import toast from "react-hot-toast";
 import styles from "./RestaurantSwitchModal.module.css";
 
 interface Props {
@@ -15,38 +15,53 @@ interface Props {
 
 export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
   const { user } = useAuth();
-  const { showToast } = useToast();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
-  const [switching, setSwitching] = useState<string | null>(null);
+  const [switching, setSwitching] = useState<string | number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
       getOwnedRestaurantsApi()
         .then(setRestaurants)
-        .catch(() => showToast("Error al cargar sucursales", "error"))
+        .catch(() => toast.error("Error al cargar sucursales"))
         .finally(() => setLoading(false));
     }
-  }, [isOpen, showToast]);
+  }, [isOpen]);
 
   const handleSwitch = async (restaurant: Restaurant) => {
     if (!user) return;
-    if (restaurant.id === String(user.restaurantId || "")) {
+    if (String(restaurant.id) === String(user.restaurantId || "")) {
       onClose();
       return;
     }
 
     setSwitching(restaurant.id);
     try {
-      await switchActiveRestaurantApi(user.id, restaurant.id);
-      showToast(`Cambiando a ${restaurant.name}...`, "success");
-      // Recargar para refrescar el contexto global y los datos de todos los módulos
+      await switchActiveRestaurantApi(String(user.id), String(restaurant.id));
+      
+      // Obtener detalles frescos (slug, branch name) antes de recargar
+      const details = await getRestaurantDetailsApi(String(restaurant.id));
+      
+      toast.success(`Cambiando a ${details.name || restaurant.name}...`);
+      
+      // Actualizar la sesión local inmediatamente
+      const raw = localStorage.getItem("foodify_session");
+      if (raw) {
+        const session = JSON.parse(raw);
+        session.user.restaurantId = restaurant.id;
+        session.user.branch = details.name || restaurant.name;
+        session.user.slug = details.slug || details.restaurant_slug || "";
+        localStorage.setItem("foodify_session", JSON.stringify(session));
+      }
+
+      // Recargar para refrescar el contexto global
       setTimeout(() => {
         window.location.reload();
-      }, 1000);
+      }, 800);
     } catch (e) {
-      showToast("No se pudo cambiar de sucursal", "error");
+      console.error("Switch error:", e);
+      toast.error("No se pudo cambiar de sucursal");
       setSwitching(null);
     }
   };
@@ -59,7 +74,9 @@ export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
         </p>
 
         {loading ? (
-          <div className={styles.loading}>Cargando sucursales...</div>
+          <div className="py-10 flex items-center justify-center text-gray-400 italic">
+            Cargando sucursales...
+          </div>
         ) : (
           <div className={styles.list}>
             {restaurants.map((r) => {
@@ -75,7 +92,7 @@ export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
                     <p className={styles.address}>{r.address || "Sin dirección"}</p>
                   </div>
                   {switching === r.id ? (
-                    <div className={styles.spinner}>...</div>
+                    <div className="animate-spin h-5 w-5 border-2 border-foodify-orange border-t-transparent rounded-full" />
                   ) : isActive ? (
                     <span className={styles.currentBadge}>Actual</span>
                   ) : (
@@ -88,7 +105,7 @@ export function RestaurantSwitchModal({ isOpen, onClose }: Props) {
         )}
 
         <div className={styles.actions}>
-          <Button variant="secondary" onClick={onClose} fullWidth>
+          <Button variant="secondary" onClick={onClose} className="w-full">
             Cerrar
           </Button>
         </div>

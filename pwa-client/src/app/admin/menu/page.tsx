@@ -1,849 +1,251 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/context/ToastContext";
-import { useFetchWithState } from "@/lib/useFetchWithState";
-import { FoodSpinner } from "@/components/ui/FoodSpinner";
-import { EmptyState } from "@/components/EmptyState";
-import { ErrorAlert } from "@/components/ErrorAlert";
-import {
-  getDishesApi,
-  createDishApi,
-  updateDishApi,
-  deleteDishApi,
-  toggleDishAvailabilityApi,
-  getAdminCategoriesApi,
-  getAdminMenusApi,
-  createCategoryApi,
-} from "@/lib/menuApi";
-import type { Dish, Category } from "@/types/menu";
-import { AdminLayout } from "@/components/layout/AdminLayout";
+import React, { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
-import { Card } from "@/components/ui/Card";
-import ui from "@/components/ui/AdminUI.module.css";
+import { Switch } from "@/components/ui/Switch";
+import { Input } from "@/components/ui/Input";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  GripVertical, 
+  Edit3, 
+  Trash2, 
+  Clock, 
+  Check,
+  ChevronRight,
+  Beef,
+  Coffee,
+  Pizza,
+  Salad,
+  IceCream,
+  UtensilsCrossed
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 
-// ─── Guard de rol ──────────────────────────────────────────────────────────────
-function useAdminGuard() {
-  const { user, isLoading } = useAuth();
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== "admin"))
-      window.location.href = "/login";
-  }, [isLoading, user]);
-  return { user, isLoading };
-}
+import { useFetchWithState } from "@/lib/useFetchWithState";
+import { getAdminMenusApi, getAdminCategoriesApi, getDishesApi, toggleDishAvailabilityApi, toggleMenuAvailabilityApi } from "@/lib/menuApi";
+import { AddCategoryModal } from "@/components/modals/AddCategoryModal";
+import { AddDishModal } from "@/components/modals/AddDishModal";
+import toast from "react-hot-toast";
 
-// ─── Formulario vacío ─────────────────────────────────────────────────────────
-const EMPTY_FORM = {
-  name: "",
-  description: "",
-  price: "",
-  categoryId: "",
-  imageUrl: "",
-  prepTime: "",
-  isAvailable: true,
-  badge: "" as "" | "Popular" | "Nuevo" | "Chef",
-};
-type DishForm = typeof EMPTY_FORM;
-
-// ─── Modal formulario ─────────────────────────────────────────────────────────
-function DishFormModal({
-  dish,
-  categories,
-  isOpen,
-  onClose,
-  onSave,
-}: {
-  dish: Dish | null;
-  categories: Category[];
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (form: DishForm, id?: string) => Promise<void>;
-}) {
-  const [form, setForm] = useState<DishForm>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Partial<Record<keyof DishForm, string>>>({});
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (dish) {
-      setForm({
-        name: dish.name,
-        description: dish.description,
-        price: String(dish.price),
-        categoryId: dish.categoryId,
-        imageUrl: dish.imageUrl ?? "",
-        prepTime: String(dish.prepTime ?? ""),
-        isAvailable: dish.isAvailable,
-        badge: dish.badge ?? "",
-      });
-    } else {
-      setForm(EMPTY_FORM);
-    }
-    setErrors({});
-  }, [dish, isOpen]);
-
-  const set = (key: keyof DishForm, val: string | boolean) =>
-    setForm((f) => ({ ...f, [key]: val }));
-
-  const validate = () => {
-    const e: typeof errors = {};
-    if (!form.name.trim()) e.name = "El nombre es requerido";
-    if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0)
-      e.price = "Precio inválido";
-    if (!form.categoryId) e.categoryId = "Selecciona una categoría";
-    if (!form.description.trim()) e.description = "La descripción es requerida";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) return;
-    setSaving(true);
-    try {
-      await onSave(form, dish?.id);
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={dish ? "✏️ Editar Platillo" : "➕ Nuevo Platillo"}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <Input
-          label="Nombre del platillo *"
-          value={form.name}
-          onChange={(e) => set("name", e.target.value)}
-          placeholder="Ej. Tacos al Pastor"
-          error={errors.name}
-        />
-
-        <div>
-          <label
-            style={{
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              color: "var(--text-secondary)",
-              display: "block",
-              marginBottom: 5,
-            }}
-          >
-            Descripción *
-          </label>
-          <textarea
-            value={form.description}
-            onChange={(e) => set("description", e.target.value)}
-            placeholder="Describe el platillo..."
-            rows={3}
-            style={{
-              width: "100%",
-              padding: "11px 14px",
-              borderRadius: "var(--radius-md)",
-              border: `1.5px solid ${errors.description ? "var(--status-error)" : "var(--bg-input)"}`,
-              background: "var(--bg-elevated)",
-              color: "var(--text-primary)",
-              fontFamily: "var(--font-family)",
-              fontSize: "0.9rem",
-              outline: "none",
-              resize: "none",
-              boxSizing: "border-box",
-            }}
-          />
-          {errors.description && (
-            <p style={{ fontSize: "0.7rem", color: "var(--status-error)", marginTop: 3 }}>
-              {errors.description}
-            </p>
-          )}
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Input
-            label="Precio (MXN) *"
-            type="number"
-            value={form.price}
-            onChange={(e) => set("price", e.target.value)}
-            placeholder="0.00"
-            error={errors.price}
-          />
-          <Select
-            label="Categoría *"
-            value={form.categoryId}
-            onChange={(e) => set("categoryId", e.target.value)}
-            error={errors.categoryId}
-          >
-            <option value="">Seleccionar...</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.emoji} {c.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Input
-            label="Tiempo de prep. (min)"
-            type="number"
-            value={form.prepTime}
-            onChange={(e) => set("prepTime", e.target.value)}
-            placeholder="Ej. 15"
-          />
-          <Select
-            label="Badge"
-            value={form.badge}
-            onChange={(e) => set("badge", e.target.value)}
-          >
-            <option value="">Sin badge</option>
-            <option value="Popular">⭐ Popular</option>
-            <option value="Nuevo">🆕 Nuevo</option>
-            <option value="Chef">👨‍🍳 Chef</option>
-          </Select>
-        </div>
-
-        <Input
-          label="Foto principal (URL)"
-          value={form.imageUrl}
-          onChange={(e) => set("imageUrl", e.target.value)}
-          placeholder="https://..."
-        />
-        {form.imageUrl?.startsWith("content://") && (
-          <p style={{ fontSize: "0.75rem", color: "#f59e0b", marginTop: -10, marginBottom: 16 }}>
-            ⚠️ Imagen local de app móvil. Para cambiarla en la PWA, escribe una URL de internet.
-          </p>
-        )}
-
-        {form.imageUrl && (
-          <div
-            style={{
-              borderRadius: "var(--radius-md)",
-              overflow: "hidden",
-              height: 110,
-              border: "1px solid var(--border-light)",
-              marginBottom: 16,
-            }}
-          >
-            {form.imageUrl.startsWith("content://") ? (
-              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--bg-input)" }}>
-                <span style={{ fontSize: "2rem" }}>📱</span>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 4 }}>Foto de celular</span>
-              </div>
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={form.imageUrl}
-                alt="preview"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Toggle disponible */}
-        <div
-          style={{
-            background: "var(--bg-elevated)",
-            borderRadius: "var(--radius-md)",
-            padding: "14px 16px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            border: "1px solid var(--border-light)",
-          }}
-        >
-          <div>
-            <p style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.9375rem", margin: 0 }}>
-              Disponible en menú
-            </p>
-            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "2px 0 0" }}>
-              Los clientes pueden ver y ordenar este platillo
-            </p>
-          </div>
-          <button
-            onClick={() => set("isAvailable", !form.isAvailable)}
-            style={{
-              width: 50,
-              height: 28,
-              borderRadius: 999,
-              border: "none",
-              cursor: "pointer",
-              background: form.isAvailable ? "var(--status-success)" : "var(--bg-input)",
-              position: "relative",
-              transition: "background 0.25s",
-              flexShrink: 0,
-            }}
-          >
-            <span
-              style={{
-                position: "absolute",
-                top: 4,
-                left: form.isAvailable ? 26 : 4,
-                width: 20,
-                height: 20,
-                borderRadius: "50%",
-                background: "white",
-                transition: "left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-              }}
-            />
-          </button>
-        </div>
-
-        <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
-          <Button variant="secondary" size="lg" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button variant="primary" size="lg" fullWidth onClick={handleSave} loading={saving}>
-            {dish ? "Guardar cambios" : "Agregar platillo"}
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// ─── Modal: Crear Categoría ───────────────────────────────────────────────────
-function CategoryFormModal({
-  menus,
-  isOpen,
-  onClose,
-  onSave,
-}: {
-  menus: { id: string; name: string }[];
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (menuId: string, name: string) => Promise<void>;
-}) {
-  const [name, setName] = useState("");
-  const [menuId, setMenuId] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setName("");
-      if (menus.length > 0) setMenuId(menus[0].id);
-      else setMenuId("");
-    }
-  }, [isOpen, menus]);
-
-  const handleSave = async () => {
-    if (!name.trim() || !menuId) return;
-    setSaving(true);
-    try {
-      await onSave(menuId, name);
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="➕ Nueva Categoría">
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <Input
-          label="Nombre de la categoría *"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Ej. Entradas, Postres..."
-        />
-        {menus.length > 1 && (
-          <Select
-            label="Menú al que pertenece *"
-            value={menuId}
-            onChange={(e) => setMenuId(e.target.value)}
-          >
-            {menus.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </Select>
-        )}
-        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-          <Button variant="secondary" size="lg" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            onClick={handleSave}
-            loading={saving}
-            disabled={!name.trim() || !menuId}
-          >
-            Crear categoría
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// ─── Modal: confirmar eliminación ─────────────────────────────────────────────
-function ConfirmDeleteModal({
-  name,
-  isOpen,
-  onClose,
-  onConfirm,
-}: {
-  name: string;
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => Promise<void>;
-}) {
-  const [loading, setLoading] = useState(false);
-
-  const handleConfirm = async () => {
-    setLoading(true);
-    try {
-      await onConfirm();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div style={{ textAlign: "center" }}>
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            background: "rgba(239,68,68,0.1)",
-            border: "1px solid rgba(239,68,68,0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 16px",
-            fontSize: "1.75rem",
-          }}
-        >
-          🗑️
-        </div>
-        <h3
-          style={{
-            fontSize: "1.125rem",
-            fontWeight: 800,
-            color: "var(--text-primary)",
-            marginBottom: 8,
-          }}
-        >
-          ¿Eliminar platillo?
-        </h3>
-        <p
-          style={{
-            color: "var(--text-muted)",
-            fontSize: "0.875rem",
-            marginBottom: 24,
-            lineHeight: 1.6,
-          }}
-        >
-          Estás a punto de eliminar{" "}
-          <strong style={{ color: "var(--text-primary)" }}>{name}</strong>. Esta
-          acción no se puede deshacer.
-        </p>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Button variant="secondary" size="md" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            variant="danger"
-            size="md"
-            fullWidth
-            onClick={handleConfirm}
-            loading={loading}
-          >
-            Eliminar
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// ─── Dish Card ────────────────────────────────────────────────────────────────
-const BADGE_CFG = {
-  Popular: { bg: "rgba(251,191,36,0.15)", color: "#fbbf24" },
-  Nuevo:   { bg: "rgba(99,102,241,0.15)", color: "#818cf8" },
-  Chef:    { bg: "rgba(255,107,53,0.15)", color: "#FF6B35" },
-};
-
-function DishCard({
-  dish,
-  onEdit,
-  onDelete,
-  onToggle,
-}: {
-  dish: Dish;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggle: () => void;
-}) {
-  const badge = dish.badge ? BADGE_CFG[dish.badge] : null;
-
-  return (
-    <Card
-      tone={!dish.isAvailable ? "default" : "default"}
-      style={{ marginBottom: 10, opacity: dish.isAvailable ? 1 : 0.6 }}
-    >
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-        {/* Imagen */}
-        <div
-          style={{
-            width: 68,
-            height: 68,
-            borderRadius: "var(--radius-md)",
-            background: "var(--bg-input)",
-            overflow: "hidden",
-            flexShrink: 0,
-          }}
-        >
-          {dish.imageUrl && !dish.imageUrl.startsWith("content://") ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={dish.imageUrl}
-              alt={dish.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.5rem",
-              }}
-            >
-              {dish.imageUrl?.startsWith("content://") ? "📱" : "🍽️"}
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                <p
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "0.9375rem",
-                    color: "var(--text-primary)",
-                    margin: 0,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {dish.name}
-                </p>
-                {badge && (
-                  <span
-                    style={{
-                      background: badge.bg,
-                      color: badge.color,
-                      fontSize: "0.6rem",
-                      fontWeight: 700,
-                      padding: "2px 7px",
-                      borderRadius: 999,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {dish.badge}
-                  </span>
-                )}
-              </div>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  color: "var(--text-muted)",
-                  margin: "0 0 6px",
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: "vertical" as const,
-                }}
-              >
-                {dish.description}
-              </p>
-              <p
-                style={{
-                  fontWeight: 800,
-                  color: "var(--color-primary)",
-                  fontSize: "0.9375rem",
-                  margin: 0,
-                }}
-              >
-                ${dish.price}
-              </p>
-            </div>
-
-            {/* Toggle disponible */}
-            <button
-              onClick={onToggle}
-              title={dish.isAvailable ? "Desactivar" : "Activar"}
-              style={{
-                width: 42,
-                height: 24,
-                borderRadius: 999,
-                border: "none",
-                cursor: "pointer",
-                background: dish.isAvailable ? "var(--status-success)" : "var(--bg-input)",
-                position: "relative",
-                transition: "background 0.25s",
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  position: "absolute",
-                  top: 3,
-                  left: dish.isAvailable ? 21 : 3,
-                  width: 18,
-                  height: 18,
-                  borderRadius: "50%",
-                  background: "white",
-                  transition: "left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                }}
-              />
-            </button>
-          </div>
-
-          {/* Acciones */}
-          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-            <Button variant="ghost" size="sm" onClick={onEdit}>
-              ✏️ Editar
-            </Button>
-            <Button variant="danger" size="sm" onClick={onDelete}>
-              🗑️
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-// ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function AdminMenuPage() {
-  const { user, isLoading } = useAdminGuard();
-  const toast = useToast();
+  const [activeTab, setActiveTab] = useState("menus");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [menus, setMenus] = useState<{ id: string; name: string }[]>([]);
-  const [dishes, setDishes] = useState<Dish[]>([]);
-  const [initLoading, setInitLoading] = useState(true);
-  const [activeCat, setActiveCat] = useState("todos");
-  const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [showCatForm, setShowCatForm] = useState(false);
-  const [editDish, setEditDish] = useState<Dish | null>(null);
-  const [dishToDelete, setDishToDelete] = useState<Dish | null>(null);
+  const { data: menus, loading: menusLoading, refetch: refetchMenus } = useFetchWithState("admin-menus", getAdminMenusApi, 15000);
+  const { data: categories, loading: catsLoading, refetch: refetchCats } = useFetchWithState("admin-categories", getAdminCategoriesApi, 15000);
+  const { data: dishes, loading: dishesLoading, refetch: refetchDishes } = useFetchWithState("admin-dishes", getDishesApi, 15000);
 
-  useEffect(() => {
-    if (!user) return;
-    Promise.all([getDishesApi(), getAdminCategoriesApi(), getAdminMenusApi()])
-      .then(([dishesRes, categoriesRes, menusRes]) => {
-        setDishes(dishesRes);
-        setCategories(categoriesRes);
-        setMenus(menusRes);
-      })
-      .catch(() => toast.error("Error al cargar el menú"))
-      .finally(() => setInitLoading(false));
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (isLoading || !user || initLoading) return <FoodSpinner />;
-
-  const filtered = dishes.filter((d) => {
-    const matchCat = activeCat === "todos" || String(d.categoryId) === activeCat;
-    const matchSearch =
-      !search || d.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
-
-  const handleSave = async (form: DishForm, id?: string) => {
-    const payload = {
-      name: form.name,
-      description: form.description,
-      price: Number(form.price),
-      categoryId: form.categoryId,
-      imageUrl: form.imageUrl || undefined,
-      isAvailable: form.isAvailable,
-      badge: form.badge || undefined,
-      prepTime: Number(form.prepTime) || 15,
-    };
-    if (id) {
-      const updated = await updateDishApi(id, payload);
-      setDishes((prev) => prev.map((d) => (d.id === id ? { ...d, ...updated } : d)));
-      toast.success("Platillo actualizado");
-    } else {
-      const created = await createDishApi(payload);
-      setDishes((prev) => [created, ...prev]);
-      toast.success("Platillo agregado al menú");
-    }
-    setEditDish(null);
-    setShowForm(false);
-  };
-
-  const handleCreateCategory = async (menuId: string, name: string) => {
+  const toggleDish = async (id: string, current: boolean) => {
     try {
-      const newCat = await createCategoryApi(menuId, name);
-      setCategories((prev) => [...prev, newCat]);
-      toast.success(`Categoría "${name}" creada`);
+      await toggleDishAvailabilityApi(id, !current);
+      toast.success("Estado del platillo actualizado");
+      refetchDishes();
     } catch {
-      toast.error("Error al crear categoría");
+      toast.error("Error al actualizar estado del platillo");
     }
   };
 
-  const handleToggle = async (dish: Dish) => {
+  const toggleMenu = async (id: string, current: boolean) => {
     try {
-      await toggleDishAvailabilityApi(dish.id, !dish.isAvailable);
-      setDishes((prev) =>
-        prev.map((d) => (d.id === dish.id ? { ...d, isAvailable: !d.isAvailable } : d))
-      );
-      toast.success(dish.isAvailable ? "Platillo desactivado" : "Platillo activado");
+      await toggleMenuAvailabilityApi(id, !current);
+      toast.success("Estado del menú actualizado");
+      refetchMenus();
     } catch {
-      toast.error("Error al cambiar disponibilidad");
+      toast.error("Error al actualizar estado del menú");
     }
   };
 
-  const handleDelete = async () => {
-    if (!dishToDelete) return;
-    await deleteDishApi(dishToDelete.id);
-    setDishes((prev) => prev.filter((d) => d.id !== dishToDelete.id));
-    toast.success("Platillo eliminado");
-    setDishToDelete(null);
-  };
-
-  const cats = [{ id: "todos", name: "Todos", emoji: "" }, ...categories];
-  const total = dishes.length;
-  const activos = dishes.filter((d) => d.isAvailable).length;
+  const loading = menusLoading || catsLoading || dishesLoading;
 
   return (
-    <AdminLayout
-      title="Gestión de Menú"
-      subtitle={`🍽️ ${total} platillos · ${activos} activos`}
-      actions={
-        <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="secondary" size="sm" onClick={() => setShowCatForm(true)}>
-            ＋ Categoría
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              setEditDish(null);
-              setShowForm(true);
-            }}
-          >
-            ＋ Platillo
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black">Gestión de Menú</h1>
+          <p className="text-text-secondary">Organiza tus menús, categorías y platillos.</p>
         </div>
-      }
-    >
-      {/* KPIs */}
-      <div className={`${ui.grid} ${ui.cols3}`}>
-        {[
-          { label: "Total", value: total, color: "var(--text-primary)" },
-          { label: "Activos", value: activos, color: "var(--status-success)" },
-          { label: "Inactivos", value: total - activos, color: "var(--text-muted)" },
-        ].map(({ label, value, color }) => (
-          <div key={label} className={ui.kpi}>
-            <p className={ui.kpiValue} style={{ color }}>
-              {value}
-            </p>
-            <p className={ui.kpiLabel}>{label}</p>
+        
+        <div className="flex gap-2">
+           <Button 
+             onClick={() => setIsAddModalOpen(true)}
+             className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20"
+           >
+              <Plus className="w-5 h-5 mr-2" />
+              {activeTab === "menus" ? "Crear Menú" : activeTab === "categories" ? "Agregar Categoría" : "Nuevo Platillo"}
+           </Button>
+        </div>
+      </div>
+
+      <AddCategoryModal 
+        isOpen={isAddModalOpen && activeTab === "categories"}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => refetchCats()}
+        menus={menus || []}
+      />
+
+      <AddDishModal 
+        isOpen={isAddModalOpen && activeTab === "dishes"}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => refetchDishes()}
+        categories={categories || []}
+      />
+
+      <Tabs defaultValue="menus" onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="bg-white dark:bg-zinc-900 border p-1 rounded-xl w-full sm:w-auto h-auto grid grid-cols-3">
+          <TabsTrigger value="menus" className="font-bold py-2 rounded-lg">Menús</TabsTrigger>
+          <TabsTrigger value="categories" className="font-bold py-2 rounded-lg">Categorías</TabsTrigger>
+          <TabsTrigger value="dishes" className="font-bold py-2 rounded-lg">Platillos</TabsTrigger>
+        </TabsList>
+
+        {loading && !menus && (
+          <div className="flex justify-center p-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foodify-orange" />
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Búsqueda */}
-      <div className={ui.searchBar}>
-        <span className={ui.searchIcon}>🔍</span>
-        <input
-          className={ui.searchInput}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar platillo..."
-        />
-      </div>
+        {/* TAB MENUS */}
+        <TabsContent value="menus" className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            {(menus || []).map((menu) => (
+              <Card key={menu.id} className="hover:border-foodify-orange transition-colors">
+                <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+                   <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors bg-foodify-orange-light text-foodify-orange">
+                        <UtensilsCrossed className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-lg">{menu.name}</h3>
+                        <div className="flex items-center gap-3 text-xs text-text-secondary font-medium mt-1">
+                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Horario: Rotativo</span>
+                           <span className="flex items-center gap-1">• #{menu.id}</span>
+                        </div>
+                      </div>
+                   </div>
+                   
+                   <div className="flex items-center gap-6 w-full sm:w-auto justify-between border-t sm:border-t-0 pt-4 sm:pt-0">
+                      <div className="flex items-center gap-2">
+                         <span className="text-[10px] font-black uppercase text-text-secondary tracking-widest">Estado</span>
+                         <Switch 
+                           checked={menu.isActive} 
+                           onCheckedChange={() => toggleMenu(menu.id, menu.isActive)} 
+                         />
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <Button variant="outline" size="sm" className="font-bold h-9">Gestionar</Button>
+                         <Button variant="ghost" size="icon" className="h-9 w-9 text-text-secondary">
+                            <Edit3 className="w-4 h-4" />
+                         </Button>
+                         <Button variant="ghost" size="icon" className="h-9 w-9 text-red-400">
+                            <Trash2 className="w-4 h-4" />
+                         </Button>
+                      </div>
+                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
 
-      {/* Filtros por categoría */}
-      <div className={ui.filterRow}>
-        {cats.map(({ id, name, emoji }) => (
-          <button
-            key={id}
-            className={`${ui.chip} ${activeCat === id ? ui.active : ""}`}
-            onClick={() => setActiveCat(id)}
-          >
-            {emoji} {name}
-          </button>
-        ))}
-      </div>
+        {/* TAB CATEGORIAS */}
+        <TabsContent value="categories" className="space-y-4">
+           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+              <p className="text-sm font-bold text-text-secondary flex items-center gap-2">
+                Viendo categorías de: 
+                <span className="text-foodify-orange bg-foodify-orange-light px-3 py-1 rounded-lg">Menú del Día</span>
+              </p>
+           </div>
 
-      {/* Lista */}
-      {filtered.length === 0 ? (
-        <div className={ui.emptyState}>
-          <p className={ui.emptyIcon}>🍽️</p>
-          <p className={ui.emptyText}>No se encontraron platillos</p>
-        </div>
-      ) : (
-        filtered.map((dish) => (
-          <DishCard
-            key={dish.id}
-            dish={dish}
-            onEdit={() => {
-              setEditDish(dish);
-              setShowForm(true);
-            }}
-            onDelete={() => setDishToDelete(dish)}
-            onToggle={() => handleToggle(dish)}
-          />
-        ))
-      )}
+            <div className="grid grid-cols-1 gap-3">
+              {(categories || []).map((cat) => (
+                 <div 
+                   key={cat.id} 
+                   className="bg-white dark:bg-zinc-900 border rounded-2xl p-4 flex items-center justify-between group hover:border-foodify-orange transition-all cursor-move"
+                 >
+                    <div className="flex items-center gap-4">
+                       <GripVertical className="w-5 h-5 text-gray-300 group-hover:text-foodify-orange" />
+                       <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-zinc-800 flex items-center justify-center text-text-primary text-xl">
+                          {cat.emoji || "📁"}
+                       </div>
+                       <div>
+                         <h4 className="font-bold text-sm">{cat.name}</h4>
+                         <p className="text-[10px] text-text-secondary font-medium uppercase tracking-wider">ID: {cat.id}</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <Button variant="ghost" size="icon" className="h-9 w-9">
+                          <Edit3 className="w-4 h-4" />
+                       </Button>
+                       <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500">
+                          <Trash2 className="w-4 h-4" />
+                       </Button>
+                    </div>
+                 </div>
+              ))}
+            </div>
+           <p className="text-center text-xs text-text-secondary font-medium italic pt-4">
+             Arrastra los elementos para reordenarlos en el menú público.
+           </p>
+        </TabsContent>
 
-      <div style={{ height: 24 }} />
+        {/* TAB PLATILLOS */}
+        <TabsContent value="dishes" className="space-y-6">
+           <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1">
+                 <Search className="absolute left-3 top-3 h-4 w-4 text-text-secondary" />
+                 <Input className="pl-10 h-10 rounded-xl" placeholder="Buscar platillo por nombre..." />
+              </div>
+              <div className="flex gap-2">
+                 <Button variant="outline" className="h-10 rounded-xl font-bold gap-2">
+                    <Filter className="w-4 h-4" /> Categoría: Todos
+                 </Button>
+                 <Button variant="outline" className="h-10 rounded-xl font-bold gap-2">
+                    Estado: Todos
+                 </Button>
+              </div>
+           </div>
 
-      {/* Modales */}
-      <DishFormModal
-        dish={editDish}
-        categories={categories}
-        isOpen={showForm}
-        onClose={() => {
-          setShowForm(false);
-          setEditDish(null);
-        }}
-        onSave={handleSave}
-      />
-
-      <ConfirmDeleteModal
-        name={dishToDelete?.name ?? ""}
-        isOpen={!!dishToDelete}
-        onClose={() => setDishToDelete(null)}
-        onConfirm={handleDelete}
-      />
-
-      <CategoryFormModal
-        menus={menus}
-        isOpen={showCatForm}
-        onClose={() => setShowCatForm(false)}
-        onSave={handleCreateCategory}
-      />
-    </AdminLayout>
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(dishes || []).map((dish) => (
+                <Card key={dish.id} className="overflow-hidden group hover:border-foodify-orange transition-all">
+                   <div className="relative h-44 bg-foodify-orange-light flex items-center justify-center">
+                     {dish.imageUrl ? (
+                        <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover" />
+                     ) : (
+                        <UtensilsCrossed className="w-12 h-12 text-foodify-orange opacity-20" />
+                     )}
+                      <div className="absolute top-4 left-4">
+                         <Switch 
+                           checked={dish.isAvailable} 
+                           onCheckedChange={() => toggleDish(dish.id, dish.isAvailable)}
+                         />
+                      </div>
+                   </div>
+                  <CardContent className="p-5">
+                    <div className="flex justify-between items-start mb-2">
+                       <h4 className="font-black text-lg leading-tight">{dish.name}</h4>
+                       <span className="font-black text-foodify-orange">${dish.price.toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-4">
+                       Categoría: {dish.categoryId}
+                    </p>
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase text-text-secondary border-t pt-4">
+                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {dish.prepTime} min</span>
+                       <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-8 rounded-lg font-bold">Editar</Button>
+                          <Button variant="ghost" size="sm" className="h-8 rounded-lg font-bold text-red-500">Eliminar</Button>
+                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+           </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
