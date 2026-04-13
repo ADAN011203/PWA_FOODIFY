@@ -64,21 +64,19 @@ function mapToInternalOrder(o: Record<string, unknown>): Order {
 }
 
 /**
- * ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2 ────────────────
- * IMPORTANT: In v3.2, customerName and customerPhone are REQUIRED for takeout mode.
- * The backend expects: { type: 'takeout', restaurantId, customerName, customerPhone, items: [...] }
+ * ─── Crear orden pública (comensal Para Llevar) — SIN JWT v3.2+ ────────────────
+ * IMPORTANT: Backend v3.2+ expects ONLY: { type, customerName, customerPhone, items }
+ * NO restaurantId, NO mode, NO table — estos se deducen del contexto
  */
 export async function createPublicOrderApi(payload: {
-  restaurantId: number;
   customerName: string;
   customerPhone: string;
   notes?: string;
   items: { dishId: number; quantity: number; specialNotes?: string }[];
 }): Promise<Order> {
-  // Purificación extrema del payload para evitar errores de actualización vacía en TypeORM (v3.2)
+  // Payload exacto que espera el backend
   const purifiedPayload = {
     type: "takeout",
-    restaurantId:  Number(payload.restaurantId),
     customerName:  payload.customerName.trim(),
     customerPhone: payload.customerPhone.trim(),
     notes:         payload.notes?.trim() || undefined,
@@ -89,9 +87,9 @@ export async function createPublicOrderApi(payload: {
     }))
   };
 
-  const { data } = await publicApi.post("/orders", purifiedPayload);
-  
-  // En v3.2 el backend devuelve el objeto de la orden directamente o dentro de un campo 'data'
+  const { data } = await publicApi.post("/api/v1/orders", purifiedPayload);
+
+  // Backend devuelve: { data: Order, status: 201 }
   const rawOrder = data.data ?? data;
   return mapToInternalOrder(rawOrder);
 }
@@ -99,6 +97,7 @@ export async function createPublicOrderApi(payload: {
 // ─── Seguimiento de orden por folio (público) ─────────────────────────────────
 export async function getOrderByFolioApi(slug: string, folio: string): Promise<Order | null> {
   try {
+    // Endpoint correcto: /menu/:slug/order/:folio (sin /api/v1)
     const { data } = await publicApi.get(`/menu/${slug}/order/${folio}`);
     return mapToInternalOrder(data.data ?? data);
   } catch { return null; }

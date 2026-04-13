@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api } from "@/lib/api/axios";
+import { getOrderByFolioApi } from "@/lib/ordersApi";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
 import { 
@@ -20,24 +20,8 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
-interface Order {
-  id: number;
-  folio: string;
-  status: "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
-  customerName: string;
-  customerPhone: string;
-  notes: string;
-  total: number;
-  qrCode?: string;
-  createdAt: string;
-  items: Array<{
-    id: number;
-    dishName: string;
-    quantity: number;
-    price: number;
-  }>;
-}
+import { cn } from "@/lib/utils";
+import type { Order } from "@/types/orders";
 
 const statusSteps = [
   { id: "pending", label: "Recibido", customerLabel: "Recibido" },
@@ -46,10 +30,29 @@ const statusSteps = [
   { id: "delivered", label: "Entregado", customerLabel: "Entregado" },
 ];
 
+// Mapear estado interno a display status
+function mapStatusToDisplayStatus(internalStatus: string): "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled" {
+  switch (internalStatus) {
+    case "nuevo":
+    case "confirmado":
+      return "pending";
+    case "en_preparacion":
+      return "preparing";
+    case "listo":
+      return "ready";
+    case "entregado":
+      return "delivered";
+    case "cancelado":
+      return "cancelled";
+    default:
+      return "pending";
+  }
+}
+
 export default function OrderTrackingPage() {
   const { slug, folio } = useParams();
   const router = useRouter();
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -58,16 +61,38 @@ export default function OrderTrackingPage() {
     else setIsRefreshing(true);
     
     try {
-      const res = await api.get(`/public/order/${folio}`);
-      setOrder(res.data.data);
+      // Usar el endpoint correcto: GET /menu/:slug/order/:folio
+      const internalOrder = await getOrderByFolioApi(slug as string, folio as string);
+      if (internalOrder) {
+        // Mapear Order interno a la estructura de display
+        setOrder({
+          id: Number(internalOrder.id),
+          folio: internalOrder.folio,
+          status: mapStatusToDisplayStatus(internalOrder.status),
+          customerName: internalOrder.attendedBy || "Cliente",
+          customerPhone: "",
+          notes: "",
+          total: internalOrder.items.reduce((sum: number, it: any) => sum + (it.unitPrice * it.qty), 0),
+          qrCode: internalOrder.qrCode,
+          createdAt: internalOrder.createdAt,
+          items: internalOrder.items.map((it: any, idx: number) => ({
+            id: idx,
+            dishName: it.dishName,
+            quantity: it.qty,
+            price: it.unitPrice
+          }))
+        });
+      } else {
+        toast.error("No se pudo cargar la información del pedido");
+      }
     } catch (error: any) {
       console.error("Error fetching order:", error);
-      if (!quiet) toast.error("No se pudo cargar la información del pedido");
+      if (!quiet) toast.error("Error al obtener el estado del pedido");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [folio]);
+  }, [slug, folio]);
 
   useEffect(() => {
     fetchOrder();

@@ -137,57 +137,75 @@ function ParaLlevarContent() {
     toast.error("Producto eliminado");
   };
 
-  const handleCreateOrder = async () => {
-    if (!data || cart.length === 0) return;
-    if (!customerName.trim() || !customerPhone.trim()) {
-      toast.error("Por favor, ingresa tu nombre y teléfono para el pedido");
-      return;
-    }
-    try {
-      const res = await createPublicOrderApi({
-        restaurantId:  Number(data.restaurant.id),
-        customerName:  customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        items: cart.map(i => ({ 
-          dishId:   Number(i.dish.id), 
-          quantity: Number(i.qty) 
-        })),
-      });
-      
-      addOrder({
-        id: String(res.id),
-        folio: res.folio,
-        status: "nuevo",
-        createdAt: new Date().toISOString(),
-        items: cart.map(i => ({
-          dishId: i.dish.id,
-          dishName: i.dish.name,
-          qty: i.qty,
-          unitPrice: i.dish.price
-        })),
-        qrCode: res.qrCode, // Guardamos el QR
-      });
+   const handleCreateOrder = async () => {
+     // Validaciones básicas
+     if (cart.length === 0) {
+       toast.error("Tu carrito está vacío");
+       return;
+     }
 
-      setLastOrder(res); // Activamos la visualización del éxito
-      setCart([]);
-      setShowCart(false);
-      toast.custom((t) => (
-        <div className="bg-zinc-900 border border-white/10 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 shadow-foodify-orange/20">
-          <div className="bg-foodify-orange p-2 rounded-full">
-            <CheckCircle2 className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-black text-lg tracking-tight">¡Pedido enviado con éxito!</span>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foodify-orange">Tu Folio: #{res.folio}</span>
-          </div>
-        </div>
-      ), { duration: 5000 });
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || err.message || "Error al crear el pedido";
-      console.error("Order creation failed:", errorMsg, err.response?.data);
-      toast.error(`Error: ${errorMsg}`);
-    }
-  };
+     if (!customerName.trim()) {
+       toast.error("Por favor ingresa tu nombre");
+       return;
+     }
+
+     if (!customerPhone.trim()) {
+       toast.error("Por favor ingresa tu teléfono para el seguimiento");
+       return;
+     }
+
+     // Validar formato de teléfono (10-15 dígitos)
+     const phoneDigits = customerPhone.replace(/\D/g, '');
+     if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+       toast.error("Ingresa un teléfono válido (10-15 dígitos)");
+       return;
+     }
+
+     try {
+       // Llamada correcta sin restaurantId
+       const res = await createPublicOrderApi({
+         customerName:  customerName.trim(),
+         customerPhone: customerPhone.trim(),
+         items: cart.map(i => ({
+           dishId:   Number(i.dish.id),
+           quantity: Number(i.qty)
+         })),
+       });
+
+       addOrder({
+         id: String(res.id),
+         folio: res.folio,
+         status: "nuevo",
+         createdAt: new Date().toISOString(),
+         items: cart.map(i => ({
+           dishId: i.dish.id,
+           dishName: i.dish.name,
+           qty: i.qty,
+           unitPrice: i.dish.price
+         })),
+         qrCode: res.qrCode,
+       });
+
+       setLastOrder(res);
+       setCart([]);
+       setShowCart(false);
+       toast.custom((t) => (
+         <div className="bg-zinc-900 border border-white/10 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 shadow-foodify-orange/20">
+           <div className="bg-foodify-orange p-2 rounded-full">
+             <CheckCircle2 className="w-6 h-6 text-white" />
+           </div>
+           <div className="flex flex-col">
+             <span className="font-black text-lg tracking-tight">¡Pedido enviado con éxito!</span>
+             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foodify-orange">Tu Folio: #{res.folio}</span>
+           </div>
+         </div>
+       ), { duration: 5000 });
+     } catch (err: any) {
+       const errorMsg = err.response?.data?.message || err.message || "Error al crear el pedido";
+       console.error("Order creation failed:", errorMsg, err.response?.data);
+       toast.error(`Error: ${errorMsg}`);
+     }
+   };
 
   if (loading) return <MenuSkeleton />;
   

@@ -32,6 +32,7 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.142.73.52:3000";
     return [
       {
         source: "/api_proxy/socket.io/:path*",
@@ -39,15 +40,15 @@ const nextConfig = {
       },
       {
         source: "/api_proxy/:path*",
-        destination: "http://3.142.73.52:3000/:path*",
+        destination: backendUrl + "/:path*",
       },
     ];
   },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
-  experimental: {
-    turbo: {},
+  webpack: (config: any) => {
+    return config;
   },
 };
 

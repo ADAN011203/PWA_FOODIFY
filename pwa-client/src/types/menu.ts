@@ -35,4 +35,5 @@ export interface Dish {
 export interface CartItem {
   dish: Dish;
   qty: number;
+  specialNotes?: string;
 }
