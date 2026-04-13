@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
-import { useAuthStore } from '@/lib/stores/useAuthStore';
+import { useAuthStore } from '@/store/authStore';
 
 // En producción (Vercel/HTTPS) usamos el proxy para evitar el error de Mixed Content
 // si el backend es HTTP (IP directa).

@@ -32,7 +32,7 @@ import {
   type ReportPeriod
 } from "@/lib/reportsApi";
 import { getInventoryItemsApi } from "@/lib/inventoryApi";
-import { useAuthStore } from "@/lib/stores/useAuthStore";
+import { useAuthStore } from "@/store/authStore";
 import { useFetchWithState } from "@/lib/useFetchWithState";
 
 const COLORS = ["#E8673A", "#3B82F6", "#10B981", "#F59E0B", "#EF4444"];

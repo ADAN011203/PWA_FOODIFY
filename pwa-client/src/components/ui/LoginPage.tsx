@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, Loader2, ChefHat, LayoutDashboard } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores/useAuthStore';
+import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -13,7 +13,7 @@ interface LoginProps {
 
 export default function LoginPage({ type }: LoginProps) {
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { setAuth } = useAuthStore();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,13 +32,13 @@ export default function LoginPage({ type }: LoginProps) {
       if (email && password) {
         let role: any = type === 'codex' ? 'saas_admin' : 'restaurant_admin';
         
-        login({
+        setAuth({
           id: 'u1',
           name: type === 'codex' ? 'SaaS Master' : 'Admin Burger',
           email,
           role,
           restaurantId: type === 'admin' ? '1' : undefined,
-        }, 'fake-jwt-token');
+        }, 'fake-jwt-token', 'fake-refresh-token');
 
         toast.success(`¡Bienvenido al Panel ${type === 'codex' ? 'CODEX' : 'Administrativo'}!`);
         router.push(type === 'codex' ? '/codex/dashboard' : '/admin/dashboard');
