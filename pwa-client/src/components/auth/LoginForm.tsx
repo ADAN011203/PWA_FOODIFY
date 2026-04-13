@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { axiosInstance } from "@/lib/authApi"; // Assume it exists or I'll create it
+import { loginApi } from "@/lib/authApi";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
@@ -45,17 +45,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ title, role, redirectPath 
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const response = await api.post("/auth/login", values);
-      const { user, token, refreshToken } = response.data.data;
+      const { user, accessToken, refreshToken } = await loginApi(values.email, values.password);
 
-      if (user.role !== role && !(role === "restaurant_admin" && user.role !== "saas_admin")) {
-        // Simple role check, adjust as needed
-        if (role === "saas_admin" && user.role !== "saas_admin") {
-          throw new Error("Acceso no permitido en el Panel CODEX");
-        }
+      if (role === "saas_admin" && user.role !== "saas_admin" && user.role !== "admin") {
+         throw new Error("Acceso no permitido en el Panel CODEX");
       }
 
-      setAuth(user, token, refreshToken);
+      setAuth(user, accessToken, refreshToken);
       toast.success("¡Bienvenido!");
       router.push(redirectPath);
     } catch (error: any) {
