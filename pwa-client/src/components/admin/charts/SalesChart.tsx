@@ -53,7 +53,7 @@ export const SalesChart: React.FC<SalesChartProps> = ({ type = 'bar', data = DAT
             <Tooltip 
               cursor={{ fill: 'transparent' }} 
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-              formatter={(value: number) => [formatCurrency(value), 'Ventas']}
+              formatter={(value: any) => [formatCurrency(Number(value || 0)), 'Ventas']}
             />
             <Bar 
               dataKey="sales" 
