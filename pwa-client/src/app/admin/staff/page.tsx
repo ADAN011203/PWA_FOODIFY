@@ -16,12 +16,8 @@ import {
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
-const MOCK_STAFF = [
-  { id: 1, name: "Carlos García", role: "restaurant_admin", email: "carlos@demo.mx", phone: "555-0001", status: "active" },
-  { id: 2, name: "María López", role: "waiter", email: "maria@demo.mx", phone: "555-0002", status: "active" },
-  { id: 3, name: "Juana de Arco", role: "chef", email: "juana@demo.mx", phone: "555-0003", status: "active" },
-  { id: 4, name: "Pedro Páramo", role: "cashier", email: "pedro@demo.mx", phone: "555-0004", status: "inactive" },
-];
+import { useFetchWithState } from "@/lib/useFetchWithState";
+import { getStaffApi } from "@/lib/staffApi";
 
 const roleConfig: any = {
   restaurant_admin: { label: "Admin", color: "bg-orange-100 text-orange-600 border-orange-200" },
@@ -31,10 +27,19 @@ const roleConfig: any = {
 };
 
 export default function AdminStaffPage() {
-  const [staff, setStaff] = useState(MOCK_STAFF);
+  const { 
+    data: staff, 
+    loading, 
+    refetch 
+  } = useFetchWithState("staff", getStaffApi, 15000);
 
   return (
     <div className="space-y-8">
+      {loading && !staff && (
+        <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foodify-orange" />
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black">Staff</h1>
@@ -57,7 +62,7 @@ export default function AdminStaffPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {staff.map((employee) => (
+        {(staff || []).map((employee) => (
           <Card key={employee.id} className="group hover:border-foodify-orange transition-all overflow-hidden">
             <CardContent className="p-6">
                <div className="flex justify-between items-start mb-6">

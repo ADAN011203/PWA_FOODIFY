@@ -19,19 +19,21 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const MOCK_INSUMOS = [
-  { id: 1, name: "Harina de Maíz", category: "Granos", stock: 12.5, unit: "kg", min_stock: 5, status: "ok" },
-  { id: 2, name: "Tomate Rojo", category: "Vegetales", stock: 3.2, unit: "kg", min_stock: 8, status: "critical" },
-  { id: 3, name: "Aceite Vegetal", category: "Abarrotes", stock: 4, unit: "L", min_stock: 5, status: "warning" },
-  { id: 4, name: "Carne al Pastor", category: "Proteínas", stock: 25, unit: "kg", min_stock: 10, status: "ok" },
-];
-
-const MOCK_LOTES = [
-  { id: 1, insumo: "Carne al Pastor", code: "L-9021", received_at: "2026-03-25", expires_at: "2026-04-20", qty: 25, status: "ok" },
-  { id: 2, insumo: "Tomate Rojo", code: "L-9025", received_at: "2026-04-10", expires_at: "2026-04-15", qty: 3, status: "expired" },
-];
+import { useFetchWithState } from "@/lib/useFetchWithState";
+import { getInventoryItemsApi } from "@/lib/inventoryApi";
 
 export default function AdminInventoryPage() {
+  const { 
+    data: items, 
+    loading, 
+    refetch 
+  } = useFetchWithState("inventory", getInventoryItemsApi, 15000);
+
+  // Derivamos KPIs y alertas del servidor en lugar de estáticos
+  const totalInsumos = items?.length ?? 0;
+  const lowStockCount = items?.filter(i => i.currentStock <= i.minStock).length ?? 0;
+  const criticalItems = items?.filter(i => (i.currentStock / i.minStock) < 0.5) ?? [];
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -58,7 +60,7 @@ export default function AdminInventoryPage() {
             </div>
             <div>
                <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest">Total Insumos</p>
-               <h3 className="text-2xl font-black">42 Items</h3>
+               <h3 className="text-2xl font-black">{totalInsumos} Items</h3>
             </div>
          </div>
          <div className="bg-white dark:bg-zinc-950 p-6 rounded-2xl border flex items-center gap-6 shadow-sm">
@@ -67,7 +69,7 @@ export default function AdminInventoryPage() {
             </div>
             <div>
                <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest">Bajo Stock</p>
-               <h3 className="text-2xl font-black">8 Alertas</h3>
+               <h3 className="text-2xl font-black">{lowStockCount} Alertas</h3>
             </div>
          </div>
          <div className="bg-white dark:bg-zinc-950 p-6 rounded-2xl border flex items-center gap-6 shadow-sm">
@@ -76,7 +78,7 @@ export default function AdminInventoryPage() {
             </div>
             <div>
                <p className="text-[10px] font-black uppercase text-text-secondary tracking-widest">Prox. a vencer</p>
-               <h3 className="text-2xl font-black">3 Lotes</h3>
+               <h3 className="text-2xl font-black">{criticalItems.length} Lotes</h3>
             </div>
          </div>
       </div>
@@ -91,6 +93,12 @@ export default function AdminInventoryPage() {
          </div>
          <Button variant="link" className="text-red-700 font-bold text-xs uppercase tracking-wider">Ver Lotes Vencidos</Button>
       </div>
+
+      {loading && !items && (
+        <div className="flex justify-center p-12">
+           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foodify-orange" />
+        </div>
+      )}
 
       <Tabs defaultValue="insumos" className="space-y-6">
          <TabsList className="bg-white dark:bg-zinc-900 border p-1 rounded-xl w-full sm:w-auto h-auto grid grid-cols-2">
@@ -121,29 +129,32 @@ export default function AdminInventoryPage() {
                      </tr>
                   </thead>
                   <tbody className="divide-y text-sm">
-                     {MOCK_INSUMOS.map((item) => (
+                      {(items || []).map((item) => {
+                         const isCritical = item.currentStock <= item.minStock;
+                         return (
                         <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                            <td className="px-6 py-4 font-bold">{item.name}</td>
                            <td className="px-6 py-4 text-text-secondary">{item.category}</td>
                            <td className="px-6 py-4">
-                              <span className="font-black">{item.stock}</span> {item.unit}
-                              <p className="text-[10px] text-text-secondary">Min: {item.min_stock} {item.unit}</p>
+                              <span className="font-black">{item.currentStock}</span> {item.unit}
+                              <p className="text-[10px] text-text-secondary">Min: {item.minStock} {item.unit}</p>
                            </td>
                            <td className="px-6 py-4">
                               <div className={cn(
                                  "inline-flex px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider",
-                                 item.status === 'ok' ? 'bg-green-100 text-green-600' :
-                                 item.status === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-                                 'bg-red-100 text-red-600'
+                                 !isCritical ? 'bg-green-100 text-green-600' :
+                                 (item.currentStock / item.minStock) < 0.5 ? 'bg-red-100 text-red-600' :
+                                 'bg-yellow-100 text-yellow-600'
                               )}>
-                                 {item.status === 'ok' ? 'Suficiente' : item.status === 'warning' ? 'Poco stock' : 'Crítico'}
+                                 {!isCritical ? 'Suficiente' : (item.currentStock / item.minStock) < 0.5 ? 'Crítico' : 'Poco stock'}
                               </div>
                            </td>
                            <td className="px-6 py-4 text-right">
                               <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="w-4 h-4" /></Button>
                            </td>
                         </tr>
-                     ))}
+                        );
+                      })}
                   </tbody>
                </table>
             </div>
@@ -151,15 +162,15 @@ export default function AdminInventoryPage() {
 
          <TabsContent value="lotes" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {MOCK_LOTES.map((lote) => (
+               {(items || []).flatMap(i => (i.batches || []).map(b => ({ ...b, itemName: i.name }))).map((lote) => (
                   <Card key={lote.id} className={cn(
                      "border-none shadow-sm overflow-hidden",
                      lote.status === 'expired' ? 'bg-red-50/50' : 'bg-white'
                   )}>
                      <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
                         <div className="space-y-0.5">
-                           <CardTitle className="text-sm font-black uppercase tracking-wider text-text-secondary">{lote.code}</CardTitle>
-                           <h4 className="font-bold">{lote.insumo}</h4>
+                           <CardTitle className="text-sm font-black uppercase tracking-wider text-text-secondary">LOTE #{lote.id}</CardTitle>
+                           <h4 className="font-bold">{lote.itemName}</h4>
                         </div>
                         <div className={cn(
                            "p-2 rounded-xl",
@@ -171,15 +182,15 @@ export default function AdminInventoryPage() {
                      <CardContent className="p-4 space-y-3">
                         <div className="flex justify-between text-xs">
                            <span className="text-text-secondary">Cantidad</span>
-                           <span className="font-bold underline">{lote.qty} unidades</span>
+                           <span className="font-bold underline">{lote.quantity}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                            <span className="text-text-secondary">Recibido</span>
-                           <span className="font-medium">{lote.received_at}</span>
+                           <span className="font-medium">{lote.entryDate?.split('T')[0]}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                            <span className="text-text-secondary font-bold">Vencimiento</span>
-                           <span className={cn("font-black", lote.status === 'expired' && "text-red-600")}>{lote.expires_at}</span>
+                           <span className={cn("font-black", lote.status === 'expired' && "text-red-600")}>{lote.expiryDate?.split('T')[0] || "N/A"}</span>
                         </div>
                      </CardContent>
                      <CardFooter className="p-4 bg-black/[0.02] flex justify-between">

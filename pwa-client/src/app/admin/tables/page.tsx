@@ -17,57 +17,36 @@ import {
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
-const MOCK_TABLES = Array.from({ length: 15 }, (_, i) => ({
-  id: i + 1,
-  name: `Mesa ${i + 1}`,
-  capacity: 4,
-  status: i % 5 === 0 ? "occupied" : i % 7 === 0 ? "reserved" : i % 9 === 0 ? "cleaning" : "available",
-  activeOrder: i % 5 === 0 ? { id: 123, total: 450.0 } : null
-}));
+
+import { useFetchWithState } from "@/lib/useFetchWithState";
+import { getTablesApi } from "@/lib/tablesApi";
 
 export default function AdminTablesPage() {
-  const [tableCount, setTableCount] = useState(15);
-  const [tables, setTables] = useState(MOCK_TABLES);
+  const { 
+    data: tables, 
+    loading, 
+    refetch 
+  } = useFetchWithState("tables", getTablesApi, 15000);
 
   const statusCounts = {
-    available: tables.filter(t => t.status === "available").length,
-    occupied: tables.filter(t => t.status === "occupied").length,
-    reserved: tables.filter(t => t.status === "reserved").length,
-    cleaning: tables.filter(t => t.status === "cleaning").length,
+    available: (tables || []).filter(t => t.status === "available").length,
+    occupied: (tables || []).filter(t => t.status === "occupied").length,
+    reserved: (tables || []).filter(t => t.status === "reserved").length,
+    cleaning: (tables || []).filter(t => t.status === "cleaning").length,
   };
 
   return (
     <div className="space-y-8">
+      {loading && !tables && (
+        <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foodify-orange" />
+        </div>
+      )}
       <div>
         <h1 className="text-3xl font-black">Mesas</h1>
         <p className="text-text-secondary">Configuración y estado actual de las mesas del salón.</p>
       </div>
 
-      {/* CONFIGURACIÓN SUPERIOR */}
-      <Card className="bg-white dark:bg-zinc-900 border-none shadow-sm">
-        <CardContent className="p-6 flex flex-col md:flex-row items-end gap-6">
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="tableCount" className="text-xs font-black uppercase tracking-widest text-text-secondary">
-              Número de mesas configuradas
-            </Label>
-            <div className="flex gap-3">
-              <Input 
-                 id="tableCount" 
-                 type="number" 
-                 className="max-w-[120px] h-11 rounded-xl font-bold" 
-                 value={tableCount}
-                 onChange={(e) => setTableCount(Number(e.target.value))}
-              />
-              <Button className="bg-foodify-orange text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-foodify-orange/20">
-                Actualizar distribución
-              </Button>
-            </div>
-          </div>
-          <p className="text-xs text-text-secondary font-medium md:mb-3">
-            Al actualizar, se crearán las mesas que falten y se mantendrán las existentes con sus pedidos activos.
-          </p>
-        </CardContent>
-      </Card>
 
       {/* INDICADORES DE ESTADO */}
       <div className="flex flex-wrap gap-4">
@@ -79,7 +58,7 @@ export default function AdminTablesPage() {
 
       {/* GRID DE MESAS */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {tables.map((table) => (
+        {(tables || []).map((table) => (
           <Card 
             key={table.id} 
             className={cn(
@@ -105,9 +84,9 @@ export default function AdminTablesPage() {
             )} />
             
             <div className="text-center">
-              <h3 className="font-black text-lg leading-tight">{table.name}</h3>
+              <h3 className="font-black text-lg leading-tight">Mesa {table.number}</h3>
               <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">
-                {table.capacity} Personas
+                {table.seats} Personas
               </p>
             </div>
 
@@ -115,7 +94,7 @@ export default function AdminTablesPage() {
                {table.status === 'available' ? (
                  <p className="text-[10px] font-black uppercase text-center text-green-600">Crear orden</p>
                ) : table.status === 'occupied' ? (
-                 <p className="text-[10px] font-black uppercase text-center text-red-600">${table.activeOrder?.total.toFixed(2)}</p>
+                 <p className="text-[10px] font-black uppercase text-center text-red-600">En uso</p>
                ) : (
                  <p className="text-[10px] font-black uppercase text-center text-text-secondary">{table.status}</p>
                )}

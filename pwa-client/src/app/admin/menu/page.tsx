@@ -26,55 +26,17 @@ import {
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-// Mock Data
-const MOCK_MENUS = [
-  { id: 1, name: "Menú del Día", hours: "Lun-Vie · 12:00 – 16:00", categories: 3, dishes: 24, active: true },
-  { id: 2, name: "Cena", hours: "Diario · 18:00 – 23:00", categories: 4, dishes: 18, active: true },
-  { id: 3, name: "Desayunos", hours: "Sáb-Dom · 08:00 – 12:00", categories: 2, dishes: 12, active: false },
-];
-
-const MOCK_CATEGORIES = [
-  { id: 1, name: "Entradas", icon: UtensilsCrossed, dishes: 6 },
-  { id: 2, name: "Platos Fuertes", icon: Beef, dishes: 12 },
-  { id: 3, name: "Bebidas", icon: Coffee, dishes: 8 },
-  { id: 4, name: "Postres", icon: IceCream, dishes: 4 },
-];
-
-const MOCK_DISHES = [
-  { 
-    id: 1, 
-    name: "Tacos al Pastor", 
-    price: 85.0, 
-    time: 15, 
-    category: "Platos Fuertes", 
-    menu: "Menú del Día", 
-    available: true,
-    image: "" 
-  },
-  { 
-    id: 2, 
-    name: "Enchiladas Suizas", 
-    price: 120.0, 
-    time: 20, 
-    category: "Platos Fuertes", 
-    menu: "Menú del Día", 
-    available: true,
-    image: "" 
-  },
-  { 
-    id: 3, 
-    name: "Café Americano", 
-    price: 35.0, 
-    time: 5, 
-    category: "Bebidas", 
-    menu: "Menú del Día", 
-    available: true,
-    image: "" 
-  },
-];
+import { useFetchWithState } from "@/lib/useFetchWithState";
+import { getAdminMenusApi, getAdminCategoriesApi, getDishesApi } from "@/lib/menuApi";
 
 export default function AdminMenuPage() {
   const [activeTab, setActiveTab] = useState("menus");
+
+  const { data: menus, loading: menusLoading } = useFetchWithState("admin-menus", getAdminMenusApi, 15000);
+  const { data: categories, loading: catsLoading } = useFetchWithState("admin-categories", getAdminCategoriesApi, 15000);
+  const { data: dishes, loading: dishesLoading } = useFetchWithState("admin-dishes", getDishesApi, 15000);
+
+  const loading = menusLoading || catsLoading || dishesLoading;
 
   return (
     <div className="space-y-6">
@@ -99,25 +61,27 @@ export default function AdminMenuPage() {
           <TabsTrigger value="dishes" className="font-bold py-2 rounded-lg">Platillos</TabsTrigger>
         </TabsList>
 
+        {loading && !menus && (
+          <div className="flex justify-center p-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foodify-orange" />
+          </div>
+        )}
+
         {/* TAB MENUS */}
         <TabsContent value="menus" className="space-y-4">
           <div className="grid grid-cols-1 gap-4">
-            {MOCK_MENUS.map((menu) => (
+            {(menus || []).map((menu) => (
               <Card key={menu.id} className="hover:border-foodify-orange transition-colors">
                 <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                      <div className={cn(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
-                        menu.active ? "bg-foodify-orange-light text-foodify-orange" : "bg-gray-100 text-gray-400"
-                      )}>
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors bg-foodify-orange-light text-foodify-orange">
                         <UtensilsCrossed className="w-6 h-6" />
                       </div>
                       <div>
                         <h3 className="font-black text-lg">{menu.name}</h3>
                         <div className="flex items-center gap-3 text-xs text-text-secondary font-medium mt-1">
-                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {menu.hours}</span>
-                           <span className="flex items-center gap-1">• {menu.categories} categorías</span>
-                           <span className="flex items-center gap-1">• {menu.dishes} platillos</span>
+                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Horario: Rotativo</span>
+                           <span className="flex items-center gap-1">• #{menu.id}</span>
                         </div>
                       </div>
                    </div>
@@ -125,7 +89,7 @@ export default function AdminMenuPage() {
                    <div className="flex items-center gap-6 w-full sm:w-auto justify-between border-t sm:border-t-0 pt-4 sm:pt-0">
                       <div className="flex items-center gap-2">
                          <span className="text-[10px] font-black uppercase text-text-secondary tracking-widest">Estado</span>
-                         <Switch defaultChecked={menu.active} />
+                         <Switch defaultChecked={true} />
                       </div>
                       <div className="flex items-center gap-2">
                          <Button variant="outline" size="sm" className="font-bold h-9">Gestionar</Button>
@@ -152,33 +116,33 @@ export default function AdminMenuPage() {
               </p>
            </div>
 
-           <div className="grid grid-cols-1 gap-3">
-             {MOCK_CATEGORIES.map((cat) => (
-                <div 
-                  key={cat.id} 
-                  className="bg-white dark:bg-zinc-900 border rounded-2xl p-4 flex items-center justify-between group hover:border-foodify-orange transition-all cursor-move"
-                >
-                   <div className="flex items-center gap-4">
-                      <GripVertical className="w-5 h-5 text-gray-300 group-hover:text-foodify-orange" />
-                      <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-zinc-800 flex items-center justify-center text-text-primary">
-                         <cat.icon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm">{cat.name}</h4>
-                        <p className="text-[10px] text-text-secondary font-medium uppercase tracking-wider">{cat.dishes} platillos</p>
-                      </div>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon" className="h-9 w-9">
-                         <Edit3 className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500">
-                         <Trash2 className="w-4 h-4" />
-                      </Button>
-                   </div>
-                </div>
-             ))}
-           </div>
+            <div className="grid grid-cols-1 gap-3">
+              {(categories || []).map((cat) => (
+                 <div 
+                   key={cat.id} 
+                   className="bg-white dark:bg-zinc-900 border rounded-2xl p-4 flex items-center justify-between group hover:border-foodify-orange transition-all cursor-move"
+                 >
+                    <div className="flex items-center gap-4">
+                       <GripVertical className="w-5 h-5 text-gray-300 group-hover:text-foodify-orange" />
+                       <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-zinc-800 flex items-center justify-center text-text-primary text-xl">
+                          {cat.emoji || "📁"}
+                       </div>
+                       <div>
+                         <h4 className="font-bold text-sm">{cat.name}</h4>
+                         <p className="text-[10px] text-text-secondary font-medium uppercase tracking-wider">ID: {cat.id}</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <Button variant="ghost" size="icon" className="h-9 w-9">
+                          <Edit3 className="w-4 h-4" />
+                       </Button>
+                       <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500">
+                          <Trash2 className="w-4 h-4" />
+                       </Button>
+                    </div>
+                 </div>
+              ))}
+            </div>
            <p className="text-center text-xs text-text-secondary font-medium italic pt-4">
              Arrastra los elementos para reordenarlos en el menú público.
            </p>
@@ -202,24 +166,28 @@ export default function AdminMenuPage() {
            </div>
 
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {MOCK_DISHES.map((dish) => (
+              {(dishes || []).map((dish) => (
                 <Card key={dish.id} className="overflow-hidden group hover:border-foodify-orange transition-all">
-                  <div className="relative h-44 bg-foodify-orange-light flex items-center justify-center">
-                    <UtensilsCrossed className="w-12 h-12 text-foodify-orange opacity-20" />
-                    <div className="absolute top-4 left-4">
-                       <Switch defaultChecked={dish.available} />
-                    </div>
-                  </div>
+                   <div className="relative h-44 bg-foodify-orange-light flex items-center justify-center">
+                     {dish.imageUrl ? (
+                        <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover" />
+                     ) : (
+                        <UtensilsCrossed className="w-12 h-12 text-foodify-orange opacity-20" />
+                     )}
+                     <div className="absolute top-4 left-4">
+                        <Switch defaultChecked={dish.isAvailable} />
+                     </div>
+                   </div>
                   <CardContent className="p-5">
                     <div className="flex justify-between items-start mb-2">
                        <h4 className="font-black text-lg leading-tight">{dish.name}</h4>
                        <span className="font-black text-foodify-orange">${dish.price.toFixed(2)}</span>
                     </div>
                     <p className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-4">
-                       {dish.category} • {dish.menu}
+                       Categoría: {dish.categoryId}
                     </p>
                     <div className="flex items-center justify-between text-[10px] font-black uppercase text-text-secondary border-t pt-4">
-                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {dish.time} min</span>
+                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {dish.prepTime} min</span>
                        <div className="flex gap-1">
                           <Button variant="ghost" size="sm" className="h-8 rounded-lg font-bold">Editar</Button>
                           <Button variant="ghost" size="sm" className="h-8 rounded-lg font-bold text-red-500">Eliminar</Button>

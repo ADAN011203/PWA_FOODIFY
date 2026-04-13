@@ -24,6 +24,8 @@ export const viewport: Viewport = {
 
 
 
+import { SocketProvider } from "@/components/providers/SocketProvider";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
@@ -38,7 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="antialiased">
         <Toaster position="top-center" />
-        {children}
+        <SocketProvider>
+          {children}
+        </SocketProvider>
       </body>
     </html>
   );

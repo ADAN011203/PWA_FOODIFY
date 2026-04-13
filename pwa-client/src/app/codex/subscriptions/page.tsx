@@ -16,16 +16,24 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const MOCK_SUBS = [
-  { id: 1, restaurant: "Foodify Gourmet", plan: "Premium", amount: 149.0, status: "active", next_billing: "2026-05-01", auto_renew: true },
-  { id: 2, restaurant: "Tacos El Guero", plan: "Basic", amount: 49.0, status: "active", next_billing: "2026-04-20", auto_renew: true },
-  { id: 3, restaurant: "Sushi House", plan: "Pro", amount: 89.0, status: "past_due", next_billing: "2026-04-10", auto_renew: false },
-  { id: 4, restaurant: "La Pizzeria", plan: "Premium", amount: 149.0, status: "active", next_billing: "2026-05-15", auto_renew: true },
-];
+import { useFetchWithState } from "@/lib/useFetchWithState";
+import { getSaasSubscriptionsApi, getSaasKpisApi } from "@/lib/saasApi";
 
 export default function CodexSubscriptions() {
+  const { data: kpi, loading: kpiLoading } = useFetchWithState("saas-kpis", () => getSaasKpisApi("month"), 15000);
+  const { data: subData, loading: subsLoading } = useFetchWithState("saas-subscriptions", () => getSaasSubscriptionsApi(), 15000);
+
+  const loading = kpiLoading || subsLoading;
+  const subscriptions = subData?.items || [];
+  const total = subData?.total || 0;
+
   return (
     <div className="space-y-8">
+      {loading && !subData && (
+        <div className="fixed inset-0 bg-[#0A0A0B]/80 backdrop-blur-sm z-50 flex items-center justify-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foodify-orange" />
+        </div>
+      )}
       <div>
         <h1 className="text-3xl font-black">Suscripciones</h1>
         <p className="text-white/40">Monitoreo de ingresos recurrentes y estados de cuenta.</p>
@@ -38,7 +46,7 @@ export default function CodexSubscriptions() {
            </div>
            <div>
               <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">Revenue Mensual (MRR)</p>
-              <h3 className="text-2xl font-black text-white">$4,250.00</h3>
+              <h3 className="text-2xl font-black text-white">${(kpi?.monthlyRevenue ?? 0).toLocaleString()}</h3>
            </div>
         </div>
         <div className="bg-[#1C1C1E] p-6 rounded-2xl border border-white/5 flex items-center gap-6 shadow-sm">
@@ -55,8 +63,8 @@ export default function CodexSubscriptions() {
               <AlertCircle className="w-6 h-6" />
            </div>
            <div>
-              <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">Suscripciones Vencidas</p>
-              <h3 className="text-2xl font-black text-white">3 Críticas</h3>
+              <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">Total Suscripciones</p>
+              <h3 className="text-2xl font-black text-white">{total} Activas</h3>
            </div>
         </div>
       </div>
@@ -85,22 +93,22 @@ export default function CodexSubscriptions() {
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-sm">
-                   {MOCK_SUBS.map((sub) => (
+                   {subscriptions.map((sub) => (
                      <tr key={sub.id} className="hover:bg-white/[0.02] transition-colors group">
-                        <td className="px-6 py-4 font-bold text-white">{sub.restaurant}</td>
+                        <td className="px-6 py-4 font-bold text-white">{sub.restaurantName}</td>
                         <td className="px-6 py-4">
                            <span className={cn(
                              "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider",
-                             sub.plan === 'Premium' ? 'bg-orange-500/10 text-orange-500' : 'bg-blue-500/10 text-blue-500'
+                             sub.planName === 'Premium' ? 'bg-orange-500/10 text-orange-500' : 'bg-blue-500/10 text-blue-500'
                            )}>
-                             {sub.plan}
+                             {sub.planName}
                            </span>
                         </td>
-                        <td className="px-6 py-4 font-black">${sub.amount.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-black">${Number(sub.amount).toFixed(2)}</td>
                         <td className="px-6 py-4 text-white/60">
                            <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 opacity-30" />
-                              {sub.next_billing}
+                              {sub.nextPaymentDate ? sub.nextPaymentDate.split('T')[0] : 'Sin fecha'}
                            </div>
                         </td>
                         <td className="px-6 py-4">

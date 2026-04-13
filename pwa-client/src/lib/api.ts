@@ -1,8 +1,8 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/store/authStore";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api_proxy/api/v1";
-const BASE_URL_PROXY = API_URL.replace("/api/v1", "");
+const API_URL = "http://3.142.73.52:3000/api/v1";
+const BASE_URL_PROXY = "http://3.142.73.52:3000";
 
 // ─── Instance with JWT ────────────────────────────────────────────────────────
 export const api: AxiosInstance = axios.create({
