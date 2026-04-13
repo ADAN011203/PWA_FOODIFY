@@ -15,7 +15,7 @@ class SocketManager {
     const token = useAuthStore.getState().token;
     
     const socket = io(namespace, {
-      path: "/api_proxy/socket.io",
+      path: "/api_proxy/socket.io/",
       auth: { token: `Bearer ${token}` },
       transports: ["polling", "websocket"],
       reconnection: true,

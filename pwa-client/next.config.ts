@@ -35,6 +35,10 @@ const nextConfig = {
     const backendUrl = process.env.BACKEND_URL || "http://3.142.73.52:3000";
     return [
       {
+        source: "/api_proxy/socket.io/:path*",
+        destination: `${backendUrl}/socket.io/:path*`,
+      },
+      {
         source: "/api_proxy/:path*",
         destination: `${backendUrl}/:path*`,
       },
