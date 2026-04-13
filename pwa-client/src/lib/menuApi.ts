@@ -223,7 +223,7 @@ export async function getFullAdminMenuApi(): Promise<{
   return {
     menus: [adminMenu],
     restaurant: {
-      id: 1,
+      id: 2,
       name: "Foodify Admin",
       isOpen: true
     }
