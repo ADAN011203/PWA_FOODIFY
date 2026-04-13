@@ -1,11 +1,10 @@
-"use client";
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Order, OrderStatus } from "@/types/orders";
 import { getActiveOrdersApi, updateOrderStatusApi, getKitchenOrdersApi, updateKitchenStatusApi } from "@/lib/ordersApi";
+import { getRestaurantSocket } from "@/lib/socketApi";
 
 const STORAGE_KEY = "foodify_guest_orders";
-const POLL_INTERVAL = 3000; // 3s
+const POLL_FALLBACK_INTERVAL = 15000; // 15sfallback if socket fails
 
 function readLocalOrders(): Order[] {
   try {
@@ -18,7 +17,7 @@ function writeLocalOrders(orders: Order[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
 }
 
-// Hook para staff — intenta cargar desde backend, fallback a localStorage
+// Hook para staff — Real-time con Sockets (T38)
 export function useSharedOrders(mode: "orders" | "kitchen" = "orders") {
   const [orders, setOrders]   = useState<Order[]>(() => readLocalOrders());
   const [isReady, setIsReady] = useState(false);
@@ -37,63 +36,63 @@ export function useSharedOrders(mode: "orders" | "kitchen" = "orders") {
         setOrders(data);
       }
       setUseBackend(true);
+      return data;
     } catch {
-      // Backend no disponible — usar localStorage
       setUseBackend(false);
+      return [];
     }
   }, [mode]);
 
-  const refreshLocal = useCallback(() => {
-    const current = localStorage.getItem(STORAGE_KEY) ?? "[]";
-    if (current !== lastSnapshotRef.current) {
-      lastSnapshotRef.current = current;
-      try { setOrders(JSON.parse(current)); } catch { setOrders([]); }
-    }
-  }, []);
-
   useEffect(() => {
-    // Carga inicial
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // 1. Carga inicial
     fetchFromBackend().then(() => setIsReady(true));
 
-    // Polling cada 3s
-    const poll = setInterval(() => {
-      if (useBackend) fetchFromBackend();
-      else refreshLocal();
-    }, POLL_INTERVAL);
-
-    // Storage event para sincronización entre pestañas (localStorage)
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && !useBackend) refreshLocal();
+    // 2. Conectar Sockets (T38 — Paridad con Android)
+    const socket = getRestaurantSocket();
+    
+    const handleNewOrder = (newOrder: any) => {
+      console.log("Socket: New Order received", newOrder);
+      fetchFromBackend(); // Refresh full list to ensure consistency
     };
-    window.addEventListener("storage", onStorage);
+
+    const handleOrderUpdated = (updatedOrder: any) => {
+      console.log("Socket: Order update received", updatedOrder);
+      fetchFromBackend();
+    };
+
+    socket.on("new_order", handleNewOrder);
+    socket.on("order_updated", handleOrderUpdated);
+    socket.on("status_changed", handleOrderUpdated);
+
+    // 3. Polling Fallback (mucho más lento, solo por seguridad)
+    const fallback = setInterval(() => {
+      if (!socket.connected) {
+        console.log("Socket disconnected, using fallback polling...");
+        fetchFromBackend();
+      }
+    }, POLL_FALLBACK_INTERVAL);
 
     return () => {
-      clearInterval(poll);
-      window.removeEventListener("storage", onStorage);
+      socket.off("new_order", handleNewOrder);
+      socket.off("order_updated", handleOrderUpdated);
+      socket.off("status_changed", handleOrderUpdated);
+      clearInterval(fallback);
     };
-  }, [fetchFromBackend, refreshLocal, useBackend]);
+  }, [fetchFromBackend]);
 
   const updateStatus = useCallback(async (id: string, status: OrderStatus) => {
-    // Actualizar UI optimistamente
+    // Optimistic update
     setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
 
-    if (useBackend) {
-      try {
-        if (mode === "kitchen") await updateKitchenStatusApi(id, status);
-        else await updateOrderStatusApi(id, status);
-      } catch {
-        // Si falla el backend, actualizar localStorage
-        const updated = readLocalOrders().map((o) => o.id === id ? { ...o, status } : o);
-        writeLocalOrders(updated);
-      }
-    } else {
-      // Modo localStorage
-      const updated = readLocalOrders().map((o) => o.id === id ? { ...o, status } : o);
-      writeLocalOrders(updated);
-      lastSnapshotRef.current = JSON.stringify(updated);
+    try {
+      if (mode === "kitchen") await updateKitchenStatusApi(id, status);
+      else await updateOrderStatusApi(id, status);
+      // Backend status is definitive
+    } catch (e) {
+      console.error("Error updating status:", e);
+      fetchFromBackend(); // Rollback to actual backend state
     }
-  }, [useBackend, mode]);
+  }, [mode, fetchFromBackend]);
 
   return { orders, updateStatus, isReady };
 }

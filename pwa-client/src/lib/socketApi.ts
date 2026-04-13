@@ -16,16 +16,13 @@ class SocketManager {
     
     const socket = io(namespace, {
       path: "/api_proxy/socket.io/",
-      auth: { token: `Bearer ${token}` },
-      transports: ["polling"],
-      upgrade: false,
-      multiplex: true,
-      withCredentials: true,
-      forceNew: false, // Share the manager across namespaces
+      // En v3.2, enviamos el token puro sin el prefijo 'Bearer' en el handshake auth para compatibilidad con NestJS
+      auth: { token }, 
+      transports: ["websocket", "polling"],
       reconnection: true,
-      reconnectionAttempts: 20,
-      reconnectionDelay: 2000,
-      randomizationFactor: 0.5,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      timeout: 20000,
     });
 
     socket.on("connect", () => {

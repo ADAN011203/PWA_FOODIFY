@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 // Use relative path for production (to trigger Vercel proxy and avoid Mixed Content)
 // During local development, Next.js proxy rewrite still works if configured in next.config.ts
 const API_URL = "/api_proxy/api/v1";
-const BASE_URL_PROXY = "/api_proxy";
+const PUBLIC_API_URL = "/api_proxy";
 
 // ─── Instance with JWT ────────────────────────────────────────────────────────
 export const api: AxiosInstance = axios.create({
@@ -15,7 +15,7 @@ export const api: AxiosInstance = axios.create({
 
 // ─── Public Instance (Menu) ───────────────────────────────────────────────────
 export const publicApi: AxiosInstance = axios.create({
-  baseURL: BASE_URL_PROXY,
+  baseURL: PUBLIC_API_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 10000,
 });
