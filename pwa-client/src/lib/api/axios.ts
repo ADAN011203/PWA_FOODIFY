@@ -13,8 +13,8 @@ const API_URL = isProd
 
 // Base URL para peticiones públicas (sin v1)
 const PUBLIC_API_URL = isProd
-  ? '/api_proxy'
-  : 'http://3.142.73.52:3000';
+  ? '/api_proxy/api/v1'
+  : 'http://3.142.73.52:3000/api/v1';
 
 // ─── Instancia Privada (con JWT - usa /api/v1) ────────────────────────────────
 export const api: AxiosInstance = axios.create({
