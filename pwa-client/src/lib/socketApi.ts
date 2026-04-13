@@ -14,9 +14,10 @@ class SocketManager {
 
     const token = useAuthStore.getState().token;
     
-    const socket = io(`${SOCKET_URL}${namespace}`, {
+    const socket = io(namespace, {
+      path: "/api_proxy/socket.io",
       auth: { token: `Bearer ${token}` },
-      transports: ["polling", "websocket"], // Use polling first to ensure Vercel compatibility
+      transports: ["polling", "websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
     });
