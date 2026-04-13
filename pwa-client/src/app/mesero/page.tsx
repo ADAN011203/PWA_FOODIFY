@@ -32,6 +32,7 @@ function useRoleGuard(allowed: string[]) {
 
 const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string; icon: any }> = {
   nuevo:          { label: "Nuevo",     color: "#3b82f6", bg: "#1e3a5f", icon: IconPlus },
+  confirmado:      { label: "Confirmado", color: "#3b82f6", bg: "#1e3a5f", icon: IconCheck },
   en_preparacion: { label: "En cocina", color: "#f59e0b", bg: "#3d2e0a", icon: IconChefHat },
   listo:          { label: "¡Listo!",   color: "#22c55e", bg: "#0d3320", icon: IconBell },
   entregado:      { label: "Entregado", color: "#6b7280", bg: "#1f2937", icon: IconCheck },
